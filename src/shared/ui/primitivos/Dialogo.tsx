@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import type { ReactNode } from "react";
 import { Boton } from "./Boton";
 
@@ -13,6 +13,7 @@ type Props = {
 
 export const Dialogo = ({ abierto, titulo, onCerrar, children, pie, ancho }: Props) => {
   const referencia = useRef<HTMLDialogElement>(null);
+  const rotulo = useId();
 
   useEffect(() => {
     const elemento = referencia.current;
@@ -33,9 +34,9 @@ export const Dialogo = ({ abierto, titulo, onCerrar, children, pie, ancho }: Pro
   }, [onCerrar]);
 
   return (
-    <dialog ref={referencia} className={ancho ? "dialogo dialogo--ancho" : "dialogo"} aria-labelledby="titulo-dialogo">
+    <dialog ref={referencia} className={ancho ? "dialogo dialogo--ancho" : "dialogo"} aria-labelledby={rotulo}>
       <div className="dialogo__encabezado">
-        <h2 className="tarjeta__titulo" id="titulo-dialogo">
+        <h2 className="tarjeta__titulo" id={rotulo}>
           {titulo}
         </h2>
         <Boton variante="fantasma" tamano="sm" icono="cerrar" aria-label="Cerrar" onClick={onCerrar} />

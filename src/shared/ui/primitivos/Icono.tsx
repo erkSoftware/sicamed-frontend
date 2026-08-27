@@ -36,7 +36,14 @@ export type NombreIcono =
   | "candado"
   | "medico"
   | "documento"
-  | "cadena";
+  | "cadena"
+  | "luna"
+  | "sol"
+  | "paleta"
+  | "comando"
+  | "capas"
+  | "sonido"
+  | "silencio";
 
 const TRAZOS: Record<NombreIcono, string> = {
   tablero: "M3 3h7v8H3zM14 3h7v5h-7zM14 11h7v10h-7zM3 14h7v7H3z",
@@ -77,6 +84,13 @@ const TRAZOS: Record<NombreIcono, string> = {
   medico: "M9 3v6a3 3 0 0 0 6 0V3M6 3h3M15 3h3M12 12v3a4 4 0 0 0 8 0v-2M20 10a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z",
   documento: "M6 3h8l5 5v13H6zM14 3v5h5M9 13h6M9 17h6",
   cadena: "M9 15l6-6M8 8H6a4 4 0 0 0 0 8h2M16 8h2a4 4 0 0 1 0 8h-2",
+  luna: "M21 13a8.5 8.5 0 0 1-10-10 8.5 8.5 0 1 0 10 10z",
+  sol: "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4",
+  paleta: "M12 21a9 9 0 1 1 0-18c4.9 0 9 3.4 9 7.5 0 2.5-2 4.5-4.5 4.5H14a2 2 0 0 0-1.4 3.4A1.8 1.8 0 0 1 12 21zM7.5 11h.01M10 7.5h.01M14.5 7.5h.01",
+  comando: "M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3z",
+  capas: "M12 3l9 5-9 5-9-5zM3 13l9 5 9-5M3 17l9 5 9-5",
+  sonido: "M4 9h4l5-4v14l-5-4H4zM16.5 9.5a3.5 3.5 0 0 1 0 5M19 7a7 7 0 0 1 0 10",
+  silencio: "M4 9h4l5-4v14l-5-4H4zM17 10l4 4M21 10l-4 4",
 };
 
 type Props = {

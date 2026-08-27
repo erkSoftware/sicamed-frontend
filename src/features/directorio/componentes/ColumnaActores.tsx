@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Icono } from "../../../shared/ui/primitivos/Icono";
 import type { NombreIcono } from "../../../shared/ui/primitivos/Icono";
 import { numero } from "../../../shared/i18n/formato";
+import { RegionDesplazable } from "../../../shared/ui/patrones/RegionDesplazable";
 
 type Props = {
   titulo: string;
@@ -24,7 +25,9 @@ export const ColumnaActores = ({ titulo, total, visibles, icono, children, pie }
         {numero(visibles)} visibles en esta página
       </p>
     </header>
-    <ul className="columna__lista">{children}</ul>
+    <RegionDesplazable className="columna__desplazador" etiqueta={`Listado de ${titulo}`}>
+      <ul className="columna__lista">{children}</ul>
+    </RegionDesplazable>
     {pie}
   </section>
 );

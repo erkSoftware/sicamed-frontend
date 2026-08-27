@@ -11,10 +11,13 @@ import { MapaColombia } from "../../../shared/ui/graficos/MapaColombia";
 import { BarrasHorizontales } from "../../../shared/ui/graficos/BarrasHorizontales";
 import { FlujoProceso } from "../../../shared/ui/graficos/FlujoProceso";
 import { LineaTendencia } from "../../../shared/ui/graficos/LineaTendencia";
-import { compacto, fechaHora, numero } from "../../../shared/i18n/formato";
+import { compacto, numero } from "../../../shared/i18n/formato";
 import { PanelBienvenida } from "../componentes/PanelBienvenida";
+import { ActividadReciente } from "../componentes/ActividadReciente";
 import { useEventosRecientes, useIndicadores } from "../hooks/useIndicadores";
 import { FichaDepartamento } from "../../../shared/ui/patrones/FichaDepartamento";
+import { sonar } from "../../../shared/ui/sonido/almacen";
+import { InterruptorSonido } from "../../../shared/ui/sonido/InterruptorSonido";
 
 type Dimension = "proveedores" | "dispensadores" | "ips" | "medicos" | "pacientes";
 
@@ -60,7 +63,7 @@ export const Tablero = () => {
                 <Kpi
                   key={item.clave}
                   etiqueta={item.etiqueta}
-                  valor={numero(datos.totales[item.clave])}
+                  cifra={datos.totales[item.clave]}
                   nota={item.clave === "pacientes" ? "Cobertura nacional estimada" : "Registrados en SICAMED"}
                   icono={item.icono}
                   delta={{ valor: item.clave === "medicos" ? "3,4%" : "1,8%", sube: true }}
@@ -73,17 +76,23 @@ export const Tablero = () => {
                 titulo="Distribución territorial"
                 descripcion={`Concentración de ${dimensionActual.etiqueta.toLowerCase()} por departamento`}
                 acciones={
-                  <div className="grupo-filtros" role="group" aria-label="Dimensión del mapa">
-                    {DIMENSIONES.map((item) => (
-                      <button
-                        key={item.clave}
-                        type="button"
-                        aria-pressed={dimension === item.clave}
-                        onClick={() => setDimension(item.clave)}
-                      >
-                        {item.etiqueta}
-                      </button>
-                    ))}
+                  <div className="mapa__mandos">
+                    <div className="grupo-filtros" role="group" aria-label="Dimensión del mapa">
+                      {DIMENSIONES.map((item, orden) => (
+                        <button
+                          key={item.clave}
+                          type="button"
+                          aria-pressed={dimension === item.clave}
+                          onClick={() => {
+                            setDimension(item.clave);
+                            sonar(orden);
+                          }}
+                        >
+                          {item.etiqueta}
+                        </button>
+                      ))}
+                    </div>
+                    <InterruptorSonido />
                   </div>
                 }
               >
@@ -190,21 +199,7 @@ export const Tablero = () => {
               }
             >
               <EstadoConsulta cargando={eventos.isLoading} error={eventos.error}>
-                <ol className="linea-tiempo">
-                  {(eventos.data?.datos ?? []).map((evento) => (
-                    <li key={evento.id} className="linea-tiempo__item">
-                      <span className="linea-tiempo__punto" aria-hidden="true">
-                        <Icono nombre={evento.tipo.includes("RECHAZ") ? "alerta" : "check"} tamano={14} />
-                      </span>
-                      <div>
-                        <p className="linea-tiempo__titulo">{evento.descripcion}</p>
-                        <p className="linea-tiempo__meta">
-                          {fechaHora(evento.fecha)} · {evento.actor} · sello {evento.huella}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
+                <ActividadReciente eventos={eventos.data?.datos ?? []} />
               </EstadoConsulta>
             </Tarjeta>
           </>
