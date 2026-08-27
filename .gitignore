@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-ssr
+coverage
+.vite
+*.local
+.env
+.env.*
+!.env.example
+.DS_Store
+decisiones/
+playwright-report
+test-results
+.vercel
+tsconfig.*.tsbuildinfo

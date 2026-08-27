@@ -1,0 +1,56 @@
+{
+  "name": "sicamed-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build && vite build --ssr && node tools/prerender.mjs",
+    "build:spa": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "typecheck": "tsc -b --pretty",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "fronteras": "eslint . --rule-severity error",
+    "check": "npm run typecheck && npm run lint && npm run test"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.51.1",
+    "clsx": "^2.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-helmet-async": "^2.0.5",
+    "react-router-dom": "^6.26.0",
+    "zustand": "^4.5.4"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.9.1",
+    "@eslint/js": "^9.8.0",
+    "@playwright/test": "^1.62.1",
+    "@testing-library/jest-dom": "^6.4.8",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/node": "^20.14.12",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "axe-core": "^4.9.1",
+    "eslint": "^9.8.0",
+    "eslint-plugin-jsx-a11y": "^6.9.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.9",
+    "globals": "^15.8.0",
+    "jsdom": "^24.1.1",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.0.0",
+    "vite": "^5.3.5",
+    "vitest": "^2.0.5"
+  }
+}

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /acceso
+Disallow: /app/salud/
+
+Sitemap: https://sicamed.co/sitemap.xml

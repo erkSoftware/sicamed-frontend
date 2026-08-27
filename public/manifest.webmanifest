@@ -1,0 +1,10 @@
+{
+  "name": "SICAMED — Sistema de Información del Cannabis Medicinal",
+  "short_name": "SICAMED",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0E5C36",
+  "lang": "es-CO",
+  "icons": [{ "src": "/marca/isotipo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

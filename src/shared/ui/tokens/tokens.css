@@ -1,0 +1,159 @@
+:root {
+  --verde-950: #05231A;
+  --verde-900: #073122;
+  --verde-800: #0A4529;
+  --verde-700: #0E5C36;
+  --verde-600: #147343;
+  --verde-500: #1E9E52;
+  --verde-400: #35B96A;
+  --verde-300: #6FD79A;
+  --verde-200: #A9E9C4;
+  --verde-100: #D6F5E3;
+  --verde-50: #EFFAF3;
+
+  --lima-900: #1F4A0D;
+  --lima-800: #2A5E12;
+  --lima-700: #357719;
+  --lima-600: #4FA827;
+  --lima-500: #5CBB30;
+  --lima-400: #7ED957;
+  --lima-300: #A6E888;
+  --lima-200: #C7F2A9;
+  --lima-100: #E4F9D3;
+  --lima-50: #F2FCE8;
+
+  --piedra-950: #0B100D;
+  --piedra-900: #131A16;
+  --piedra-800: #1E2721;
+  --piedra-700: #35403A;
+  --piedra-600: #4A554E;
+  --piedra-500: #5F6B64;
+  --piedra-400: #8B958E;
+  --piedra-300: #BEC4BF;
+  --piedra-200: #DEDDD7;
+  --piedra-150: #E7E6E0;
+  --piedra-100: #F0EFE9;
+  --piedra-50: #F7F6F2;
+  --papel: #FBFAF7;
+  --blanco: #FFFFFF;
+
+  --rojo-800: #7F1010;
+  --rojo-700: #A31212;
+  --rojo-600: #C62828;
+  --ambar-800: #6B4600;
+  --ambar-700: #8A5A00;
+  --azul-800: #0F3D5E;
+  --azul-700: #14507A;
+  --azul-600: #1B6FA8;
+
+  --exito-fondo: var(--verde-50);
+  --exito-texto: var(--verde-800);
+  --exito-borde: var(--verde-200);
+  --alerta-fondo: #FDF3DE;
+  --alerta-texto: var(--ambar-800);
+  --alerta-borde: #E9D6A6;
+  --peligro-fondo: #FCEBEB;
+  --peligro-texto: var(--rojo-800);
+  --peligro-borde: #EFC4C4;
+  --info-fondo: #E7F1F8;
+  --info-texto: var(--azul-800);
+  --info-borde: #BDD8EA;
+  --acento-fondo: var(--lima-50);
+  --acento-borde: var(--lima-200);
+
+  --fondo: var(--papel);
+  --superficie: var(--blanco);
+  --superficie-alt: var(--piedra-50);
+  --superficie-inversa: var(--verde-950);
+  --borde: var(--piedra-200);
+  --borde-suave: var(--piedra-150);
+  --borde-fuerte: var(--piedra-300);
+  --texto: var(--piedra-950);
+  --texto-suave: var(--piedra-600);
+  --texto-tenue: var(--piedra-500);
+  --texto-inverso: #E6F0E9;
+  --marca: var(--verde-700);
+  --marca-fuerte: var(--verde-800);
+  --marca-viva: var(--lima-500);
+  --acento: var(--lima-700);
+  --acento-texto: var(--lima-800);
+
+  --lateral-fondo: var(--verde-950);
+  --lateral-texto: #B9D3C4;
+  --lateral-texto-activo: var(--blanco);
+  --lateral-activo: rgba(126, 217, 87, 0.12);
+  --lateral-borde: rgba(255, 255, 255, 0.09);
+
+  --clinico-marca: var(--azul-700);
+  --clinico-fondo: var(--info-fondo);
+
+  --mapa-relleno: var(--verde-100);
+  --mapa-borde: var(--blanco);
+  --mapa-vacio: var(--piedra-150);
+  --mapa-marco: var(--verde-800);
+
+  --globo-oceano: #04211A;
+  --globo-oceano-borde: #0C5F43;
+  --globo-tierra: #147343;
+  --globo-tierra-luz: #35B96A;
+  --globo-tierra-borde: rgba(239, 250, 243, 0.5);
+  --globo-malla: rgba(214, 245, 227, 0.15);
+  --globo-foco: #7ED957;
+  --globo-marca: #E4F9D3;
+  --globo-halo: rgba(126, 217, 87, 0.5);
+  --globo-atmosfera: rgba(53, 185, 106, 0.22);
+  --globo-departamento-bajo: #0F6B45;
+  --globo-departamento-alto: #A6E888;
+  --lamina-tinta: var(--verde-800);
+  --lamina-relleno: rgba(92, 187, 48, 0.13);
+  --lamina-bractea: rgba(92, 187, 48, 0.2);
+  --lamina-pistilo: #9C6B2F;
+  --orbita-linea: rgba(14, 92, 54, 0.16);
+  --orbita-halo: rgba(92, 187, 48, 0.13);
+
+  --radio-xs: 2px;
+  --radio-sm: 3px;
+  --radio-md: 4px;
+  --radio-lg: 6px;
+  --radio-xl: 10px;
+  --radio-completo: 999px;
+
+  --e1: 4px;
+  --e2: 8px;
+  --e3: 12px;
+  --e4: 16px;
+  --e5: 24px;
+  --e6: 32px;
+  --e7: 48px;
+  --e8: 64px;
+  --e9: 96px;
+  --e10: 136px;
+
+  --sombra-sm: 0 1px 2px rgba(11, 16, 13, 0.05);
+  --sombra-md: 0 1px 2px rgba(11, 16, 13, 0.04), 0 10px 28px rgba(11, 16, 13, 0.07);
+  --sombra-lg: 0 18px 56px rgba(11, 16, 13, 0.16);
+
+  --fuente-display: "Bricolage Grotesque", "Public Sans", system-ui, sans-serif;
+  --fuente: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fuente-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --texto-xs: 0.6875rem;
+  --texto-sm: 0.8125rem;
+  --texto-base: 0.9375rem;
+  --texto-md: 1.0625rem;
+  --texto-lg: 1.25rem;
+  --texto-xl: 1.5rem;
+  --texto-2xl: 2rem;
+  --texto-3xl: clamp(2.25rem, 1.4rem + 3.6vw, 3.5rem);
+  --texto-4xl: clamp(3.25rem, 1.1rem + 8.6vw, 8rem);
+  --texto-5xl: clamp(3.5rem, 0.6rem + 11vw, 9rem);
+
+  --rastreo-titular: -0.03em;
+  --rastreo-etiqueta: 0.16em;
+  --medida: 66ch;
+
+  --ancho-lateral: 248px;
+  --alto-barra: 64px;
+  --marco: clamp(20px, 5vw, 72px);
+  --transicion: 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
