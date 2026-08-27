@@ -5,7 +5,7 @@ import { Tarjeta } from "../../../shared/ui/primitivos/Tarjeta";
 import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { Boton } from "../../../shared/ui/primitivos/Boton";
 import { Icono } from "../../../shared/ui/primitivos/Icono";
-import { fechaHora } from "../../../shared/i18n/formato";
+import { fechaCorta } from "../../../shared/i18n/formato";
 import { useTeleconsultas } from "../../pacientes/hooks/usePacientes";
 
 export const Teleconsulta = () => {
@@ -41,12 +41,17 @@ export const Teleconsulta = () => {
             texto="Cuando agendes una cita en modalidad de teleconsulta, aparecerá aquí con su enlace de sala."
           />
         ) : (
-          <div className="rejilla rejilla--3">
+          <div className="rejilla rejilla--2">
             {proximas.map((cita) => (
               <Tarjeta
                 key={cita.id}
                 titulo={cita.paciente}
                 descripcion={cita.motivo}
+                acciones={
+                  <Insignia tono={cita.estado === "CONFIRMADA" ? "exito" : "info"}>
+                    {cita.estado.replace("_", " ")}
+                  </Insignia>
+                }
                 pie={
                   <Boton
                     tamano="sm"
@@ -58,19 +63,21 @@ export const Teleconsulta = () => {
                   </Boton>
                 }
               >
-                <div className="pila" style={{ gap: "var(--e3)" }}>
-                  <Insignia tono={cita.estado === "CONFIRMADA" ? "exito" : "info"}>
-                    {cita.estado.replace("_", " ")}
-                  </Insignia>
-                  <p className="fila" style={{ gap: "var(--e2)", color: "var(--texto-suave)" }}>
-                    <Icono nombre="reloj" tamano={16} />
-                    {fechaHora(cita.fecha)} · {cita.duracionMinutos} min
-                  </p>
-                  <p className="fila" style={{ gap: "var(--e2)", color: "var(--texto-suave)" }}>
-                    <Icono nombre="medico" tamano={16} />
+                <dl className="tele-datos">
+                  <dt>Sesión</dt>
+                  <dd className="tele-datos__dato mono">
+                    {fechaCorta(cita.fecha)} ·{" "}
+                    {new Date(cita.fecha).toLocaleTimeString("es-CO", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    · {cita.duracionMinutos} min
+                  </dd>
+                  <dt>Profesional</dt>
+                  <dd>
                     {cita.profesional} · {cita.especialidad}
-                  </p>
-                </div>
+                  </dd>
+                </dl>
               </Tarjeta>
             ))}
           </div>

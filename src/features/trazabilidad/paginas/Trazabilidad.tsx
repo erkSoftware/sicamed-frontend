@@ -53,7 +53,7 @@ const COLUMNAS: readonly Columna<EventoTrazabilidad>[] = [
     ),
   },
   { clave: "actor", encabezado: "Actor", render: (evento) => evento.actor },
-  { clave: "fecha", encabezado: "Fecha", render: (evento) => fechaHora(evento.fecha) },
+  { clave: "fecha", encabezado: "Fecha", render: (evento) => <span className="dato">{fechaHora(evento.fecha)}</span> },
   {
     clave: "huella",
     encabezado: "Sello",

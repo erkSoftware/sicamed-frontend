@@ -1,6 +1,7 @@
 node_modules
 dist
 dist-ssr
+dist-servidor
 coverage
 .vite
 *.local
@@ -13,3 +14,6 @@ playwright-report
 test-results
 .vercel
 tsconfig.*.tsbuildinfo
+
+tiros/
+*.tmp.mjs

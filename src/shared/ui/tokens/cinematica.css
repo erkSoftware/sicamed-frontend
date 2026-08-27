@@ -1,0 +1,582 @@
+html[data-cinematica="corriendo"],
+html[data-cinematica="corriendo"] body {
+  background: #010A07;
+}
+
+html[data-cinematica="corriendo"] body {
+  overflow: hidden;
+}
+
+html[data-cinematica="corriendo"] .sitio {
+  visibility: hidden;
+}
+
+.cinematica {
+  visibility: visible;
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background:
+    radial-gradient(120% 90% at 50% 42%, #0A3A28 0%, var(--verde-950) 46%, #010A07 100%);
+  transition: opacity 900ms ease, transform 900ms cubic-bezier(0.7, 0, 0.84, 0);
+}
+
+.cinematica[data-fase="salida"] {
+  opacity: 0;
+  transform: scale(1.05);
+  pointer-events: none;
+}
+
+.cinematica__escenario {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.cinematica__lienzo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.cinematica[data-fase="entrada"] .cinematica__lienzo {
+  animation: cinematica-impacto 1000ms cubic-bezier(0.64, 0, 0.78, 0) forwards;
+}
+
+@keyframes cinematica-impacto {
+  0% {
+    filter: blur(0) saturate(1);
+    transform: scale(1);
+  }
+  62% {
+    filter: blur(3px) saturate(1.2);
+    transform: scale(1.06);
+  }
+  100% {
+    filter: blur(22px) saturate(1.5);
+    transform: scale(1.28);
+    opacity: 0;
+  }
+}
+
+.cinematica[data-fase="ecosistema"] .cinematica__lienzo,
+.cinematica[data-fase="salida"] .cinematica__lienzo {
+  filter: blur(18px) saturate(1.35);
+  transform: scale(1.16);
+}
+
+.cinematica__velo {
+  position: absolute;
+  inset: 0;
+  background: #010A07;
+  opacity: 0;
+  transition: opacity 640ms ease;
+  pointer-events: none;
+}
+
+.cinematica[data-fase="ecosistema"] .cinematica__velo,
+.cinematica[data-fase="salida"] .cinematica__velo {
+  opacity: 0.76;
+}
+
+.cinematica__destello {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 60% at 50% 50%, rgba(126, 217, 87, 0.55) 0%, rgba(126, 217, 87, 0) 68%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cinematica[data-fase="entrada"] .cinematica[data-fase="ecosistema"] .cinematica__lienzo,
+.cinematica[data-fase="salida"] .cinematica__lienzo {
+  filter: blur(18px) saturate(1.35);
+  transform: scale(1.16);
+}
+
+.cinematica__destello {
+  animation: cinematica-destello 1000ms ease-out forwards;
+}
+
+@keyframes cinematica-destello {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  70% {
+    opacity: 0.28;
+    transform: scale(1.05);
+  }
+  88% {
+    opacity: 0.62;
+    transform: scale(1.3);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+.cinematica__banda {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: clamp(24px, 6vh, 62px);
+  background: #010A07;
+  transform: scaleY(0);
+  animation: cinematica-banda 820ms cubic-bezier(0.16, 1, 0.3, 1) 80ms forwards;
+  z-index: 3;
+}
+
+.cinematica__banda--alta {
+  top: 0;
+  transform-origin: top;
+  border-bottom: 1px solid rgba(126, 217, 87, 0.16);
+}
+
+.cinematica__banda--baja {
+  bottom: 0;
+  transform-origin: bottom;
+  border-top: 1px solid rgba(126, 217, 87, 0.16);
+}
+
+@keyframes cinematica-banda {
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.cinematica__capa,
+.cinematica__ficha,
+.cinematica__ecosistema {
+  position: absolute;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 620ms ease, transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.cinematica__capa[data-visible="si"],
+.cinematica__ficha[data-visible="si"],
+.cinematica__ecosistema[data-visible="si"] {
+  opacity: 1;
+  transform: none;
+}
+
+.cinematica__capa {
+  inset: 0;
+  background: radial-gradient(48% 36% at 50% 50%, rgba(1, 10, 7, 0.88) 0%, rgba(1, 10, 7, 0) 74%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e4);
+  text-align: center;
+  transform: translateY(18px);
+}
+
+.cinematica__capa--pie {
+  inset: auto 0 clamp(72px, 14vh, 132px) 0;
+  gap: var(--e2);
+}
+
+.cinematica__marca {
+  font-family: var(--fuente-display);
+  font-size: clamp(2.75rem, 11vw, 8rem);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  color: var(--verde-50);
+  text-shadow: 0 0 46px rgba(126, 217, 87, 0.28);
+}
+
+.cinematica__regla {
+  display: block;
+  width: min(44vw, 460px);
+  height: 2px;
+  background: var(--marca-viva);
+  transform: scaleX(0);
+  transform-origin: center;
+  animation: cinematica-regla 860ms 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cinematica-regla {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.cinematica__lema,
+.cinematica__rotulo {
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-xs);
+  letter-spacing: var(--rastreo-etiqueta);
+  text-transform: uppercase;
+  color: var(--verde-300);
+}
+
+.cinematica__dato {
+  font-size: var(--texto-sm);
+  color: rgba(214, 245, 227, 0.72);
+}
+
+.cinematica__ficha {
+  top: 50%;
+  left: clamp(var(--e5), 7vw, 120px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+  padding-left: var(--e5);
+  border-left: 2px solid var(--marca-viva);
+  transform: translateY(-50%) translateX(-22px);
+}
+
+.cinematica__ficha[data-visible="si"] {
+  transform: translateY(-50%);
+}
+
+.cinematica__nombre {
+  font-family: var(--fuente-display);
+  font-size: clamp(2rem, 5.4vw, 4.25rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--verde-50);
+  text-shadow: 0 0 38px rgba(126, 217, 87, 0.24);
+}
+
+.cinematica__cifras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e5);
+  margin-top: var(--e3);
+  list-style: none;
+}
+
+.cinematica__cifras li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cinematica__cifras li > span:first-child {
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  color: var(--lima-400);
+}
+
+.cinematica__unidad {
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(214, 245, 227, 0.6);
+}
+
+.cinematica__ecosistema {
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e4);
+  padding: clamp(var(--e6), 10vh, 120px) var(--e5);
+  transform: scale(0.96);
+}
+
+.cinematica__lamina {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 780px);
+  margin: 0;
+  background: var(--superficie);
+  border: 1px solid rgba(126, 217, 87, 0.28);
+  border-radius: var(--radio-lg);
+  overflow: hidden;
+  box-shadow: 0 30px 90px rgba(1, 10, 7, 0.6);
+}
+
+.cinematica__lamina .relato__canva {
+  grid-area: auto;
+  width: 100%;
+  height: auto;
+  max-height: min(44vh, 360px);
+}
+
+.cinematica__glosa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+  padding: var(--e3) var(--e4);
+  border-top: 1px solid var(--borde);
+}
+
+.cinematica__paso {
+  font-size: var(--texto-xs);
+  letter-spacing: var(--rastreo-etiqueta);
+  text-transform: uppercase;
+  color: var(--marca);
+}
+
+.cinematica__sello {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  padding: 4px var(--e3);
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-xs);
+  color: var(--exito-texto);
+  background: var(--exito-fondo);
+  border: 1px solid var(--exito-borde);
+  border-radius: var(--radio-completo);
+}
+
+.cinematica__pasos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--e2) var(--e4);
+  list-style: none;
+}
+
+.cinematica__pasos li {
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(214, 245, 227, 0.34);
+  transition: color 320ms ease;
+}
+
+.cinematica__pasos li[data-estado="hecho"] {
+  color: rgba(214, 245, 227, 0.62);
+}
+
+.cinematica__pasos li[data-estado="activo"] {
+  color: var(--lima-400);
+}
+
+.cinematica__progreso {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 0;
+  background: var(--marca-viva);
+  animation: cinematica-progreso var(--cinematica-total, 16000ms) linear forwards;
+  z-index: 4;
+}
+
+@keyframes cinematica-progreso {
+  to {
+    width: 100%;
+  }
+}
+
+.cinematica__salto {
+  position: absolute;
+  right: clamp(var(--e4), 4vw, var(--e7));
+  bottom: clamp(var(--e4), 4vh, var(--e6));
+  z-index: 5;
+  padding: 7px var(--e4);
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(214, 245, 227, 0.78);
+  background: rgba(1, 10, 7, 0.5);
+  border: 1px solid rgba(126, 217, 87, 0.32);
+  border-radius: var(--radio-completo);
+  cursor: pointer;
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.cinematica__salto:hover {
+  color: var(--verde-950);
+  background: var(--marca-viva);
+  border-color: var(--marca-viva);
+}
+
+@media (max-width: 720px) {
+  .cinematica__ficha {
+    top: auto;
+    bottom: clamp(84px, 18vh, 160px);
+    left: var(--e5);
+    right: var(--e5);
+    transform: translateY(18px);
+  }
+
+  .cinematica__ficha[data-visible="si"] {
+    transform: none;
+  }
+
+  .cinematica__cifras {
+    gap: var(--e4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cinematica {
+    display: none;
+  }
+
+  html[data-cinematica="corriendo"] .cinematica {
+    display: block;
+  }
+}
+
+.intro-flotante {
+  position: fixed;
+  inset-block-end: var(--e5);
+  inset-inline-end: var(--e5);
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e3) var(--e4) var(--e3) var(--e3);
+  border: 1px solid var(--verde-700);
+  border-radius: var(--radio-lg);
+  background: var(--verde-950);
+  color: #EAF6EF;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(5, 35, 26, 0.34);
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 460ms ease,
+    transform 460ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+html[data-intro="listo"] .intro-flotante {
+  opacity: 1;
+  transform: none;
+}
+
+.intro-flotante__disco {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: var(--radio-md);
+  background: var(--lima-500);
+  color: var(--verde-950);
+}
+
+.intro-flotante__disco::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px solid var(--lima-400);
+  border-radius: var(--radio-lg);
+  opacity: 0;
+}
+
+.intro-flotante__bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.intro-flotante__rotulo {
+  font-family: var(--fuente-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: var(--rastreo-etiqueta);
+  text-transform: uppercase;
+  color: var(--lima-400);
+}
+
+.intro-flotante__titulo {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.intro-flotante:hover {
+  background: var(--verde-900);
+  border-color: var(--lima-600);
+}
+
+.intro-flotante:focus-visible {
+  outline: 2px solid var(--lima-400);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .intro-flotante__disco::after {
+    animation: intro-flotante-pulso 3400ms ease-out infinite;
+  }
+}
+
+@keyframes intro-flotante-pulso {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.9);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
+}
+
+@media (max-width: 640px) {
+  .intro-flotante {
+    inset-block-end: var(--e4);
+    inset-inline-end: var(--e4);
+    padding: var(--e2) var(--e3) var(--e2) var(--e2);
+  }
+
+  .intro-flotante__rotulo {
+    display: none;
+  }
+}
+
+@media print {
+  .intro-flotante {
+    display: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .intro-flotante {
+    padding: var(--e2);
+    border-radius: var(--radio-completo);
+  }
+
+  .intro-flotante__bloque {
+    display: none;
+  }
+
+  .intro-flotante__disco {
+    border-radius: var(--radio-completo);
+  }
+}
+
+.cinematica__ecosistema .escena {
+  width: min(1120px, 94vw);
+  gap: var(--e3);
+}
+
+.cinematica__ecosistema .escena__cadena {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--e2) var(--e5);
+}
+
+.cinematica__ecosistema .escena__eslabon + .escena__eslabon::after {
+  display: none;
+}
+
+.cinematica__ecosistema .escena__relato {
+  min-height: 40px;
+}

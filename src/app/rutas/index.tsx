@@ -16,6 +16,11 @@ import { Inventario } from "../../features/inventario";
 import { Trazabilidad } from "../../features/trazabilidad";
 import { Reportes } from "../../features/reportes";
 import { RuedasNegocio } from "../../features/ruedas-negocio";
+import { DetallePlanta, Plantas } from "../../features/plantas";
+import { Beneficio } from "../../features/beneficio";
+import { Expedientes, PoliticaVerificacion } from "../../features/expedientes";
+import { CierreOperacion } from "../../features/cierre";
+import { Conexiones } from "../../features/interoperabilidad";
 
 export const Enrutador = () => (
   <Routes>
@@ -86,6 +91,62 @@ export const Enrutador = () => (
         element={
           <GuardaDeRuta permiso="produccion:cultivo:leer">
             <Produccion />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="plantas"
+        element={
+          <GuardaDeRuta permiso="produccion:planta:leer">
+            <Plantas />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="plantas/:id"
+        element={
+          <GuardaDeRuta permiso="produccion:planta:leer">
+            <DetallePlanta />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="beneficio"
+        element={
+          <GuardaDeRuta permiso="produccion:beneficio:leer">
+            <Beneficio />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="expedientes"
+        element={
+          <GuardaDeRuta permiso="cumplimiento:expediente:leer">
+            <Expedientes />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="politicas"
+        element={
+          <GuardaDeRuta permiso="admin:politica:gestionar">
+            <PoliticaVerificacion />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="cierre"
+        element={
+          <GuardaDeRuta permiso="vitrina:oferta:leer">
+            <CierreOperacion />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="conexiones"
+        element={
+          <GuardaDeRuta permiso="interoperabilidad:conexion:leer">
+            <Conexiones />
           </GuardaDeRuta>
         }
       />

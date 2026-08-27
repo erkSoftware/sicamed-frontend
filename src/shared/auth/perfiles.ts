@@ -7,6 +7,9 @@ const PERMISOS_COMERCIALES: readonly Permiso[] = [
   "cumplimiento:atestacion:escribir",
   "produccion:cultivo:leer",
   "produccion:cultivo:escribir",
+  "produccion:planta:leer",
+  "produccion:beneficio:leer",
+  "cumplimiento:expediente:leer",
   "inventario:lote:leer",
   "inventario:lote:escribir",
   "vitrina:oferta:leer",
@@ -15,6 +18,33 @@ const PERMISOS_COMERCIALES: readonly Permiso[] = [
   "ruedas:convocatoria:leer",
   "directorio:actor:leer",
   "reportes:tablero:leer",
+  "interoperabilidad:conexion:leer",
+  "ambiente:lectura:leer",
+];
+
+const PERMISOS_PLATAFORMA: readonly Permiso[] = [
+  "actores:org:leer",
+  "actores:org:escribir",
+  "cumplimiento:atestacion:leer",
+  "cumplimiento:atestacion:escribir",
+  "cumplimiento:expediente:leer",
+  "cumplimiento:expediente:verificar",
+  "produccion:cultivo:leer",
+  "produccion:cultivo:escribir",
+  "produccion:planta:leer",
+  "produccion:beneficio:leer",
+  "inventario:lote:leer",
+  "inventario:lote:escribir",
+  "vitrina:oferta:leer",
+  "vitrina:oferta:publicar",
+  "trazabilidad:evento:leer",
+  "ruedas:convocatoria:leer",
+  "directorio:actor:leer",
+  "reportes:tablero:leer",
+  "interoperabilidad:conexion:leer",
+  "ambiente:lectura:leer",
+  "admin:politica:gestionar",
+  "institucional:consultar",
 ];
 
 export type PerfilDemo = {
@@ -85,9 +115,49 @@ export const PERFILES_DEMO: readonly PerfilDemo[] = [
       "reportes:tablero:leer",
       "institucional:consultar",
       "ruedas:convocatoria:leer",
+      "cumplimiento:expediente:leer",
+      "produccion:planta:leer",
+      "produccion:beneficio:leer",
+      "interoperabilidad:conexion:leer",
+      "ambiente:lectura:leer",
     ],
   },
+  {
+    clave: "ANALISTA_DOCUMENTAL",
+    nombre: "Lida Almeciga",
+    rol: "Analista de verificación documental",
+    correo: "lida.almeciga@sicamed.gov.co",
+    organizacionId: "ORG-0000",
+    organizacion: "SICAMED · Administración de la plataforma",
+    descripcion:
+      "Revisa los expedientes de registro y aprueba o devuelve cada documento con su observación.",
+    permisos: [
+      "actores:org:leer",
+      "directorio:actor:leer",
+      "cumplimiento:atestacion:leer",
+      "cumplimiento:expediente:leer",
+      "cumplimiento:expediente:verificar",
+      "trazabilidad:evento:leer",
+      "reportes:tablero:leer",
+    ],
+  },
+  {
+    clave: "SUPER_ADMIN",
+    nombre: "Diego Fernando Marín",
+    rol: "Super administrador",
+    correo: "super.admin@sicamed.gov.co",
+    organizacionId: "ORG-0000",
+    organizacion: "SICAMED · Administración de la plataforma",
+    descripcion:
+      "Ve todo el ecosistema y define la política de verificación documental que aplica a cada tipo de actor.",
+    permisos: PERMISOS_PLATAFORMA,
+  },
 ];
+
+const PERFIL_INICIAL = import.meta.env.VITE_PERFIL_DEMO ?? "";
+
+export const perfilPorDefecto = (): PerfilDemo =>
+  PERFILES_DEMO.find((perfil) => perfil.clave === PERFIL_INICIAL) ?? (PERFILES_DEMO[0] as PerfilDemo);
 
 export const DURACION_SESION_MS = 30 * 60 * 1000;
 

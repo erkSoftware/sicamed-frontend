@@ -12,13 +12,13 @@ export const PanelBienvenida = ({ titulo, etiqueta, texto, acciones }: Props) =>
   <section className="heroe-panel">
     <p className="heroe-panel__etiqueta">{etiqueta}</p>
     <h1 className="heroe-panel__titulo" aria-label={titulo}>
-      {titulo.split("").map((letra, indice) => (
-        <span
-          key={`${letra}-${indice}`}
-          aria-hidden="true"
-          className={letra === " " ? "heroe-panel__letra heroe-panel__letra--espacio" : "heroe-panel__letra"}
-        >
-          {letra === " " ? "" : letra}
+      {titulo.split(" ").map((palabra, orden) => (
+        <span key={`${palabra}-${orden}`} aria-hidden="true" className="heroe-panel__palabra">
+          {palabra.split("").map((letra, indice) => (
+            <span key={`${letra}-${indice}`} className="heroe-panel__letra">
+              {letra}
+            </span>
+          ))}
         </span>
       ))}
     </h1>

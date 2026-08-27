@@ -43,9 +43,9 @@ const etiquetar = (texto: string): string =>
 
 const DEPARTAMENTOS_ACTIVOS = [...new Set(OFERTAS_PUBLICAS.map((oferta) => oferta.departamento))];
 
-const ACTORES_DESTACADOS = [...new Map(
-  OFERTAS_PUBLICAS.map((oferta) => [oferta.organizacion, oferta]),
-).values()]
+const ACTORES_DESTACADOS = [
+  ...new Map(OFERTAS_PUBLICAS.map((oferta) => [oferta.organizacion, oferta])).values(),
+]
   .slice(0, 6)
   .map((oferta) => ({
     organizacion: oferta.organizacion,
@@ -150,46 +150,72 @@ export const VitrinaPublica = () => {
 
             <nav className="rail" aria-label="Filtrar por tipo de producto">
               <p className="rail__titulo rotulo">Tipo de producto</p>
-              <ul className="rail__lista">
-                <li>
-                  <button
-                    type="button"
-                    className="rail__opcion"
-                    aria-pressed={tipoProducto === ""}
-                    onClick={() => actualizar("producto", "")}
-                  >
-                    <span className="rail__icono" aria-hidden="true">
-                      <Icono nombre="vitrina" tamano={15} />
-                    </span>
-                    Todos los productos
-                    <span className="rail__conteo mono">{OFERTAS_PUBLICAS.length}</span>
-                  </button>
-                </li>
-                {TIPOS_PRODUCTO.map((tipo) => {
-                  const total = OFERTAS_PUBLICAS.filter((oferta) => oferta.tipoProducto === tipo).length;
-                  return (
-                    <li key={tipo}>
-                      <button
-                        type="button"
-                        className="rail__opcion"
-                        aria-pressed={tipoProducto === tipo}
-                        onClick={() => actualizar("producto", tipoProducto === tipo ? "" : tipo)}
-                      >
-                        <span className="rail__icono" aria-hidden="true">
-                          <Icono nombre="hoja" tamano={15} />
-                        </span>
-                        {tipo}
-                        <span className="rail__conteo mono">{total}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+              <div className="rail__desplazable rail__desplazable--suelto">
+                <ul className="rail__lista">
+                  <li>
+                    <button
+                      type="button"
+                      className="rail__opcion"
+                      aria-pressed={tipoProducto === ""}
+                      onClick={() => actualizar("producto", "")}
+                    >
+                      <span className="rail__icono" aria-hidden="true">
+                        <Icono nombre="vitrina" tamano={15} />
+                      </span>
+                      Todos los productos
+                      <span className="rail__conteo mono">{OFERTAS_PUBLICAS.length}</span>
+                    </button>
+                  </li>
+                  {TIPOS_PRODUCTO.map((tipo) => {
+                    const total = OFERTAS_PUBLICAS.filter(
+                      (oferta) => oferta.tipoProducto === tipo,
+                    ).length;
+                    return (
+                      <li key={tipo}>
+                        <button
+                          type="button"
+                          className="rail__opcion"
+                          aria-pressed={tipoProducto === tipo}
+                          onClick={() => actualizar("producto", tipoProducto === tipo ? "" : tipo)}
+                        >
+                          <span className="rail__icono" aria-hidden="true">
+                            <Icono nombre="hoja" tamano={15} />
+                          </span>
+                          {tipo}
+                          <span className="rail__conteo mono">{total}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </nav>
 
             <nav className="rail" aria-label="Filtrar por departamento">
-              <p className="rail__titulo rotulo">Departamento</p>
-              <div className="rail__desplazable">
+              <p className="rail__titulo rotulo" id="rotulo-departamento">
+                Departamento
+              </p>
+              <select
+                className="rail__selector"
+                aria-labelledby="rotulo-departamento"
+                value={departamento}
+                onChange={(evento) => actualizar("departamento", evento.target.value)}
+              >
+                <option value="">Todo el territorio ({DEPARTAMENTOS_ACTIVOS.length})</option>
+                {DEPARTAMENTOS.filter((item) => DEPARTAMENTOS_ACTIVOS.includes(item.nombre)).map(
+                  (item) => (
+                    <option key={item.codigo} value={item.nombre}>
+                      {item.nombre} (
+                      {
+                        OFERTAS_PUBLICAS.filter((oferta) => oferta.departamento === item.nombre)
+                          .length
+                      }
+                      )
+                    </option>
+                  ),
+                )}
+              </select>
+              <div className="rail__desplazable rail__desplazable--rail">
                 <ul className="rail__lista">
                   <li>
                     <button
@@ -205,29 +231,34 @@ export const VitrinaPublica = () => {
                       <span className="rail__conteo mono">{DEPARTAMENTOS_ACTIVOS.length}</span>
                     </button>
                   </li>
-                  {DEPARTAMENTOS.filter((item) => DEPARTAMENTOS_ACTIVOS.includes(item.nombre)).map((item) => {
-                    const total = OFERTAS_PUBLICAS.filter(
-                      (oferta) => oferta.departamento === item.nombre,
-                    ).length;
-                    return (
-                      <li key={item.codigo}>
-                        <button
-                          type="button"
-                          className="rail__opcion"
-                          aria-pressed={departamento === item.nombre}
-                          onClick={() =>
-                            actualizar("departamento", departamento === item.nombre ? "" : item.nombre)
-                          }
-                        >
-                          <span className="rail__icono" aria-hidden="true">
-                            <Icono nombre="mapa" tamano={15} />
-                          </span>
-                          {item.nombre}
-                          <span className="rail__conteo mono">{total}</span>
-                        </button>
-                      </li>
-                    );
-                  })}
+                  {DEPARTAMENTOS.filter((item) => DEPARTAMENTOS_ACTIVOS.includes(item.nombre)).map(
+                    (item) => {
+                      const total = OFERTAS_PUBLICAS.filter(
+                        (oferta) => oferta.departamento === item.nombre,
+                      ).length;
+                      return (
+                        <li key={item.codigo}>
+                          <button
+                            type="button"
+                            className="rail__opcion"
+                            aria-pressed={departamento === item.nombre}
+                            onClick={() =>
+                              actualizar(
+                                "departamento",
+                                departamento === item.nombre ? "" : item.nombre,
+                              )
+                            }
+                          >
+                            <span className="rail__icono" aria-hidden="true">
+                              <Icono nombre="mapa" tamano={15} />
+                            </span>
+                            {item.nombre}
+                            <span className="rail__conteo mono">{total}</span>
+                          </button>
+                        </li>
+                      );
+                    },
+                  )}
                 </ul>
               </div>
             </nav>
@@ -268,7 +299,11 @@ export const VitrinaPublica = () => {
                   </li>
                 ))}
                 <li>
-                  <button type="button" className="ficha-filtro ficha-filtro--limpiar" onClick={limpiar}>
+                  <button
+                    type="button"
+                    className="ficha-filtro ficha-filtro--limpiar"
+                    onClick={limpiar}
+                  >
                     Limpiar todo
                   </button>
                 </li>
@@ -346,7 +381,7 @@ export const VitrinaPublica = () => {
                       <Icono nombre="organizacion" tamano={16} />
                       Ofertas de este actor
                     </button>
-                    <Link className="accion" to="/normativa">
+                    <Link className="accion accion--secundaria" to="/normativa">
                       <Icono nombre="licencias" tamano={16} />
                       Marco normativo
                     </Link>
@@ -361,7 +396,9 @@ export const VitrinaPublica = () => {
           <div className="panel panel--pegado">
             <div className="panel__cabecera">
               <p className="panel__titulo">Actores en la vitrina</p>
-              <p className="panel__nota">Organizaciones con habilitación vigente publicando ahora.</p>
+              <p className="panel__nota">
+                Organizaciones con habilitación vigente publicando ahora.
+              </p>
             </div>
             <ul className="destacados">
               {ACTORES_DESTACADOS.map((actor) => (

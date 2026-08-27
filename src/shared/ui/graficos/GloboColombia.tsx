@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ANILLOS_COLOMBIA, ANILLOS_MUNDO, CENTRO_COLOMBIA } from "../../api/mock/mundo";
+import { CENTRO_COLOMBIA } from "../../api/mock/mundo";
 import { CONTORNOS } from "../../api/mock/contornos";
-import { invertirOrtografica, proyectarOrtografica, puntoEnAnillo, type Camara } from "../../geo/proyecciones";
+import { invertirOrtografica, puntoEnAnillo, type Camara } from "../../geo/proyecciones";
 import { numero } from "../../i18n/formato";
+import { leerPaletaGlobo, pintarGlobo, type MarcaGlobo } from "./pintarGlobo";
 
-export type MarcaGlobo = {
-  codigo: string;
-  nombre: string;
-  valor: number;
-};
+export type { MarcaGlobo } from "./pintarGlobo";
 
 type Props = {
   marcas: readonly MarcaGlobo[];
@@ -31,26 +28,6 @@ const suavizar = (t: number): number => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t +
 const anguloCorto = (desde: number, hasta: number): number => {
   const delta = ((hasta - desde + 540) % 360) - 180;
   return desde + delta;
-};
-
-const leerColor = (elemento: HTMLElement, variable: string): string =>
-  getComputedStyle(elemento).getPropertyValue(variable).trim() || "#0E5C36";
-
-const aCanal = (hex: string): readonly [number, number, number] => {
-  const limpio = hex.replace("#", "");
-  const ancho = limpio.length === 3 ? 1 : 2;
-  const leer = (indice: number) => {
-    const trozo = limpio.slice(indice * ancho, indice * ancho + ancho);
-    return parseInt(ancho === 1 ? trozo + trozo : trozo, 16);
-  };
-  return [leer(0), leer(1), leer(2)];
-};
-
-const mezclar = (desde: string, hasta: string, t: number): string => {
-  const a = aCanal(desde);
-  const b = aCanal(hasta);
-  const canal = (indice: 0 | 1 | 2) => Math.round(a[indice] + (b[indice] - a[indice]) * t);
-  return `rgb(${canal(0)}, ${canal(1)}, ${canal(2)})`;
 };
 
 export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
@@ -127,19 +104,7 @@ export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
     let ultimoY = 0;
     let punteroActivo: number | null = null;
 
-    const paleta = {
-      oceano: leerColor(raiz, "--globo-oceano"),
-      oceanoBorde: leerColor(raiz, "--globo-oceano-borde"),
-      tierra: leerColor(raiz, "--globo-tierra"),
-      tierraLuz: leerColor(raiz, "--globo-tierra-luz"),
-      tierraBorde: leerColor(raiz, "--globo-tierra-borde"),
-      malla: leerColor(raiz, "--globo-malla"),
-      foco: leerColor(raiz, "--globo-foco"),
-      marca: leerColor(raiz, "--globo-marca"),
-      halo: leerColor(raiz, "--globo-halo"),
-      departamentoBajo: leerColor(raiz, "--globo-departamento-bajo"),
-      departamentoAlto: leerColor(raiz, "--globo-departamento-alto"),
-    };
+    const paleta = leerPaletaGlobo(raiz);
 
     const medir = () => {
       const caja = raiz.getBoundingClientRect();
@@ -176,82 +141,6 @@ export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
 
     punteroRef.current = departamentoEn;
 
-    const trazarAnillos = (anillos: readonly (readonly number[])[], camara: Camara) => {
-      contexto.beginPath();
-      for (const anillo of anillos) {
-        let dibujando = false;
-        for (let i = 0; i < anillo.length; i += 2) {
-          const punto = proyectarOrtografica(anillo[i] as number, anillo[i + 1] as number, camara);
-          if (!punto.visible) {
-            dibujando = false;
-            continue;
-          }
-          if (dibujando) contexto.lineTo(punto.x, punto.y);
-          else {
-            contexto.moveTo(punto.x, punto.y);
-            dibujando = true;
-          }
-        }
-        contexto.closePath();
-      }
-    };
-
-    const dibujarMalla = (camara: Camara, paso: number) => {
-      contexto.strokeStyle = paleta.malla;
-      contexto.lineWidth = 1;
-      contexto.beginPath();
-      for (let lat = -80; lat <= 80; lat += paso) {
-        let dibujando = false;
-        for (let lon = -180; lon <= 180; lon += 2) {
-          const punto = proyectarOrtografica(lon, lat, camara);
-          if (!punto.visible) {
-            dibujando = false;
-            continue;
-          }
-          if (dibujando) contexto.lineTo(punto.x, punto.y);
-          else {
-            contexto.moveTo(punto.x, punto.y);
-            dibujando = true;
-          }
-        }
-      }
-      for (let lon = -180; lon < 180; lon += paso) {
-        let dibujando = false;
-        for (let lat = -90; lat <= 90; lat += 2) {
-          const punto = proyectarOrtografica(lon, lat, camara);
-          if (!punto.visible) {
-            dibujando = false;
-            continue;
-          }
-          if (dibujando) contexto.lineTo(punto.x, punto.y);
-          else {
-            contexto.moveTo(punto.x, punto.y);
-            dibujando = true;
-          }
-        }
-      }
-      contexto.stroke();
-    };
-
-    const dibujarRelieve = (camara: Camara, visor: number) => {
-      const sombra = contexto.createRadialGradient(
-        camara.centroX - visor * 0.42,
-        camara.centroY - visor * 0.46,
-        visor * 0.12,
-        camara.centroX - visor * 0.16,
-        camara.centroY - visor * 0.18,
-        visor * 1.45,
-      );
-      sombra.addColorStop(0, "rgba(255, 255, 255, 0.16)");
-      sombra.addColorStop(0.42, "rgba(255, 255, 255, 0)");
-      sombra.addColorStop(0.72, "rgba(2, 14, 9, 0.34)");
-      sombra.addColorStop(1, "rgba(2, 14, 9, 0.78)");
-      contexto.fillStyle = sombra;
-      contexto.beginPath();
-      contexto.arc(camara.centroX, camara.centroY, visor, 0, Math.PI * 2);
-      contexto.fill();
-    };
-
     const dibujar = (ahora: number) => {
       const s = estado.current;
       const transcurrido = Math.min(ahora - previo, 64);
@@ -277,127 +166,20 @@ export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
         }
       }
 
-      const camara = camaraActual();
-      const visor = radioVisor();
-      contexto.clearRect(0, 0, ancho, alto);
-
-      const agua = contexto.createRadialGradient(
-        camara.centroX - visor * 0.36,
-        camara.centroY - visor * 0.4,
-        visor * 0.06,
-        camara.centroX,
-        camara.centroY,
-        visor * 1.08,
-      );
-      agua.addColorStop(0, paleta.oceanoBorde);
-      agua.addColorStop(1, paleta.oceano);
-
-      contexto.save();
-      contexto.beginPath();
-      contexto.arc(camara.centroX, camara.centroY, visor, 0, Math.PI * 2);
-      contexto.fillStyle = agua;
-      contexto.fill();
-      contexto.clip();
-
-      dibujarMalla(camara, s.revelado > 0.5 ? 5 : 20);
-
-      trazarAnillos(ANILLOS_MUNDO, camara);
-      const tierra = contexto.createLinearGradient(
-        camara.centroX - visor,
-        camara.centroY - visor,
-        camara.centroX + visor,
-        camara.centroY + visor,
-      );
-      tierra.addColorStop(0, paleta.tierraLuz);
-      tierra.addColorStop(1, paleta.tierra);
-      contexto.fillStyle = tierra;
-      contexto.fill();
-      contexto.strokeStyle = paleta.tierraBorde;
-      contexto.lineWidth = 1 + s.revelado * 0.4;
-      contexto.stroke();
-
-      if (s.revelado < 0.98) {
-        contexto.globalAlpha = 1 - s.revelado;
-        trazarAnillos(ANILLOS_COLOMBIA, camara);
-        contexto.fillStyle = paleta.foco;
-        contexto.fill();
-        contexto.globalAlpha = 1;
-      }
-
-      if (s.revelado > 0.02) {
-        trazarAnillos(ANILLOS_MUNDO, camara);
-        contexto.fillStyle = `rgba(6, 38, 27, ${0.52 * s.revelado})`;
-        contexto.fill();
-
-        for (const contorno of CONTORNOS) {
-          const marca = datosRef.current.porCodigo.get(contorno.codigo);
-          const peso = marca ? Math.sqrt(marca.valor / datosRef.current.maximo) : 0;
-          const enfocado = destacadoRef.current === contorno.codigo;
-          trazarAnillos(contorno.anillos, camara);
-          contexto.globalAlpha = s.revelado;
-          contexto.fillStyle = enfocado
-            ? paleta.foco
-            : mezclar(paleta.departamentoBajo, paleta.departamentoAlto, marca ? 0.12 + peso * 0.88 : 0);
-          contexto.fill();
-          contexto.strokeStyle = paleta.tierraBorde;
-          contexto.lineWidth = enfocado ? 2 : 0.7;
-          contexto.stroke();
-        }
-        contexto.globalAlpha = 1;
-      }
-
-      dibujarRelieve(camara, visor);
-      contexto.restore();
-
-      contexto.beginPath();
-      contexto.arc(camara.centroX, camara.centroY, visor, 0, Math.PI * 2);
-      contexto.strokeStyle = paleta.halo;
-      contexto.lineWidth = 1.4;
-      contexto.stroke();
-
       const pulso = reducido || s.revelado > 0.5 ? 0.5 : (Math.sin(ahora / 620) + 1) / 2;
 
-      if (s.revelado > 0.02) {
-        contexto.save();
-        contexto.beginPath();
-        contexto.arc(camara.centroX, camara.centroY, visor, 0, Math.PI * 2);
-        contexto.clip();
-        for (const contorno of CONTORNOS) {
-          const marca = datosRef.current.porCodigo.get(contorno.codigo);
-          if (!marca) continue;
-          const punto = proyectarOrtografica(contorno.lon, contorno.lat, camara);
-          if (!punto.visible) continue;
-          const enfocado = destacadoRef.current === marca.codigo;
-          const peso = Math.sqrt(marca.valor / datosRef.current.maximo);
-          const radio = (2 + peso * 4.4) * s.revelado;
-          contexto.fillStyle = paleta.marca;
-          contexto.globalAlpha = s.revelado * (enfocado ? 0.42 : 0.18);
-          contexto.beginPath();
-          contexto.arc(punto.x, punto.y, radio * (enfocado ? 3 + pulso * 1.4 : 2.1 + pulso * 0.5), 0, Math.PI * 2);
-          contexto.fill();
-          contexto.globalAlpha = s.revelado;
-          contexto.beginPath();
-          contexto.arc(punto.x, punto.y, enfocado ? radio * 1.5 : radio, 0, Math.PI * 2);
-          contexto.fill();
-          contexto.globalAlpha = 1;
-        }
-        contexto.restore();
-      } else {
-        const punto = proyectarOrtografica(CENTRO_COLOMBIA.lon, CENTRO_COLOMBIA.lat, camara);
-        if (punto.visible) {
-          const radio = 7 + pulso * 6;
-          contexto.globalAlpha = 0.26;
-          contexto.beginPath();
-          contexto.arc(punto.x, punto.y, radio * 2.6, 0, Math.PI * 2);
-          contexto.fillStyle = paleta.marca;
-          contexto.fill();
-          contexto.globalAlpha = 0.9;
-          contexto.beginPath();
-          contexto.arc(punto.x, punto.y, 5.5, 0, Math.PI * 2);
-          contexto.fill();
-          contexto.globalAlpha = 1;
-        }
-      }
+      pintarGlobo(contexto, {
+        ancho,
+        alto,
+        camara: camaraActual(),
+        visor: radioVisor(),
+        revelado: s.revelado,
+        pulso,
+        paleta,
+        porCodigo: datosRef.current.porCodigo,
+        maximo: datosRef.current.maximo,
+        destacado: destacadoRef.current,
+      });
 
       cuadro = requestAnimationFrame(dibujar);
     };

@@ -1142,7 +1142,16 @@
 }
 
 .heroe-panel__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.36em;
+  row-gap: 0;
   margin: var(--e4) 0 var(--e3);
+}
+
+.heroe-panel__palabra {
+  display: inline-flex;
+  white-space: nowrap;
 }
 
 .heroe-panel__texto {
@@ -1203,7 +1212,7 @@
   box-shadow: none;
   padding: var(--e5);
   gap: var(--e3);
-  box-shadow: inset 1px 0 0 var(--borde-suave);
+  box-shadow: inset 1px 0 0 var(--borde);
 }
 
 .rejilla-kpi .kpi:first-child {
@@ -1227,9 +1236,13 @@
 }
 
 .kpi__nota {
-  align-items: baseline;
-  line-height: 1.4;
+  display: block;
+  line-height: 1.45;
   color: var(--texto-tenue);
+}
+
+.kpi__nota .kpi__delta {
+  margin-right: 7px;
 }
 
 .kpi__delta {
@@ -1237,6 +1250,7 @@
   border-radius: 0;
   background: none;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .kpi__delta--sube {
@@ -1270,7 +1284,7 @@
   background: var(--superficie);
   border: 0;
   border-radius: 0;
-  box-shadow: inset 1px 0 0 var(--borde-suave);
+  box-shadow: inset 1px 0 0 var(--borde);
   padding: var(--e4) var(--e4) var(--e5);
   gap: var(--e2);
 }
@@ -1376,7 +1390,7 @@
 
   .rejilla-kpi .kpi {
     padding: var(--e4);
-    box-shadow: inset 1px 0 0 var(--borde-suave), inset 0 1px 0 var(--borde-suave);
+    box-shadow: inset 1px 0 0 var(--borde), inset 0 1px 0 var(--borde);
   }
 }
 
@@ -1718,4 +1732,1016 @@
   font-size: var(--texto-xs);
   letter-spacing: 0.05em;
   color: var(--texto-tenue);
+}
+
+@media (max-width: 900px) {
+  .barra__migas {
+    flex: 1 1 auto;
+  }
+
+  .selector-contexto {
+    max-width: 36vw;
+  }
+}
+
+@media (max-width: 560px) {
+  .selector-contexto {
+    display: none;
+  }
+
+  .barra__migas {
+    font-size: var(--texto-xs);
+  }
+}
+
+.lateral__organizacion {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--e4);
+  border-bottom: 1px solid var(--lateral-borde);
+  flex-shrink: 0;
+}
+
+.lateral__organizacion span {
+  font-family: var(--fuente-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: var(--rastreo-etiqueta);
+  text-transform: uppercase;
+  color: rgba(207, 233, 217, 0.62);
+}
+
+.lateral__organizacion strong {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.3;
+}
+
+.tabla-envoltura {
+  background-image:
+    linear-gradient(to right, var(--superficie) 40%, rgba(255, 255, 255, 0)),
+    linear-gradient(to left, var(--superficie) 40%, rgba(255, 255, 255, 0)),
+    radial-gradient(farthest-side at 0 50%, rgba(11, 16, 13, 0.13), rgba(11, 16, 13, 0)),
+    radial-gradient(farthest-side at 100% 50%, rgba(11, 16, 13, 0.13), rgba(11, 16, 13, 0));
+  background-position: left center, right center, left center, right center;
+  background-repeat: no-repeat;
+  background-size: 36px 100%, 36px 100%, 12px 100%, 12px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+@media (max-width: 900px) {
+  .columna__lista {
+    max-height: 340px;
+  }
+}
+
+.dato {
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-xs);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--texto-suave);
+}
+
+.agenda,
+.agenda__citas {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.agenda__dia {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--e3);
+  padding: var(--e2) var(--e5);
+  background: var(--superficie-alt);
+  border-block: 1px solid var(--borde-suave);
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+.agenda__cita {
+  display: grid;
+  grid-template-columns: auto 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e3) var(--e5);
+  border-bottom: 1px solid var(--borde-suave);
+}
+
+.agenda__cita:last-child {
+  border-bottom: 0;
+}
+
+.agenda__hora {
+  font-size: var(--texto-xs);
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
+
+.agenda__medio {
+  display: grid;
+  place-items: center;
+  color: var(--piedra-400);
+}
+
+.agenda__cuerpo {
+  min-width: 0;
+}
+
+.agenda__cuerpo strong {
+  display: block;
+  font-family: var(--fuente-display);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.agenda__meta {
+  display: block;
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  .agenda__dia,
+  .agenda__cita {
+    padding-inline: var(--e4);
+  }
+
+  .agenda__cita {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    row-gap: 2px;
+  }
+
+  .agenda__medio {
+    display: none;
+  }
+
+  .agenda__meta {
+    white-space: normal;
+  }
+}
+
+.tele-datos {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+
+.tele-datos dt + dd + dt {
+  margin-top: var(--e3);
+}
+
+.tele-datos dt {
+  font-family: var(--fuente-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.tele-datos dd {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--texto-suave);
+}
+
+.tele-datos__dato {
+  font-size: var(--texto-xs);
+  letter-spacing: 0.02em;
+  color: var(--texto-suave);
+}
+
+.aviso {
+  border-radius: var(--radio-xs);
+  font-size: var(--texto-sm);
+  line-height: 1.55;
+  align-items: flex-start;
+}
+
+.aviso > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.banda-clinica {
+  border-radius: 0;
+}
+
+.banda-clinica > svg {
+  flex-shrink: 0;
+}
+
+.selector-perfil {
+  position: relative;
+}
+
+.selector-perfil__disparador {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  height: 34px;
+  padding: 0 var(--e2) 0 4px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-completo);
+  background: var(--superficie);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color var(--transicion);
+}
+
+.selector-perfil__disparador:hover {
+  border-color: var(--borde-fuerte);
+}
+
+.selector-perfil__disparador[aria-expanded="true"] {
+  border-color: var(--marca);
+}
+
+.selector-perfil__disparador:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.selector-perfil__texto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.selector-perfil__etiqueta {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+  font-weight: 700;
+}
+
+.selector-perfil__texto strong {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatar--pequeno {
+  width: 26px;
+  height: 26px;
+  font-size: 10px;
+}
+
+.selector-perfil__lista {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  width: min(360px, 88vw);
+  display: flex;
+  flex-direction: column;
+  padding: var(--e2);
+  gap: 2px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-lg);
+}
+
+.selector-perfil__nota {
+  padding: var(--e2) var(--e3) var(--e3);
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+  line-height: 1.45;
+  border-bottom: 1px solid var(--borde-suave);
+  margin-bottom: var(--e2);
+}
+
+.selector-perfil__opcion {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  width: 100%;
+  padding: var(--e2) var(--e3);
+  border: none;
+  border-radius: var(--radio-md);
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transicion);
+}
+
+.selector-perfil__opcion:hover,
+.selector-perfil__opcion[aria-checked="true"] {
+  background: var(--lima-50);
+}
+
+.selector-perfil__detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.selector-perfil__detalle strong {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.selector-perfil__detalle span {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.selector-perfil__organizacion {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.enlace-fila {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.enlace-fila:hover strong {
+  color: var(--marca);
+  text-decoration: underline;
+}
+
+.enlace-fila__meta {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.ficha-lista {
+  display: flex;
+  flex-direction: column;
+}
+
+.ficha-lista__item {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  flex-wrap: wrap;
+  padding: var(--e3) var(--e4);
+  border-bottom: 1px solid var(--borde-suave);
+}
+
+.ficha-lista__item:last-child {
+  border-bottom: none;
+}
+
+.ficha-lista__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 190px;
+  min-width: 0;
+}
+
+.ficha-lista__cuerpo strong {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.ficha-lista__meta {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.ficha-lista__cifras {
+  display: flex;
+  gap: var(--e3);
+  font-size: var(--texto-xs);
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.genealogia {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e4);
+}
+
+.genealogia__nodo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--e3) var(--e4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-md);
+  background: var(--superficie-alt);
+}
+
+.genealogia__nodo[data-nivel="actual"] {
+  border-color: var(--marca);
+  background: var(--lima-50);
+}
+
+.genealogia__nodo + .genealogia__nodo::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--e4) * -1);
+  left: var(--e5);
+  width: 1px;
+  height: var(--e4);
+  background: var(--borde-fuerte);
+}
+
+.genealogia__rol {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--texto-tenue);
+}
+
+.genealogia__nombre {
+  font-size: var(--texto-md);
+  font-weight: 600;
+  color: inherit;
+}
+
+a.genealogia__nombre:hover {
+  color: var(--marca);
+}
+
+.genealogia__meta {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.genealogia__hijas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+}
+
+.genealogia__hijas a {
+  font-size: var(--texto-xs);
+  padding: 2px 8px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-completo);
+  background: var(--superficie);
+  color: inherit;
+  text-decoration: none;
+}
+
+.genealogia__hijas a:hover {
+  border-color: var(--marca);
+  color: var(--marca);
+}
+
+.balance {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 190px;
+}
+
+.balance__pista {
+  display: block;
+  height: 7px;
+  border-radius: var(--radio-completo);
+  background: var(--lima-200);
+  overflow: hidden;
+}
+
+.balance__seco {
+  display: block;
+  height: 100%;
+  border-radius: var(--radio-completo);
+  background: var(--marca);
+}
+
+.balance__cifras {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+  font-variant-numeric: tabular-nums;
+}
+
+.expediente {
+  display: flex;
+  flex-direction: column;
+}
+
+.expediente__documento {
+  display: flex;
+  gap: var(--e3);
+  align-items: flex-start;
+  padding: var(--e4);
+  border-bottom: 1px solid var(--borde-suave);
+  border-left: 3px solid transparent;
+}
+
+.expediente__documento:last-child {
+  border-bottom: none;
+}
+
+.expediente__documento[data-estado="APROBADO"] {
+  border-left-color: var(--exito-borde);
+}
+
+.expediente__documento[data-estado="DEVUELTO"] {
+  border-left-color: var(--peligro-borde);
+}
+
+.expediente__documento[data-estado="VENCIDO"] {
+  border-left-color: var(--alerta-borde);
+}
+
+.expediente__documento[data-estado="EN_VERIFICACION"] {
+  border-left-color: var(--info-borde);
+}
+
+.expediente__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--radio-md);
+  background: var(--piedra-100);
+  color: var(--texto-suave);
+}
+
+.expediente__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.expediente__cuerpo strong {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.expediente__meta {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+  overflow-wrap: anywhere;
+}
+
+.expediente__observacion {
+  font-size: var(--texto-xs);
+  color: var(--texto-suave);
+  padding: var(--e2) var(--e3);
+  border-left: 2px solid var(--borde-fuerte);
+  background: var(--superficie-alt);
+  border-radius: 0 var(--radio-sm) var(--radio-sm) 0;
+  line-height: 1.45;
+}
+
+.expediente__decision {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--e2);
+  flex: none;
+}
+
+.expediente__acciones {
+  display: flex;
+  gap: var(--e2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.politica {
+  display: flex;
+  flex-direction: column;
+}
+
+.politica__regla {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  flex-wrap: wrap;
+  padding: var(--e3) var(--e4);
+  border-bottom: 1px solid var(--borde-suave);
+}
+
+.politica__regla:last-child {
+  border-bottom: none;
+}
+
+.politica__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.politica__cuerpo strong {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.politica__norma {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.politica__mandos {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  flex-wrap: wrap;
+}
+
+.cierre-flujo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+}
+
+.cierre-flujo__paso {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  flex-wrap: wrap;
+  padding: var(--e3) var(--e4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-md);
+  background: var(--superficie-alt);
+}
+
+.cierre-flujo__paso[data-dentro="no"] {
+  border-style: dashed;
+  border-color: var(--alerta-borde);
+  background: var(--alerta-fondo);
+}
+
+.cierre-flujo__orden {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+  font-weight: 700;
+}
+
+.cierre-flujo__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 240px;
+}
+
+.cierre-flujo__cuerpo strong {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.cierre-flujo__cuerpo span {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.cierre-flujo__zona {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--texto-tenue);
+}
+
+.cierre-flujo__paso[data-dentro="no"] .cierre-flujo__zona {
+  color: var(--alerta-texto);
+}
+
+.ruta-cierre {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+}
+
+.ruta-cierre__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radio-md);
+  background: var(--lima-100);
+  color: var(--marca-fuerte);
+}
+
+.ruta-cierre__entidad {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.ruta-cierre__detalle {
+  font-size: var(--texto-xs);
+  color: var(--texto-suave);
+  line-height: 1.5;
+}
+
+.ruta-cierre__norma {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.cierre-lista {
+  display: flex;
+  flex-direction: column;
+}
+
+.cierre-lista__item {
+  display: flex;
+  gap: var(--e4);
+  align-items: flex-start;
+  flex-wrap: wrap;
+  padding: var(--e4);
+  border-bottom: 1px solid var(--borde-suave);
+  border-left: 3px solid transparent;
+}
+
+.cierre-lista__item:last-child {
+  border-bottom: none;
+}
+
+.cierre-lista__item[data-via="FNE"] {
+  border-left-color: var(--alerta-borde);
+}
+
+.cierre-lista__item[data-via="EXPORTACION"] {
+  border-left-color: var(--info-borde);
+}
+
+.cierre-lista__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.cierre-lista__cuerpo strong {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.cierre-lista__meta {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.cierre-lista__entidad {
+  font-size: var(--texto-xs);
+  color: var(--texto-suave);
+}
+
+.cierre-lista__estado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--e2);
+  flex: none;
+}
+
+.conexiones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+}
+
+.conexiones__item {
+  display: flex;
+  gap: var(--e4);
+  align-items: flex-start;
+  flex-wrap: wrap;
+  padding: var(--e4);
+  border: 1px solid var(--borde);
+  border-left: 3px solid var(--borde-fuerte);
+  border-radius: var(--radio-md);
+  background: var(--superficie);
+}
+
+.conexiones__item[data-estado="OPERATIVA"] {
+  border-left-color: var(--exito-borde);
+}
+
+.conexiones__item[data-estado="DEGRADADA"] {
+  border-left-color: var(--alerta-borde);
+}
+
+.conexiones__item[data-estado="SIN_RESPUESTA"] {
+  border-left-color: var(--peligro-borde);
+}
+
+.conexiones__item[data-estado="NO_CONECTADA"] {
+  border-left-style: dashed;
+}
+
+.conexiones__sigla {
+  flex: none;
+  font-size: var(--texto-md);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--marca-fuerte);
+  min-width: 78px;
+}
+
+.conexiones__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 300px;
+  min-width: 0;
+}
+
+.conexiones__cuerpo strong {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.conexiones__entidad {
+  font-size: var(--texto-xs);
+  color: var(--texto-suave);
+  font-weight: 600;
+}
+
+.conexiones__proposito {
+  font-size: var(--texto-xs);
+  color: var(--texto-suave);
+  line-height: 1.5;
+}
+
+.conexiones__mecanismo,
+.conexiones__norma {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.conexiones__estado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex: none;
+}
+
+.conexiones__meta {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.conexiones__cifras {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  font-size: var(--texto-xs);
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.conexiones__cifras span[data-alerta="si"] {
+  color: var(--alerta-texto);
+  font-weight: 600;
+}
+
+.telemetria {
+  display: flex;
+  flex-direction: column;
+}
+
+.telemetria__item {
+  display: flex;
+  gap: var(--e4);
+  align-items: center;
+  flex-wrap: wrap;
+  padding: var(--e3) var(--e4);
+  border-bottom: 1px solid var(--borde-suave);
+  border-left: 3px solid transparent;
+}
+
+.telemetria__item:last-child {
+  border-bottom: none;
+}
+
+.telemetria__item[data-estado="FUERA_DE_RANGO"] {
+  border-left-color: var(--alerta-borde);
+  background: var(--alerta-fondo);
+}
+
+.telemetria__item[data-estado="SIN_SENAL"] {
+  border-left-style: dashed;
+  border-left-color: var(--borde-fuerte);
+}
+
+.telemetria__origen {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.telemetria__origen strong {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.telemetria__origen span {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.telemetria__medidas {
+  display: flex;
+  gap: var(--e4);
+  flex-wrap: wrap;
+  font-size: var(--texto-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.telemetria__medidas > span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.telemetria__rotulo {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+  font-weight: 700;
+}
+
+.telemetria__estado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex: none;
+}
+
+.telemetria__fecha {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+@media (max-width: 720px) {
+  .selector-perfil__texto {
+    display: none;
+  }
+
+  .expediente__decision,
+  .cierre-lista__estado,
+  .conexiones__estado,
+  .telemetria__estado {
+    align-items: flex-start;
+  }
+
+  .conexiones__cifras {
+    align-items: flex-start;
+  }
+
+  .conexiones__estado,
+  .cierre-lista__estado,
+  .telemetria__estado {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .conexiones__meta,
+  .conexiones__sigla {
+    overflow-wrap: anywhere;
+  }
+}
+
+.nombre-compacto {
+  white-space: nowrap;
 }

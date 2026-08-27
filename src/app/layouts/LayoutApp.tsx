@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useAuth } from "../../shared/auth/useAuth";
+import { SelectorPerfil } from "../../shared/auth/SelectorPerfil";
 import { useNavegacionAgrupada } from "../../shared/rbac/useNavegacion";
 import { Boton } from "../../shared/ui/primitivos/Boton";
 import { Icono } from "../../shared/ui/primitivos/Icono";
@@ -24,6 +25,7 @@ export const LayoutApp = () => {
   return (
     <div className="marco">
       <Helmet>
+        <title>{actual ? `${actual.etiqueta} · SICAMED` : "SICAMED"}</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <a className="saltar-al-contenido" href="#contenido-principal">
@@ -49,6 +51,11 @@ export const LayoutApp = () => {
             <span className="lateral__lema">Cannabis medicinal</span>
           </span>
         </Link>
+
+        <p className="lateral__organizacion">
+          <span>Organización</span>
+          <strong>{sesion?.usuario.organizacion}</strong>
+        </p>
 
         <nav className="lateral__nav" aria-label="Navegación principal">
           {grupos.map(([grupo, items]) => (
@@ -117,6 +124,7 @@ export const LayoutApp = () => {
               <span className="selector-contexto__etiqueta">Organización</span>
               <strong>{sesion?.usuario.organizacion}</strong>
             </span>
+            <SelectorPerfil />
             <Boton variante="fantasma" tamano="sm" icono="campana" aria-label="Notificaciones" />
           </div>
         </header>

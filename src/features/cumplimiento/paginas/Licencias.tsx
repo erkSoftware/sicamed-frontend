@@ -8,7 +8,7 @@ import { Dialogo } from "../../../shared/ui/primitivos/Dialogo";
 import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { CampoSelect, CampoTexto } from "../../../shared/ui/primitivos/Campo";
 import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
-import { diasHasta, fecha, numero } from "../../../shared/i18n/formato";
+import { diasHasta, fechaCorta, numero } from "../../../shared/i18n/formato";
 import type { Atestacion } from "../../../shared/api/mock/tipos";
 import type { Columna } from "../../../shared/ui/primitivos/Tabla";
 import { useAtestaciones } from "../hooks/useAtestaciones";
@@ -34,7 +34,7 @@ const COLUMNAS: readonly Columna<Atestacion>[] = [
   { clave: "tipo", encabezado: "Tipo", render: (a) => a.tipo.replaceAll("_", " ") },
   { clave: "acto", encabezado: "Acto administrativo", render: (a) => a.acto },
   { clave: "autoridad", encabezado: "Autoridad", render: (a) => a.autoridad },
-  { clave: "expedicion", encabezado: "Expedición", render: (a) => fecha(a.expedicion) },
+  { clave: "expedicion", encabezado: "Expedición", render: (a) => <span className="dato">{fechaCorta(a.expedicion)}</span> },
   {
     clave: "vencimiento",
     encabezado: "Vencimiento",
@@ -42,7 +42,7 @@ const COLUMNAS: readonly Columna<Atestacion>[] = [
       const dias = diasHasta(a.vencimiento);
       return (
         <span>
-          {fecha(a.vencimiento)}
+          <span className="dato">{fechaCorta(a.vencimiento)}</span>
           <br />
           <span style={{ fontSize: "var(--texto-xs)", color: "var(--texto-tenue)" }}>
             {dias < 0 ? `vencida hace ${Math.abs(dias)} días` : `en ${dias} días`}

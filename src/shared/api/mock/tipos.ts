@@ -154,3 +154,220 @@ export type ManifestacionInteres = {
   fecha: string;
   estado: "NUEVA" | "EN_REVISION" | "HABILITADA" | "DESCARTADA";
 };
+
+export type TipoCannabis = "PSICOACTIVO" | "NO_PSICOACTIVO";
+
+export type Variedad = {
+  id: string;
+  nombre: string;
+  tipo: TipoCannabis;
+  thc: number;
+  cbd: number;
+  registroIca: string;
+  procedencia: string;
+  plantasVivas: number;
+};
+
+export type OrigenPlanta = "SEMILLA" | "CLON";
+
+export type EstadoPlanta =
+  | "PROPAGACION"
+  | "VEGETATIVO"
+  | "FLORACION"
+  | "COSECHADA"
+  | "DESTRUIDA";
+
+export type Planta = {
+  id: string;
+  codigo: string;
+  variedadId: string;
+  variedad: string;
+  tipo: TipoCannabis;
+  cultivoId: string;
+  cultivo: string;
+  organizacionId: string;
+  departamento: string;
+  origen: OrigenPlanta;
+  madre: string | null;
+  estado: EstadoPlanta;
+  siembra: string;
+  bloque: string;
+  labores: number;
+  aptaDesde: string;
+  huella: string;
+};
+
+export type CategoriaAgroinsumo = "FERTILIZANTE" | "FITOSANITARIO" | "BIOLOGICO" | "SUSTRATO";
+
+export type Agroinsumo = {
+  id: string;
+  nombre: string;
+  categoria: CategoriaAgroinsumo;
+  registroIca: string;
+  ingrediente: string;
+  carenciaDias: number;
+};
+
+export type TipoLabor =
+  | "TRASPLANTE"
+  | "RIEGO"
+  | "PODA"
+  | "FERTILIZACION"
+  | "FITOSANITARIO"
+  | "MONITOREO";
+
+export type Labor = {
+  id: string;
+  plantaId: string;
+  planta: string;
+  tipo: TipoLabor;
+  agroinsumo: string | null;
+  dosis: string;
+  responsable: string;
+  fecha: string;
+  aptaDesde: string | null;
+  huella: string;
+};
+
+export type EstadoBeneficio = "SECADO" | "CURADO" | "ACONDICIONADO" | "RECHAZADO";
+
+export type Beneficio = {
+  id: string;
+  codigo: string;
+  cultivoId: string;
+  cultivo: string;
+  organizacionId: string;
+  organizacion: string;
+  departamento: string;
+  variedad: string;
+  tipo: TipoCannabis;
+  plantas: number;
+  pesoHumedo: number;
+  pesoSeco: number;
+  pesoAcondicionado: number;
+  humedad: number;
+  estado: EstadoBeneficio;
+  inicio: string;
+  fin: string;
+  loteCodigo: string | null;
+  responsable: string;
+  huella: string;
+};
+
+export type TipoDocumento =
+  | "CAMARA_COMERCIO"
+  | "RUT"
+  | "LICENCIA_CULTIVO"
+  | "LICENCIA_FABRICACION"
+  | "CERTIFICADO_BPA"
+  | "CUPO_FNE"
+  | "AUTORIZACION_SANITARIA"
+  | "PLANO_PREDIO";
+
+export type EstadoDocumento =
+  | "PENDIENTE"
+  | "EN_VERIFICACION"
+  | "APROBADO"
+  | "DEVUELTO"
+  | "VENCIDO";
+
+export type DocumentoExpediente = {
+  id: string;
+  tipo: TipoDocumento;
+  archivo: string;
+  estado: EstadoDocumento;
+  cargado: string;
+  vence: string | null;
+  verificadoPor: string | null;
+  observacion: string | null;
+  huella: string;
+};
+
+export type EstadoExpediente =
+  | "BORRADOR"
+  | "RADICADO"
+  | "EN_VERIFICACION"
+  | "APROBADO"
+  | "DEVUELTO";
+
+export type Expediente = {
+  id: string;
+  radicado: string;
+  organizacionId: string;
+  organizacion: string;
+  tipoActor: TipoActor;
+  departamento: string;
+  estado: EstadoExpediente;
+  radicacion: string;
+  analista: string | null;
+  documentos: readonly DocumentoExpediente[];
+};
+
+export type ReglaVerificacion = {
+  id: string;
+  tipoActor: TipoActor;
+  documento: TipoDocumento;
+  obligatorio: boolean;
+  modo: "MANUAL" | "AUTOMATICO";
+  vigenciaMeses: number | null;
+  norma: string;
+};
+
+export type ViaCierre = "FNE" | "CONTRATO_DIRECTO" | "EXPORTACION";
+
+export type EstadoCierre =
+  | "CONTACTO_HABILITADO"
+  | "TRAMITE_EXTERNO"
+  | "MOVIMIENTO_DECLARADO"
+  | "SIN_DECLARAR";
+
+export type CierreExterno = {
+  id: string;
+  ofertaId: string;
+  oferta: string;
+  tipoProducto: string;
+  tipo: TipoCannabis;
+  organizacion: string;
+  contraparte: string;
+  departamento: string;
+  via: ViaCierre;
+  entidad: string;
+  norma: string;
+  estado: EstadoCierre;
+  habilitado: string;
+  declarado: string | null;
+  movimiento: string | null;
+};
+
+export type EstadoConexion = "OPERATIVA" | "DEGRADADA" | "SIN_RESPUESTA" | "NO_CONECTADA";
+
+export type Conexion = {
+  id: string;
+  sigla: string;
+  nombre: string;
+  entidad: string;
+  proposito: string;
+  direccion: "CONSULTA" | "REPORTE" | "BIDIRECCIONAL";
+  estado: EstadoConexion;
+  ultimaLectura: string;
+  conciliados: number;
+  discrepancias: number;
+  mecanismo: string;
+  norma: string;
+};
+
+export type EstadoLectura = "EN_RANGO" | "FUERA_DE_RANGO" | "SIN_SENAL";
+
+export type LecturaAmbiente = {
+  id: string;
+  cultivoId: string;
+  cultivo: string;
+  bloque: string;
+  departamento: string;
+  temperatura: number;
+  humedad: number;
+  conductividad: number;
+  luz: number;
+  estado: EstadoLectura;
+  registro: string;
+};

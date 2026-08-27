@@ -79,9 +79,10 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  html:not([data-cinematica="corriendo"]),
+  html:not([data-cinematica="corriendo"]) *,
+  html:not([data-cinematica="corriendo"]) *::before,
+  html:not([data-cinematica="corriendo"]) *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

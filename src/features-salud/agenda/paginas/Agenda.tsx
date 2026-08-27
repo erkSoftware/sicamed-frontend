@@ -2,6 +2,7 @@ import { useState } from "react";
 import { EncabezadoPagina } from "../../../shared/ui/patrones/EncabezadoPagina";
 import { EstadoConsulta } from "../../../shared/ui/patrones/EstadoConsulta";
 import { EstadoVacio } from "../../../shared/ui/patrones/EstadoVacio";
+import { RegionDesplazable } from "../../../shared/ui/patrones/RegionDesplazable";
 import { Buscador } from "../../../shared/ui/patrones/Buscador";
 import { GrupoFiltros } from "../../../shared/ui/patrones/GrupoFiltros";
 import { Tarjeta } from "../../../shared/ui/primitivos/Tarjeta";
@@ -70,38 +71,54 @@ export const Agenda = () => {
             texto="Ajusta los filtros o agenda una nueva cita de control para un paciente en tratamiento."
           />
         ) : (
-          <div className="pila" style={{ gap: "var(--e5)" }}>
-            {Object.entries(porDia).map(([dia, citasDelDia]) => (
-              <Tarjeta key={dia} titulo={fechaLarga(dia)} descripcion={`${citasDelDia.length} citas`} sinRelleno>
-                <ul style={{ listStyle: "none", padding: "var(--e3)", margin: 0, display: "grid", gap: "var(--e2)" }}>
-                  {citasDelDia.map((cita) => (
-                    <li key={cita.id}>
-                      <div className="ficha">
-                        <span className="ficha__medio" aria-hidden="true">
-                          <Icono nombre={cita.modalidad === "TELECONSULTA" ? "teleconsulta" : "agenda"} tamano={18} />
-                        </span>
-                        <span className="ficha__cuerpo">
-                          <span className="ficha__titulo">{cita.paciente}</span>
-                          <span className="ficha__meta">
-                            <span className="mono">
-                              {new Date(cita.fecha).toLocaleTimeString("es-CO", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                            <span>{cita.motivo}</span>
-                            <span>{cita.profesional}</span>
-                            <span>{cita.duracionMinutos} min</span>
+          <Tarjeta
+            titulo="Citas del período"
+            descripcion={`${citas.length} citas en ${Object.keys(porDia).length} días de atención`}
+            sinRelleno
+            pie={
+              <p className="pie-region mono">
+                La agenda se desplaza dentro del panel · nada de esto queda en el dispositivo
+              </p>
+            }
+          >
+            <RegionDesplazable etiqueta="Agenda de citas" alto={540}>
+              <ol className="agenda">
+                {Object.entries(porDia).map(([dia, citasDelDia]) => (
+                  <li key={dia}>
+                    <p className="agenda__dia">
+                      <span>{fechaLarga(dia)}</span>
+                      <span className="mono">{citasDelDia.length} citas</span>
+                    </p>
+                    <ul className="agenda__citas">
+                      {citasDelDia.map((cita) => (
+                        <li key={cita.id} className="agenda__cita">
+                          <span className="agenda__hora mono">
+                            {new Date(cita.fecha).toLocaleTimeString("es-CO", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
-                        </span>
-                        <Insignia tono={TONO[cita.estado]}>{cita.estado.replace("_", " ")}</Insignia>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </Tarjeta>
-            ))}
-          </div>
+                          <span className="agenda__medio" aria-hidden="true">
+                            <Icono
+                              nombre={cita.modalidad === "TELECONSULTA" ? "teleconsulta" : "agenda"}
+                              tamano={15}
+                            />
+                          </span>
+                          <span className="agenda__cuerpo">
+                            <strong>{cita.paciente}</strong>
+                            <span className="agenda__meta">
+                              {cita.motivo} · {cita.profesional} · {cita.duracionMinutos} min
+                            </span>
+                          </span>
+                          <Insignia tono={TONO[cita.estado]}>{cita.estado.replace("_", " ")}</Insignia>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ol>
+            </RegionDesplazable>
+          </Tarjeta>
         )}
       </EstadoConsulta>
     </div>

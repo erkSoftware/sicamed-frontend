@@ -30,6 +30,12 @@ En `/acceso` se elige el perfil con el que se entra:
 | **Hernán Cifuentes** — productor sin atestación | **La demo:** al publicar, el sistema rechaza y cita `Res. 1241/2026 Art. 13b` |
 | **Dra. Alejandra Ríos** — equipo clínico | Zona clínica: pacientes, agenda y teleconsulta |
 | **Andrés Beltrán** — analista institucional | Panel de solo lectura sobre todo el ecosistema |
+| **Lida Almeciga** — analista documental | Verifica expedientes de registro: aprueba o devuelve cada documento |
+| **Diego Fernando Marín** — super administrador | Ve todo y define la política de verificación documental |
+
+`VITE_PERFIL_DEMO` fija el perfil que se precarga en `/acceso` y con el que se restaura la sesión. En `.env.example` viene como `SUPER_ADMIN`.
+
+Con `VITE_MODO_AUTH=mock`, la barra superior de `/app` incluye un **conmutador de perfil**: cambiar de perfil recalcula los permisos y la navegación lateral en caliente, sin volver a `/acceso`.
 
 ---
 
@@ -72,6 +78,7 @@ O conectando el repositorio en el panel de Vercel. `vercel.json` ya define:
 | `VITE_URL_API_COMERCIAL` | — | URL del servicio comercial |
 | `VITE_URL_API_CLINICA` | — | URL del servicio clínico |
 | `VITE_MODO_AUTH` | `mock` | `cloudflare` u `oidc` |
+| `VITE_PERFIL_DEMO` | `SUPER_ADMIN` | — (se ignora fuera de `mock`) |
 | `VITE_URL_PUBLICA` | `https://sicamed.co` | dominio real, usado en canónicas y sitemap |
 
 ---
@@ -181,6 +188,7 @@ El gate ya detectó y bloqueó un defecto real durante esta implementación: con
 
 ## Documentación relacionada
 
+- `PROCESO-REAL-SICAMED.md` — el proceso real tramo por tramo, dónde termina la operación y qué brechas cubre cada módulo
 - `GUIA-TECNICA-FRONTEND.md` — la guía que define esta arquitectura
 - `CONTRIBUTING.md` — reglas R1–R4 y definición de terminado
 - `contracts/README.md` — versionado de contratos
