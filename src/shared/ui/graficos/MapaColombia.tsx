@@ -15,6 +15,7 @@ type Props = {
   seleccionado?: string;
   onSeleccionar?: (codigo: string) => void;
   onAbrirFicha?: (codigo: string) => void;
+  sinRanking?: boolean;
 };
 
 const ESCALONES = 5;
@@ -25,7 +26,14 @@ const tramo = (valor: number, maximo: number): number => {
   return Math.min(ESCALONES - 1, Math.floor(proporcion * ESCALONES));
 };
 
-export const MapaColombia = ({ puntos, unidad, seleccionado, onSeleccionar, onAbrirFicha }: Props) => {
+export const MapaColombia = ({
+  puntos,
+  unidad,
+  seleccionado,
+  onSeleccionar,
+  onAbrirFicha,
+  sinRanking,
+}: Props) => {
   const [activo, setActivo] = useState<string | null>(null);
   const titulo = useId();
 
@@ -107,6 +115,7 @@ export const MapaColombia = ({ puntos, unidad, seleccionado, onSeleccionar, onAb
         </figcaption>
       </figure>
 
+      {sinRanking ? null : (
       <ol className="mapa__ranking">
         {ranking.map((punto, indice) => {
           const contenido = (
@@ -154,6 +163,7 @@ export const MapaColombia = ({ puntos, unidad, seleccionado, onSeleccionar, onAb
           );
         })}
       </ol>
+      )}
     </div>
   );
 };

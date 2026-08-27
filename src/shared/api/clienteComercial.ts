@@ -114,6 +114,69 @@ export const apiComercial = {
           parametros: { busqueda },
         }),
 
+  variedades: () =>
+    modoMock
+      ? servidorMock.variedades()
+      : solicitar<Awaited<ReturnType<typeof servidorMock.variedades>>>("comercial", "/produccion/variedades"),
+
+  agroinsumos: () =>
+    modoMock
+      ? servidorMock.agroinsumos()
+      : solicitar<Awaited<ReturnType<typeof servidorMock.agroinsumos>>>("comercial", "/produccion/agroinsumos"),
+
+  plantas: (filtro: FiltroListado = {}) =>
+    modoMock
+      ? servidorMock.plantas(filtro)
+      : solicitar<Awaited<ReturnType<typeof servidorMock.plantas>>>("comercial", "/produccion/plantas", {
+          parametros: aParametros(filtro),
+        }),
+
+  planta: (id: string) =>
+    modoMock
+      ? servidorMock.planta(id)
+      : solicitar<Awaited<ReturnType<typeof servidorMock.planta>>>("comercial", `/produccion/plantas/${id}`),
+
+  beneficios: (filtro: FiltroListado = {}) =>
+    modoMock
+      ? servidorMock.beneficios(filtro)
+      : solicitar<Awaited<ReturnType<typeof servidorMock.beneficios>>>("comercial", "/produccion/beneficios", {
+          parametros: aParametros(filtro),
+        }),
+
+  expedientes: (filtro: FiltroListado = {}) =>
+    modoMock
+      ? servidorMock.expedientes(filtro)
+      : solicitar<Awaited<ReturnType<typeof servidorMock.expedientes>>>("comercial", "/cumplimiento/expedientes", {
+          parametros: aParametros(filtro),
+        }),
+
+  politicaVerificacion: () =>
+    modoMock
+      ? servidorMock.politicaVerificacion()
+      : solicitar<Awaited<ReturnType<typeof servidorMock.politicaVerificacion>>>(
+          "comercial",
+          "/cumplimiento/politica-verificacion",
+        ),
+
+  cierres: (filtro: FiltroListado = {}) =>
+    modoMock
+      ? servidorMock.cierres(filtro)
+      : solicitar<Awaited<ReturnType<typeof servidorMock.cierres>>>("comercial", "/vitrina/cierres", {
+          parametros: aParametros(filtro),
+        }),
+
+  conexiones: () =>
+    modoMock
+      ? servidorMock.conexiones()
+      : solicitar<Awaited<ReturnType<typeof servidorMock.conexiones>>>("comercial", "/interoperabilidad/conexiones"),
+
+  ambiente: (filtro: FiltroListado = {}) =>
+    modoMock
+      ? servidorMock.ambiente(filtro)
+      : solicitar<Awaited<ReturnType<typeof servidorMock.ambiente>>>("comercial", "/ambiente/lecturas", {
+          parametros: aParametros(filtro),
+        }),
+
   reportes: () =>
     modoMock
       ? servidorMock.reportes()

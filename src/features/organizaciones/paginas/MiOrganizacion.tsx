@@ -8,7 +8,7 @@ import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { Tabla } from "../../../shared/ui/primitivos/Tabla";
 import { Icono } from "../../../shared/ui/primitivos/Icono";
 import { useAuth } from "../../../shared/auth/useAuth";
-import { fecha, numero } from "../../../shared/i18n/formato";
+import { fecha, fechaCorta, numero } from "../../../shared/i18n/formato";
 import { useAtestacionesDe, useOrganizacionActual } from "../hooks/useOrganizacion";
 
 const TONO = {
@@ -132,7 +132,7 @@ export const MiOrganizacion = () => {
                     { clave: "tipo", encabezado: "Tipo", render: (a) => a.tipo.replaceAll("_", " ") },
                     { clave: "acto", encabezado: "Acto administrativo", render: (a) => a.acto },
                     { clave: "autoridad", encabezado: "Autoridad", render: (a) => a.autoridad },
-                    { clave: "vencimiento", encabezado: "Vence", render: (a) => fecha(a.vencimiento) },
+                    { clave: "vencimiento", encabezado: "Vence", render: (a) => <span className="dato">{fechaCorta(a.vencimiento)}</span> },
                     {
                       clave: "estado",
                       encabezado: "Estado",

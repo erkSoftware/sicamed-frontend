@@ -7,7 +7,7 @@ import { Boton } from "../../../shared/ui/primitivos/Boton";
 import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
 import { DEPARTAMENTOS } from "../../../shared/api/mock/catalogos";
-import { fecha, numero } from "../../../shared/i18n/formato";
+import { fechaCorta, numero } from "../../../shared/i18n/formato";
 import type { Lote } from "../../../shared/api/mock/tipos";
 import type { Columna } from "../../../shared/ui/primitivos/Tabla";
 import { useLotes } from "../hooks/useLotes";
@@ -59,8 +59,8 @@ const COLUMNAS: readonly Columna<Lote>[] = [
     encabezado: "Estado",
     render: (lote) => <Insignia tono={TONO_ESTADO[lote.estado]}>{lote.estado.replace("_", " ")}</Insignia>,
   },
-  { clave: "fecha", encabezado: "Creado", render: (lote) => fecha(lote.fecha) },
-  { clave: "vencimiento", encabezado: "Vence", render: (lote) => fecha(lote.vencimiento) },
+  { clave: "fecha", encabezado: "Creado", render: (lote) => <span className="dato">{fechaCorta(lote.fecha)}</span> },
+  { clave: "vencimiento", encabezado: "Vence", render: (lote) => <span className="dato">{fechaCorta(lote.vencimiento)}</span> },
 ];
 
 export const Inventario = () => {

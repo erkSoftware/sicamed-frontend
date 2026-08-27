@@ -7,7 +7,7 @@ import { Boton } from "../../../shared/ui/primitivos/Boton";
 import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
 import { DEPARTAMENTOS } from "../../../shared/api/mock/catalogos";
-import { fecha, numero } from "../../../shared/i18n/formato";
+import { fechaCorta, numero } from "../../../shared/i18n/formato";
 import type { Cultivo } from "../../../shared/api/mock/tipos";
 import type { Columna } from "../../../shared/ui/primitivos/Tabla";
 import { useCultivos } from "../hooks/useCultivos";
@@ -61,8 +61,8 @@ const COLUMNAS: readonly Columna<Cultivo>[] = [
     encabezado: "Etapa",
     render: (cultivo) => <Insignia tono={TONO_ESTADO[cultivo.estado]}>{cultivo.estado}</Insignia>,
   },
-  { clave: "siembra", encabezado: "Siembra", render: (cultivo) => fecha(cultivo.siembra) },
-  { clave: "cosecha", encabezado: "Cosecha estimada", render: (cultivo) => fecha(cultivo.cosechaEstimada) },
+  { clave: "siembra", encabezado: "Siembra", render: (cultivo) => <span className="dato">{fechaCorta(cultivo.siembra)}</span> },
+  { clave: "cosecha", encabezado: "Cosecha estimada", render: (cultivo) => <span className="dato">{fechaCorta(cultivo.cosechaEstimada)}</span> },
 ];
 
 export const Produccion = () => {

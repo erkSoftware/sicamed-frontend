@@ -95,6 +95,7 @@ export const Tablero = () => {
                     valor: departamento[dimension],
                   }))}
                   onAbrirFicha={setDepartamentoAbierto}
+                  sinRanking
                 />
               </Tarjeta>
 

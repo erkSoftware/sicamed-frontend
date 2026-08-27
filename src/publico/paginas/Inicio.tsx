@@ -11,6 +11,7 @@ import { CadenaViva } from "../../shared/ui/graficos/CadenaViva";
 import { LaminaBotanica } from "../../shared/ui/graficos/LaminaBotanica";
 import { GloboColombia } from "../../shared/ui/graficos/GloboColombia";
 import { RelatoTrazabilidad } from "../../shared/ui/graficos/RelatoTrazabilidad";
+import { MapaInstitucional } from "../../shared/ui/graficos/MapaInstitucional";
 import { TitularMarca } from "../componentes/TitularMarca";
 import { FichaDepartamento } from "../../shared/ui/patrones/FichaDepartamento";
 import { MapaColombia } from "../../shared/ui/graficos/MapaColombia";
@@ -152,6 +153,22 @@ export const Inicio = () => {
         </div>
         <div data-revelar>
           <RelatoTrazabilidad />
+        </div>
+
+        <div className="seccion__encabezado seccion__encabezado--ancho instituciones__intro">
+          <p className="seccion__etiqueta">Quién responde</p>
+          <h3 className="seccion__titulo seccion__titulo--menor">
+            Cuatro ministerios y tres autoridades técnicas sobre la misma cadena
+          </h3>
+          <p className="seccion__texto">
+            Ninguna entidad ve el recorrido completo por su cuenta. La Instancia de Coordinación
+            reúne a MinCIT, MinAgricultura, MinJusticia y MinSalud, con el apoyo técnico del ICA, el
+            INVIMA y el FNE. SICAMED no reemplaza a ninguna: registra lo que cada una ya declaró.
+          </p>
+        </div>
+
+        <div data-revelar>
+          <MapaInstitucional />
         </div>
       </div>
     </section>

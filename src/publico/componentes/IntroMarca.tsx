@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { cinematicaActiva } from "../intro/decision";
 
 const LETRAS = ["S", "I", "C", "A", "M", "E", "D"];
 const DURACION = 2000;
@@ -8,7 +9,9 @@ const debeOmitir = (): boolean =>
   typeof window === "undefined" || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const marcarEstado = (estado: "corriendo" | "listo"): void => {
-  document.documentElement.setAttribute("data-intro", estado);
+  const raiz = document.documentElement;
+  if (estado === "listo" && raiz.getAttribute("data-cinematica") === "corriendo") return;
+  raiz.setAttribute("data-intro", estado);
 };
 
 export const IntroMarca = () => {
@@ -16,6 +19,7 @@ export const IntroMarca = () => {
   const esPortada = useLocation().pathname === "/";
 
   useEffect(() => {
+    if (cinematicaActiva()) return undefined;
     if (!esPortada || debeOmitir()) {
       marcarEstado("listo");
       return undefined;

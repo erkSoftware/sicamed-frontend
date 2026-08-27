@@ -12,6 +12,40 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
     />
+    <script>
+      (function () {
+        window.__sicamedIntro = window.__sicamedIntro || [];
+        function anotar(paso, dato) {
+          window.__sicamedIntro.push({ ms: Math.round(performance.now()), paso: paso, dato: dato || {} });
+        }
+        try {
+          var ruta = location.pathname;
+          var hash = location.hash;
+          var pedida = /^#animation$/i.test(hash);
+          var vista = false;
+          try {
+            vista = localStorage.getItem("SICAMED_intro_animation_seen") === "true";
+          } catch (error) {
+            vista = "sin acceso";
+          }
+          var reducido = matchMedia("(prefers-reduced-motion: reduce)").matches;
+          anotar("guardia", { ruta: ruta, hash: hash, pedida: pedida, vista: vista, reducido: reducido });
+          if (ruta !== "/") return;
+          if (!pedida && (reducido || vista === true)) return;
+          document.documentElement.setAttribute("data-cinematica", "corriendo");
+          document.documentElement.setAttribute("data-intro", "corriendo");
+          anotar("guardia-activa");
+          setTimeout(function () {
+            if (document.documentElement.getAttribute("data-cinematica") !== "corriendo") return;
+            anotar("guardia-rescate");
+            document.documentElement.removeAttribute("data-cinematica");
+          }, 40000);
+        } catch (error) {
+          anotar("guardia-error", { error: String(error) });
+          document.documentElement.removeAttribute("data-cinematica");
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="raiz"></div>

@@ -17,6 +17,13 @@ export const fecha = (iso: string): string =>
     new Date(iso),
   );
 
+export const fechaCorta = (iso: string): string =>
+  new Intl.DateTimeFormat(LOCALE, { day: "2-digit", month: "short", year: "numeric" })
+    .formatToParts(new Date(iso))
+    .filter((parte) => parte.type !== "literal")
+    .map((parte) => (parte.type === "month" ? parte.value.replace(".", "") : parte.value))
+    .join(" ");
+
 export const fechaHora = (iso: string): string =>
   new Intl.DateTimeFormat(LOCALE, {
     day: "2-digit",

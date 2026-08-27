@@ -14,6 +14,18 @@ import {
   RUEDAS,
   SERIE_PUBLICACIONES,
 } from "./datos";
+import {
+  AGROINSUMOS,
+  AMBIENTE,
+  BENEFICIOS,
+  CIERRES,
+  CONEXIONES,
+  EXPEDIENTES,
+  LABORES,
+  PLANTAS,
+  POLITICA_VERIFICACION,
+  VARIEDADES_REGISTRADAS,
+} from "./datosProceso";
 import { DEPARTAMENTOS, ETAPAS_PROCESO, TOTALES_NACIONALES } from "./catalogos";
 import { CITAS, INDICADORES_CLINICOS, NOTAS, PACIENTES, PRESCRIPCIONES } from "./datosClinicos";
 import type { Atestacion, Oferta, Organizacion } from "./tipos";
@@ -224,6 +236,90 @@ export const servidorMock = {
       medicos: filtrar(MEDICOS),
       totales: TOTALES_NACIONALES,
     });
+  },
+
+  variedades: () => demorar(VARIEDADES_REGISTRADAS),
+
+  agroinsumos: () => demorar(AGROINSUMOS),
+
+  plantas: (filtro: FiltroListado = {}) => {
+    const resultado = PLANTAS.filter(
+      (planta) =>
+        (!filtro.busqueda ||
+          contiene(planta.codigo, filtro.busqueda) ||
+          contiene(planta.variedad, filtro.busqueda) ||
+          contiene(planta.cultivo, filtro.busqueda) ||
+          contiene(planta.madre ?? "", filtro.busqueda)) &&
+        (!filtro.estado || planta.estado === filtro.estado) &&
+        (!filtro.tipo || planta.origen === filtro.tipo) &&
+        (!filtro.departamento || planta.departamento === filtro.departamento),
+    );
+    return demorar(paginar(resultado, filtro.pagina, filtro.porPagina ?? 10));
+  },
+
+  planta: (id: string) => {
+    const encontrada = PLANTAS.find((planta) => planta.id === id);
+    if (!encontrada) return rechazarNoEncontrado("Planta", id);
+    return demorar({
+      planta: encontrada,
+      labores: LABORES.filter((labor) => labor.plantaId === id),
+      madre: encontrada.madre
+        ? (PLANTAS.find((planta) => planta.codigo === encontrada.madre) ?? null)
+        : null,
+      clones: PLANTAS.filter((planta) => planta.madre === encontrada.codigo),
+    });
+  },
+
+  beneficios: (filtro: FiltroListado = {}) => {
+    const resultado = BENEFICIOS.filter(
+      (beneficio) =>
+        (!filtro.busqueda ||
+          contiene(beneficio.codigo, filtro.busqueda) ||
+          contiene(beneficio.cultivo, filtro.busqueda) ||
+          contiene(beneficio.variedad, filtro.busqueda)) &&
+        (!filtro.estado || beneficio.estado === filtro.estado) &&
+        (!filtro.departamento || beneficio.departamento === filtro.departamento),
+    );
+    return demorar(paginar(resultado, filtro.pagina, filtro.porPagina ?? 10));
+  },
+
+  expedientes: (filtro: FiltroListado = {}) => {
+    const resultado = EXPEDIENTES.filter(
+      (expediente) =>
+        (!filtro.busqueda ||
+          contiene(expediente.organizacion, filtro.busqueda) ||
+          contiene(expediente.radicado, filtro.busqueda)) &&
+        (!filtro.estado || expediente.estado === filtro.estado) &&
+        (!filtro.tipo || expediente.tipoActor === filtro.tipo) &&
+        (!filtro.departamento || expediente.departamento === filtro.departamento),
+    );
+    return demorar(paginar(resultado, filtro.pagina, filtro.porPagina ?? 8));
+  },
+
+  politicaVerificacion: () => demorar(POLITICA_VERIFICACION),
+
+  cierres: (filtro: FiltroListado = {}) => {
+    const resultado = CIERRES.filter(
+      (cierre) =>
+        (!filtro.busqueda ||
+          contiene(cierre.oferta, filtro.busqueda) ||
+          contiene(cierre.contraparte, filtro.busqueda) ||
+          contiene(cierre.organizacion, filtro.busqueda)) &&
+        (!filtro.estado || cierre.estado === filtro.estado) &&
+        (!filtro.tipo || cierre.via === filtro.tipo),
+    );
+    return demorar(resultado);
+  },
+
+  conexiones: () => demorar(CONEXIONES),
+
+  ambiente: (filtro: FiltroListado = {}) => {
+    const resultado = AMBIENTE.filter(
+      (lectura) =>
+        (!filtro.estado || lectura.estado === filtro.estado) &&
+        (!filtro.departamento || lectura.departamento === filtro.departamento),
+    );
+    return demorar(resultado);
   },
 
   reportes: () =>

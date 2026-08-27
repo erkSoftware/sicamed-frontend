@@ -12,7 +12,7 @@ import { Tarjeta } from "../../../shared/ui/primitivos/Tarjeta";
 import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { EnlaceBoton } from "../../../shared/ui/primitivos/EnlaceBoton";
 import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
-import { fecha, numero } from "../../../shared/i18n/formato";
+import { fechaCorta, numero } from "../../../shared/i18n/formato";
 import { aOfertaVista } from "../modelo/mapeo";
 import type { OfertaVista } from "../modelo/mapeo";
 import { useManifestaciones, useOfertas } from "../hooks/useOfertas";
@@ -42,8 +42,8 @@ const COLUMNAS: readonly Columna<OfertaVista>[] = [
     encabezado: "Estado",
     render: (oferta) => <Insignia tono={oferta.tonoEstado}>{oferta.etiquetaEstado}</Insignia>,
   },
-  { clave: "publicada", encabezado: "Publicada", render: (oferta) => fecha(oferta.publicada) },
-  { clave: "vigencia", encabezado: "Vigencia", render: (oferta) => fecha(oferta.vigencia) },
+  { clave: "publicada", encabezado: "Publicada", render: (oferta) => <span className="dato">{fechaCorta(oferta.publicada)}</span> },
+  { clave: "vigencia", encabezado: "Vigencia", render: (oferta) => <span className="dato">{fechaCorta(oferta.vigencia)}</span> },
   {
     clave: "interesados",
     encabezado: "Interesados",
@@ -145,7 +145,7 @@ export const ListaOfertas = () => {
               { clave: "oferta", encabezado: "Oferta", render: (item) => item.oferta },
               { clave: "solicitante", encabezado: "Solicitante", render: (item) => item.solicitante },
               { clave: "departamento", encabezado: "Departamento", render: (item) => item.departamento },
-              { clave: "fecha", encabezado: "Fecha", render: (item) => fecha(item.fecha) },
+              { clave: "fecha", encabezado: "Fecha", render: (item) => <span className="dato">{fechaCorta(item.fecha)}</span> },
               {
                 clave: "estado",
                 encabezado: "Estado",

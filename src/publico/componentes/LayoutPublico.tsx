@@ -1,5 +1,7 @@
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { IntroMarca } from "./IntroMarca";
+import { IntroCinematica } from "../intro/IntroCinematica";
+import { BotonIntro } from "../intro/BotonIntro";
 import { useRevelarSeccion } from "../../shared/ui/movimiento/useRevelarSeccion";
 
 const ANIO = new Date().getFullYear();
@@ -15,7 +17,9 @@ export const LayoutPublico = () => {
         Saltar al contenido principal
       </a>
 
+      <IntroCinematica />
       <IntroMarca />
+      <BotonIntro />
 
       <header className="cabecera-sitio">
         <div className="contenedor cabecera-sitio__interior">
@@ -36,16 +40,23 @@ export const LayoutPublico = () => {
             <NavLink to="/actores" className={({ isActive }) => (isActive ? "activo" : undefined)}>
               Actores
             </NavLink>
-            <NavLink to="/normativa" className={({ isActive }) => (isActive ? "activo" : undefined)}>
+            <NavLink
+              to="/normativa"
+              className={({ isActive }) => (isActive ? "activo" : undefined)}
+            >
               Normativa
             </NavLink>
-            <NavLink to="/transparencia" className={({ isActive }) => (isActive ? "activo" : undefined)}>
+            <NavLink
+              to="/transparencia"
+              className={({ isActive }) => (isActive ? "activo" : undefined)}
+            >
               Transparencia
             </NavLink>
-            <Link to="/acceso" className="boton boton--primario boton--sm">
-              Ingresar
-            </Link>
           </nav>
+
+          <Link to="/acceso" className="boton boton--primario boton--sm cabecera-sitio__acceso">
+            Ingresar
+          </Link>
         </div>
       </header>
 
@@ -66,7 +77,7 @@ export const LayoutPublico = () => {
               </p>
             </div>
             <div>
-              <h3>Consulta pública</h3>
+              <h2 className="pie-sitio__titulo">Consulta pública</h2>
               <ul>
                 <li>
                   <Link to="/vitrina">Vitrina de ofertas</Link>
@@ -80,7 +91,7 @@ export const LayoutPublico = () => {
               </ul>
             </div>
             <div>
-              <h3>Marco normativo</h3>
+              <h2 className="pie-sitio__titulo">Marco normativo</h2>
               <ul>
                 <li>
                   <Link to="/normativa">Res. 1241 de 2026</Link>
@@ -94,7 +105,7 @@ export const LayoutPublico = () => {
               </ul>
             </div>
             <div>
-              <h3>Plataforma</h3>
+              <h2 className="pie-sitio__titulo">Plataforma</h2>
               <ul>
                 <li>
                   <Link to="/acceso">Ingresar</Link>

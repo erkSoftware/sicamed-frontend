@@ -136,4 +136,8 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
     rules: { "no-console": "off" },
   },
+  {
+    files: ["src/publico/intro/diagnostico.ts"],
+    rules: { "no-console": "off" },
+  },
 );

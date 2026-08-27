@@ -1,4 +1,4 @@
-import { PERFILES_DEMO, sesionDesdePerfil } from "./perfiles";
+import { PERFILES_DEMO, perfilPorDefecto, sesionDesdePerfil } from "./perfiles";
 import type { ProveedorAutenticacion, Sesion } from "./tipos";
 
 const CLAVE_PERFIL = "sicamed.perfil-demo";
@@ -6,7 +6,7 @@ const CLAVE_PERFIL = "sicamed.perfil-demo";
 let credencialEnMemoria: string | undefined;
 
 const perfilPorClave = (clave: string | null) =>
-  PERFILES_DEMO.find((perfil) => perfil.clave === clave) ?? PERFILES_DEMO[0];
+  PERFILES_DEMO.find((perfil) => perfil.clave === clave) ?? perfilPorDefecto();
 
 export const proveedorMock: ProveedorAutenticacion = {
   nombre: "mock",

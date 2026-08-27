@@ -97,7 +97,7 @@ export const ActoresPublico = () => (
         <h2 className="seccion__titulo" style={{ marginBottom: "var(--e4)" }}>
           Distribución territorial
         </h2>
-        <RegionDesplazable etiqueta="Proveedores por departamento" className="tarjeta" style={{ overflow: "hidden" }}>
+        <RegionDesplazable etiqueta="Proveedores por departamento" className="tarjeta" alto={430}>
           <BarrasHorizontales
             titulo="Proveedores registrados por departamento"
             unidad="Proveedores"
@@ -106,6 +106,9 @@ export const ActoresPublico = () => (
               .map((departamento) => ({ etiqueta: departamento.nombre, valor: departamento.proveedores }))}
           />
         </RegionDesplazable>
+        <p className="pie-region mono" style={{ marginTop: "var(--e3)" }}>
+          {DEPARTAMENTOS.length} departamentos · desplaza dentro del panel para ver el resto
+        </p>
       </section>
     </div>
   </div>
