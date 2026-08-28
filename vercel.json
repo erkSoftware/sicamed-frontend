@@ -5,7 +5,7 @@
   "framework": "vite",
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [{ "source": "/((?!assets/|.*\\..*).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/(.*)", "destination": "/aplicacion.html" }],
   "headers": [
     {
       "source": "/assets/(.*)",

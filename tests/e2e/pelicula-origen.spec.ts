@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { CLAVE_INTRO, CLAVE_ORIGEN, omitirCinematica } from "./apoyo";
 
-const omitirSoloIntro = async (page: import("@playwright/test").Page) => {
+const omitirSoloIntro = async (page: Page) => {
   await page.addInitScript((clave: string) => {
     try {
       window.localStorage.setItem(clave, "true");

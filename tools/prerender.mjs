@@ -63,7 +63,8 @@ ${rutas
 `;
 
 writeFileSync(join(dist, "sitemap.xml"), sitemap, "utf-8");
+writeFileSync(join(dist, "aplicacion.html"), plantilla, "utf-8");
 
 if (existsSync(distServidor)) rmSync(distServidor, { recursive: true, force: true });
 
-console.log(`Prerender completo: ${rutas.length} rutas estáticas + sitemap.xml`);
+console.log(`Prerender completo: ${rutas.length} rutas estáticas + sitemap.xml + cascarón`);
