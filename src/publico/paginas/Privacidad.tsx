@@ -22,9 +22,9 @@ export const Privacidad = () => (
     <div className="prosa">
       <h1 className="seccion__titulo">Tratamiento de datos personales</h1>
       <p>
-        SICAMED trata datos personales conforme a la Ley 1581 de 2012 y sus decretos
-        reglamentarios. Los datos relativos a la salud son datos sensibles y reciben el régimen
-        reforzado que la norma exige.
+        SICAMED trata datos personales conforme a la Ley 1581 de 2012 y sus decretos reglamentarios.
+        Los datos relativos a la salud son datos sensibles y reciben el régimen reforzado que la
+        norma exige.
       </p>
 
       <h2>Separación de zonas</h2>
@@ -34,9 +34,18 @@ export const Privacidad = () => (
         explícitos:
       </p>
       <ul>
-        <li>Cachés independientes por zona; la zona clínica descarta los datos al desmontar la vista.</li>
-        <li>Prohibición total de persistencia clínica en el dispositivo: sin almacenamiento local, sin almacenamiento de sesión, sin bases de datos del navegador, sin caché de trabajo sin conexión.</li>
-        <li>Observabilidad ciega a lo clínico: sin grabación de sesión, sin cuerpo de respuesta en los reportes de error y con rutas parametrizadas en lugar de identificadores reales.</li>
+        <li>
+          Cachés independientes por zona; la zona clínica descarta los datos al desmontar la vista.
+        </li>
+        <li>
+          Prohibición total de persistencia clínica en el dispositivo: sin almacenamiento local, sin
+          almacenamiento de sesión, sin bases de datos del navegador, sin caché de trabajo sin
+          conexión.
+        </li>
+        <li>
+          Observabilidad ciega a lo clínico: sin grabación de sesión, sin cuerpo de respuesta en los
+          reportes de error y con rutas parametrizadas en lugar de identificadores reales.
+        </li>
         <li>El cierre de sesión limpia el estado de ambas zonas.</li>
       </ul>
 

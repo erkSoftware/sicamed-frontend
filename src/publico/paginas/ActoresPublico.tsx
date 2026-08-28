@@ -12,10 +12,30 @@ import { numero } from "../../shared/i18n/formato";
 const HABILITADAS = ORGANIZACIONES.filter((organizacion) => organizacion.estado === "HABILITADA");
 
 const GRUPOS = [
-  { titulo: "Proveedores", icono: "hoja" as const, total: TOTALES_NACIONALES.proveedores, texto: "Cultivadores y transformadores con licencia registrada." },
-  { titulo: "Dispensadores", icono: "vitrina" as const, total: TOTALES_NACIONALES.dispensadores, texto: "Establecimientos autorizados para la dispensación." },
-  { titulo: "IPS", icono: "edificio" as const, total: TOTALES_NACIONALES.ips, texto: "Prestadores de servicios de salud vinculados." },
-  { titulo: "Médicos", icono: "medico" as const, total: TOTALES_NACIONALES.medicos, texto: "Profesionales habilitados para prescribir." },
+  {
+    titulo: "Proveedores",
+    icono: "hoja" as const,
+    total: TOTALES_NACIONALES.proveedores,
+    texto: "Cultivadores y transformadores con licencia registrada.",
+  },
+  {
+    titulo: "Dispensadores",
+    icono: "vitrina" as const,
+    total: TOTALES_NACIONALES.dispensadores,
+    texto: "Establecimientos autorizados para la dispensación.",
+  },
+  {
+    titulo: "IPS",
+    icono: "edificio" as const,
+    total: TOTALES_NACIONALES.ips,
+    texto: "Prestadores de servicios de salud vinculados.",
+  },
+  {
+    titulo: "Médicos",
+    icono: "medico" as const,
+    total: TOTALES_NACIONALES.medicos,
+    texto: "Profesionales habilitados para prescribir.",
+  },
 ];
 
 export const ActoresPublico = () => (
@@ -24,7 +44,11 @@ export const ActoresPublico = () => (
       titulo="Actores habilitados del cannabis medicinal en Colombia"
       descripcion="Directorio público de proveedores, dispensadores, IPS y médicos registrados en SICAMED, con su distribución territorial por departamento."
       ruta="/actores"
-      palabrasClave={["actores cannabis medicinal", "cultivadores habilitados Colombia", "dispensarios cannabis"]}
+      palabrasClave={[
+        "actores cannabis medicinal",
+        "cultivadores habilitados Colombia",
+        "dispensarios cannabis",
+      ]}
       datosEstructurados={[
         migasJsonLd([
           { nombre: "Inicio", ruta: "/" },
@@ -47,8 +71,8 @@ export const ActoresPublico = () => (
       <p className="seccion__etiqueta">Registro nacional</p>
       <h1 className="seccion__titulo">Actores del ecosistema</h1>
       <p className="seccion__texto">
-        La identidad de los actores habilitados y su territorio son información pública. Los datos de
-        contacto y la capacidad productiva son reservados y no se publican.
+        La identidad de los actores habilitados y su territorio son información pública. Los datos
+        de contacto y la capacidad productiva son reservados y no se publican.
       </p>
     </header>
 
@@ -103,7 +127,10 @@ export const ActoresPublico = () => (
             unidad="Proveedores"
             datos={[...DEPARTAMENTOS]
               .sort((a, b) => b.proveedores - a.proveedores)
-              .map((departamento) => ({ etiqueta: departamento.nombre, valor: departamento.proveedores }))}
+              .map((departamento) => ({
+                etiqueta: departamento.nombre,
+                valor: departamento.proveedores,
+              }))}
           />
         </RegionDesplazable>
         <p className="pie-region mono" style={{ marginTop: "var(--e3)" }}>

@@ -1,4 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { omitirCinematica } from "./apoyo";
+
+test.beforeEach(async ({ page }) => {
+  await omitirCinematica(page);
+});
 
 test("el mapa publico abre la ficha del departamento con datos de cultivo", async ({ page }) => {
   await page.goto("/");
@@ -10,8 +15,11 @@ test("el mapa publico abre la ficha del departamento con datos de cultivo", asyn
   const dialogo = page.getByRole("dialog");
   await expect(dialogo).toBeVisible();
   await expect(dialogo.getByRole("heading", { name: "Antioquia" })).toBeVisible();
-  await expect(dialogo.getByText(/predios registrados/)).toBeVisible();
-  await expect(dialogo.getByText(/lotes con cadena de custodia/)).toBeVisible();
+  await expect(dialogo.getByText("Predios registrados")).toBeVisible();
+
+  await dialogo.getByRole("tab", { name: /Trazabilidad/ }).click();
+  await expect(dialogo.getByText("Lotes con custodia")).toBeVisible();
+
   await expect(dialogo.getByRole("link", { name: /Ver ofertas del departamento/ })).toBeVisible();
 });
 
@@ -47,5 +55,5 @@ test("el globo abre la ficha al pulsar una region de Colombia", async ({ page })
   await page.mouse.click(x, y);
   const dialogo = page.getByRole("dialog");
   await expect(dialogo).toBeVisible();
-  await expect(dialogo.getByText(/plantas en pie/)).toBeVisible();
+  await expect(dialogo.getByText("Plantas en pie")).toBeVisible();
 });

@@ -34,7 +34,11 @@ export const Transparencia = () => (
       titulo="Datos abiertos y transparencia"
       descripcion="Conjuntos de datos abiertos del sistema de información del cannabis medicinal: actores, ofertas vigentes, volumen por etapa y rechazos normativos agregados."
       ruta="/transparencia"
-      palabrasClave={["datos abiertos cannabis", "transparencia SICAMED", "estadísticas cannabis medicinal Colombia"]}
+      palabrasClave={[
+        "datos abiertos cannabis",
+        "transparencia SICAMED",
+        "estadísticas cannabis medicinal Colombia",
+      ]}
       datosEstructurados={[
         migasJsonLd([
           { nombre: "Inicio", ruta: "/" },
@@ -64,7 +68,9 @@ export const Transparencia = () => (
 
     <div className="tarjetas-valor" style={{ marginBottom: "var(--e7)" }}>
       <article className="valor">
-        <strong style={{ fontSize: "var(--texto-3xl)" }}>{numero(TOTALES_NACIONALES.proveedores)}</strong>
+        <strong style={{ fontSize: "var(--texto-3xl)" }}>
+          {numero(TOTALES_NACIONALES.proveedores)}
+        </strong>
         <p className="valor__texto">Proveedores registrados</p>
       </article>
       <article className="valor">
@@ -78,7 +84,9 @@ export const Transparencia = () => (
         <p className="valor__texto">Dosis entregadas a pacientes</p>
       </article>
       <article className="valor">
-        <strong style={{ fontSize: "var(--texto-3xl)" }}>{compacto(TOTALES_NACIONALES.pacientes)}</strong>
+        <strong style={{ fontSize: "var(--texto-3xl)" }}>
+          {compacto(TOTALES_NACIONALES.pacientes)}
+        </strong>
         <p className="valor__texto">Pacientes con acceso potencial</p>
       </article>
     </div>

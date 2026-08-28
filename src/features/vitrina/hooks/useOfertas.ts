@@ -21,6 +21,31 @@ export const useManifestaciones = () =>
     queryFn: () => apiComercial.manifestaciones(),
   });
 
+export const useManifestarInteres = () => {
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: apiComercial.manifestarInteres,
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: ["comercial", "manifestaciones"] });
+      void cliente.invalidateQueries({ queryKey: ["comercial", "ofertas"] });
+      void cliente.invalidateQueries({ queryKey: ["comercial", "oferta"] });
+      void cliente.invalidateQueries({ queryKey: ["comercial", "eventos"] });
+    },
+  });
+};
+
+export const useHabilitarContacto = () => {
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: apiComercial.habilitarContacto,
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: ["comercial", "manifestaciones"] });
+      void cliente.invalidateQueries({ queryKey: ["comercial", "cierres"] });
+      void cliente.invalidateQueries({ queryKey: ["comercial", "eventos"] });
+    },
+  });
+};
+
 export const usePublicarOferta = () => {
   const cliente = useQueryClient();
   return useMutation({

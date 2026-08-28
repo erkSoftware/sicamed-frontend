@@ -77,225 +77,231 @@ export const Inicio = () => {
   const [departamentoAbierto, setDepartamentoAbierto] = useState<string | null>(null);
 
   return (
-  <>
-    <Seo
-      titulo="SICAMED — Sistema de Información del Cannabis Medicinal"
-      descripcion="Plataforma nacional de trazabilidad, cumplimiento normativo y vitrina pública del cannabis medicinal en Colombia. Consulta abierta, sin registro."
-      ruta="/"
-      palabrasClave={[
-        "cannabis medicinal Colombia",
-        "trazabilidad cannabis",
-        "vitrina cannabis medicinal",
-        "licencias cannabis Colombia",
-        "SICAMED",
-      ]}
-      datosEstructurados={[organizacionJsonLd(), sitioWebJsonLd(), preguntasJsonLd(PREGUNTAS)]}
-    />
+    <>
+      <Seo
+        titulo="SICAMED — Sistema de Información del Cannabis Medicinal"
+        descripcion="Plataforma nacional de trazabilidad, cumplimiento normativo y vitrina pública del cannabis medicinal en Colombia. Consulta abierta, sin registro."
+        ruta="/"
+        palabrasClave={[
+          "cannabis medicinal Colombia",
+          "trazabilidad cannabis",
+          "vitrina cannabis medicinal",
+          "licencias cannabis Colombia",
+          "SICAMED",
+        ]}
+        datosEstructurados={[organizacionJsonLd(), sitioWebJsonLd(), preguntasJsonLd(PREGUNTAS)]}
+      />
 
-    <section className="heroe">
-      <div className="contenedor heroe__interior">
-        <div className="heroe__texto-bloque">
-          <div data-entrada="2">
-            <TitularMarca />
+      <section className="heroe">
+        <div className="contenedor heroe__interior">
+          <div className="heroe__texto-bloque">
+            <div data-entrada="2">
+              <TitularMarca />
+            </div>
+            <div className="heroe__acciones" data-entrada="4">
+              <Link to="/vitrina" className="boton boton--acento boton--lg">
+                Explorar la vitrina
+              </Link>
+              <Link to="/normativa" className="boton boton--secundario boton--lg">
+                Marco normativo
+              </Link>
+            </div>
           </div>
-          <div className="heroe__acciones" data-entrada="4">
-            <Link to="/vitrina" className="boton boton--acento boton--lg">
-              Explorar la vitrina
-            </Link>
-            <Link to="/normativa" className="boton boton--secundario boton--lg">
-              Marco normativo
-            </Link>
+
+          <div className="heroe__globo" data-entrada="3">
+            <GloboColombia
+              unidad="proveedores"
+              marcas={DEPARTAMENTOS.map((departamento) => ({
+                codigo: departamento.codigo,
+                nombre: departamento.nombre,
+                valor: departamento.proveedores,
+              }))}
+              onAbrirFicha={setDepartamentoAbierto}
+            />
           </div>
         </div>
+      </section>
 
-        <div className="heroe__globo" data-entrada="3">
-          <GloboColombia
-            unidad="proveedores"
-            marcas={DEPARTAMENTOS.map((departamento) => ({
-              codigo: departamento.codigo,
-              nombre: departamento.nombre,
-              valor: departamento.proveedores,
-            }))}
-            onAbrirFicha={setDepartamentoAbierto}
-          />
-        </div>
-      </div>
-    </section>
-
-    <section className="seccion">
-      <div className="contenedor">
-        <div className="seccion__encabezado seccion__encabezado--ancho">
-          <p className="seccion__etiqueta">La planta</p>
-          <h2 className="seccion__titulo">Lo que se registra empieza aquí</h2>
-          <p className="seccion__texto">
-            Cada lote del sistema nace de una planta identificada por variedad, predio y licencia. La
-            morfología no es un adorno: el margen aserrado, la bráctea y el viraje del pistilo son los
-            rasgos que sustentan la inspección y la fecha de cosecha reportada.
-          </p>
-        </div>
-        <div data-revelar>
-          <LaminaBotanica />
-        </div>
-      </div>
-    </section>
-
-    <section className="seccion seccion--alt">
-      <div className="contenedor">
-        <div className="seccion__encabezado seccion__encabezado--ancho">
-          <p className="seccion__etiqueta">El recorrido</p>
-          <h2 className="seccion__titulo">De la mano que siembra a quien lo necesita</h2>
-          <p className="seccion__texto">
-            Seis escenas para entender qué registra el sistema y quién responde en cada una. El
-            producto no termina siempre en el mismo lugar: droguerías y cadenas de farmacia, IPS y
-            hospitales, laboratorios que transforman o exportan, y el paciente con fórmula. SICAMED
-            registra el recorrido y publica la oferta; el acuerdo se cierra fuera del sistema.
-          </p>
-        </div>
-        <div data-revelar>
-          <RelatoTrazabilidad />
-        </div>
-
-        <div className="seccion__encabezado seccion__encabezado--ancho instituciones__intro">
-          <p className="seccion__etiqueta">Quién responde</p>
-          <h3 className="seccion__titulo seccion__titulo--menor">
-            Cuatro ministerios y tres autoridades técnicas sobre la misma cadena
-          </h3>
-          <p className="seccion__texto">
-            Ninguna entidad ve el recorrido completo por su cuenta. La Instancia de Coordinación
-            reúne a MinCIT, MinAgricultura, MinJusticia y MinSalud, con el apoyo técnico del ICA, el
-            INVIMA y el FNE. SICAMED no reemplaza a ninguna: registra lo que cada una ya declaró.
-          </p>
-        </div>
-
-        <div data-revelar>
-          <MapaInstitucional />
-        </div>
-      </div>
-    </section>
-
-    <section className="seccion">
-      <div className="contenedor">
-        <div className="seccion__encabezado">
-          <p className="seccion__etiqueta">Por qué existe</p>
-          <h2 className="seccion__titulo">Un registro que sirve de prueba, no de vitrina decorativa</h2>
-          <p className="seccion__texto">
-            SICAMED convierte el cumplimiento normativo en algo verificable: quién está habilitado,
-            para qué producto, hasta cuándo, y qué pasó con cada lote.
-          </p>
-        </div>
-
-        <div className="tarjetas-valor" data-revelar>
-          {VALORES.map((valor) => (
-            <article key={valor.titulo} className="valor">
-              <span className="valor__icono" aria-hidden="true">
-                <Icono nombre={valor.icono} tamano={20} />
-              </span>
-              <h3 className="valor__titulo">{valor.titulo}</h3>
-              <p className="valor__texto">{valor.texto}</p>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <section className="seccion seccion--alt">
-      <div className="contenedor">
-        <div className="seccion__encabezado">
-          <p className="seccion__etiqueta">La cadena</p>
-          <h2 className="seccion__titulo">Las mismas escenas, ahora con cifras</h2>
-          <p className="seccion__texto">
-            Cinco etapas, cada una con su registro verificable y su responsable identificado. Sigue
-            el recorrido de un lote: cada parada sella un evento con la huella del anterior, hasta
-            el destino que corresponda.
-          </p>
-        </div>
-        <div data-revelar>
-          <CadenaViva etapas={ETAPAS_PROCESO} />
-        </div>
-      </div>
-    </section>
-
-
-    <section className="seccion seccion--tinta">
-      <div className="contenedor">
-        <div className="seccion__encabezado seccion__encabezado--ancho">
-          <p className="seccion__etiqueta">Cobertura</p>
-          <h2 className="seccion__titulo">Presencia en todo el territorio</h2>
-          <p className="seccion__texto">
-            Distribución de proveedores registrados por departamento sobre el mapa oficial del DANE.
-            Los actores priorizados son pequeños y medianos cultivadores, muchos en zonas con
-            conexión irregular.
-          </p>
-        </div>
-        <div data-revelar>
-          <MapaColombia
-            unidad="proveedores"
-            puntos={DEPARTAMENTOS.map((departamento) => ({
-              codigo: departamento.codigo,
-              nombre: departamento.nombre,
-              valor: departamento.proveedores,
-            }))}
-            onAbrirFicha={setDepartamentoAbierto}
-          />
-        </div>
-      </div>
-    </section>
-
-    <section className="seccion">
-      <div className="contenedor">
-        <div className="seccion__encabezado seccion__encabezado--fila">
-          <div>
-            <p className="seccion__etiqueta">Vitrina</p>
-            <h2 className="seccion__titulo">Ofertas publicadas recientemente</h2>
+      <section className="seccion">
+        <div className="contenedor">
+          <div className="seccion__encabezado seccion__encabezado--ancho">
+            <p className="seccion__etiqueta">La planta</p>
+            <h2 className="seccion__titulo">Lo que se registra empieza aquí</h2>
+            <p className="seccion__texto">
+              Cada lote del sistema nace de una planta identificada por variedad, predio y licencia.
+              La morfología no es un adorno: el margen aserrado, la bráctea y el viraje del pistilo
+              son los rasgos que sustentan la inspección y la fecha de cosecha reportada.
+            </p>
           </div>
-          <Link to="/vitrina" className="boton boton--secundario">
-            Ver todas las ofertas
-          </Link>
+          <div data-revelar>
+            <LaminaBotanica />
+          </div>
         </div>
-        <div className="rejilla-ofertas" data-revelar>
-          {OFERTAS_PUBLICAS.slice(0, 6).map((oferta) => (
-            <Link key={oferta.id} to={`/vitrina/${oferta.id}`} className="oferta">
-              <div className="oferta__cabecera">
-                <h3 className="oferta__titulo">{oferta.tipoProducto}</h3>
-                <Icono nombre="flecha" tamano={18} />
-              </div>
-              <p className="oferta__actor">
-                {oferta.organizacion} · {oferta.municipio}, {oferta.departamento}
-              </p>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section className="seccion seccion--alt">
-      <div className="contenedor">
-        <div className="seccion__encabezado">
-          <p className="seccion__etiqueta">Preguntas frecuentes</p>
-          <h2 className="seccion__titulo">Lo que suelen preguntar</h2>
+      <section className="seccion seccion--alt">
+        <div className="contenedor">
+          <div className="seccion__encabezado seccion__encabezado--ancho">
+            <p className="seccion__etiqueta">El recorrido</p>
+            <h2 className="seccion__titulo">De la mano que siembra a quien lo necesita</h2>
+            <p className="seccion__texto">
+              Seis escenas para entender qué registra el sistema y quién responde en cada una. El
+              producto no termina siempre en el mismo lugar: droguerías y cadenas de farmacia, IPS y
+              hospitales, laboratorios que transforman o exportan, y el paciente con fórmula.
+              SICAMED registra el recorrido y publica la oferta; el acuerdo se cierra fuera del
+              sistema.
+            </p>
+          </div>
+          <div data-revelar>
+            <RelatoTrazabilidad />
+          </div>
+
+          <div className="seccion__encabezado seccion__encabezado--ancho instituciones__intro">
+            <p className="seccion__etiqueta">Quién responde</p>
+            <h3 className="seccion__titulo seccion__titulo--menor">
+              Cuatro ministerios y tres autoridades técnicas sobre la misma cadena
+            </h3>
+            <p className="seccion__texto">
+              Ninguna entidad ve el recorrido completo por su cuenta. La Instancia de Coordinación
+              reúne a MinCIT, MinAgricultura, MinJusticia y MinSalud, con el apoyo técnico del ICA,
+              el INVIMA y el FNE. SICAMED no reemplaza a ninguna: registra lo que cada una ya
+              declaró.
+            </p>
+          </div>
+
+          <div data-revelar>
+            <MapaInstitucional />
+          </div>
         </div>
-        <div className="prosa" style={{ maxWidth: "none" }}>
-          {PREGUNTAS.map((item) => (
-            <details
-              key={item.pregunta}
-              style={{
-                background: "var(--superficie)",
-                border: "1px solid var(--borde)",
-                borderRadius: "var(--radio-md)",
-                padding: "var(--e4)",
-                marginBottom: "var(--e3)",
-              }}
-            >
-              <summary style={{ fontWeight: 600, cursor: "pointer", color: "var(--texto)" }}>
-                {item.pregunta}
-              </summary>
-              <p style={{ marginTop: "var(--e3)" }}>{item.respuesta}</p>
-            </details>
-          ))}
+      </section>
+
+      <section className="seccion">
+        <div className="contenedor">
+          <div className="seccion__encabezado">
+            <p className="seccion__etiqueta">Por qué existe</p>
+            <h2 className="seccion__titulo">
+              Un registro que sirve de prueba, no de vitrina decorativa
+            </h2>
+            <p className="seccion__texto">
+              SICAMED convierte el cumplimiento normativo en algo verificable: quién está
+              habilitado, para qué producto, hasta cuándo, y qué pasó con cada lote.
+            </p>
+          </div>
+
+          <div className="tarjetas-valor" data-revelar>
+            {VALORES.map((valor) => (
+              <article key={valor.titulo} className="valor">
+                <span className="valor__icono" aria-hidden="true">
+                  <Icono nombre={valor.icono} tamano={20} />
+                </span>
+                <h3 className="valor__titulo">{valor.titulo}</h3>
+                <p className="valor__texto">{valor.texto}</p>
+              </article>
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
-    <FichaDepartamento codigo={departamentoAbierto} onCerrar={() => setDepartamentoAbierto(null)} />
+      </section>
+
+      <section className="seccion seccion--alt">
+        <div className="contenedor">
+          <div className="seccion__encabezado">
+            <p className="seccion__etiqueta">La cadena</p>
+            <h2 className="seccion__titulo">Las mismas escenas, ahora con cifras</h2>
+            <p className="seccion__texto">
+              Cinco etapas, cada una con su registro verificable y su responsable identificado.
+              Sigue el recorrido de un lote: cada parada sella un evento con la huella del anterior,
+              hasta el destino que corresponda.
+            </p>
+          </div>
+          <div data-revelar>
+            <CadenaViva etapas={ETAPAS_PROCESO} />
+          </div>
+        </div>
+      </section>
+
+      <section className="seccion seccion--tinta">
+        <div className="contenedor">
+          <div className="seccion__encabezado seccion__encabezado--ancho">
+            <p className="seccion__etiqueta">Cobertura</p>
+            <h2 className="seccion__titulo">Presencia en todo el territorio</h2>
+            <p className="seccion__texto">
+              Distribución de proveedores registrados por departamento sobre el mapa oficial del
+              DANE. Los actores priorizados son pequeños y medianos cultivadores, muchos en zonas
+              con conexión irregular.
+            </p>
+          </div>
+          <div data-revelar>
+            <MapaColombia
+              unidad="proveedores"
+              puntos={DEPARTAMENTOS.map((departamento) => ({
+                codigo: departamento.codigo,
+                nombre: departamento.nombre,
+                valor: departamento.proveedores,
+              }))}
+              onAbrirFicha={setDepartamentoAbierto}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="seccion">
+        <div className="contenedor">
+          <div className="seccion__encabezado seccion__encabezado--fila">
+            <div>
+              <p className="seccion__etiqueta">Vitrina</p>
+              <h2 className="seccion__titulo">Ofertas publicadas recientemente</h2>
+            </div>
+            <Link to="/vitrina" className="boton boton--secundario">
+              Ver todas las ofertas
+            </Link>
+          </div>
+          <div className="rejilla-ofertas" data-revelar>
+            {OFERTAS_PUBLICAS.slice(0, 6).map((oferta) => (
+              <Link key={oferta.id} to={`/vitrina/${oferta.id}`} className="oferta">
+                <div className="oferta__cabecera">
+                  <h3 className="oferta__titulo">{oferta.tipoProducto}</h3>
+                  <Icono nombre="flecha" tamano={18} />
+                </div>
+                <p className="oferta__actor">
+                  {oferta.organizacion} · {oferta.municipio}, {oferta.departamento}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="seccion seccion--alt">
+        <div className="contenedor">
+          <div className="seccion__encabezado">
+            <p className="seccion__etiqueta">Preguntas frecuentes</p>
+            <h2 className="seccion__titulo">Lo que suelen preguntar</h2>
+          </div>
+          <div className="prosa" style={{ maxWidth: "none" }}>
+            {PREGUNTAS.map((item) => (
+              <details
+                key={item.pregunta}
+                style={{
+                  background: "var(--superficie)",
+                  border: "1px solid var(--borde)",
+                  borderRadius: "var(--radio-md)",
+                  padding: "var(--e4)",
+                  marginBottom: "var(--e3)",
+                }}
+              >
+                <summary style={{ fontWeight: 600, cursor: "pointer", color: "var(--texto)" }}>
+                  {item.pregunta}
+                </summary>
+                <p style={{ marginTop: "var(--e3)" }}>{item.respuesta}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+      <FichaDepartamento
+        codigo={departamentoAbierto}
+        onCerrar={() => setDepartamentoAbierto(null)}
+      />
     </>
   );
 };

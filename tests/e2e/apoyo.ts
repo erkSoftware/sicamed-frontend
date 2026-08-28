@@ -6,8 +6,12 @@ export const iniciarSesionComo = async (page: Page, perfil: string) => {
   const nombres: Record<string, string> = {
     PRODUCTOR_HABILITADO: "Marcela Ospina",
     PRODUCTOR_SIN_ATESTACION: "Hernán Cifuentes",
+    OPERARIO_CAMPO: "Jairo Peñaloza",
     EQUIPO_CLINICO: "Dra. Alejandra Ríos",
-    INSTITUCIONAL: "Andrés Beltrán",
+    INSTITUCIONAL: "Paula Andrea Rincón",
+    ADMIN_INSTITUCIONAL: "Andrés Beltrán",
+    ANALISTA_DOCUMENTAL: "Lida Almeciga",
+    SUPER_ADMIN: "Diego Fernando Marín",
   };
   const etiqueta = nombres[perfil];
   if (!etiqueta) throw new Error(`Perfil de demostración desconocido: ${perfil}`);
@@ -32,4 +36,17 @@ export const abrirMenuSiEsMovil = async (page: Page) => {
   if ((await boton.getAttribute("aria-expanded")) === "true") return;
   await boton.click();
   await expect(page.locator("#navegacion-lateral")).toHaveAttribute("data-abierto", "true");
+};
+
+export const CLAVE_INTRO = "SICAMED_intro_animation_seen";
+export const CLAVE_ORIGEN = "SICAMED_vitrina_origen_seen";
+
+export const omitirCinematica = async (page: Page) => {
+  await page.addInitScript((claves: string[]) => {
+    try {
+      for (const clave of claves) window.localStorage.setItem(clave, "true");
+    } catch {
+      return;
+    }
+  }, [CLAVE_INTRO, CLAVE_ORIGEN]);
 };

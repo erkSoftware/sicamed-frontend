@@ -2,15 +2,24 @@ import { useState } from "react";
 import { EncabezadoPagina } from "../../../shared/ui/patrones/EncabezadoPagina";
 import { TablaConFiltros } from "../../../shared/ui/patrones/TablaConFiltros";
 import { EstadoVacio } from "../../../shared/ui/patrones/EstadoVacio";
+import { DialogoFormulario } from "../../../shared/ui/patrones/DialogoFormulario";
 import { Kpi } from "../../../shared/ui/patrones/Kpi";
 import { Boton } from "../../../shared/ui/primitivos/Boton";
 import { Insignia } from "../../../shared/ui/primitivos/Insignia";
+import { CampoSelect, CampoTexto } from "../../../shared/ui/primitivos/Campo";
 import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
+import { usePermiso } from "../../../shared/rbac/usePermiso";
+import { useAutor } from "../../../shared/auth/useAutor";
 import { DEPARTAMENTOS } from "../../../shared/api/mock/catalogos";
 import { fechaCorta, numero } from "../../../shared/i18n/formato";
-import type { Lote } from "../../../shared/api/mock/tipos";
+import type { EstadoLote, Lote, TipoLote } from "../../../shared/api/mock/tipos";
 import type { Columna } from "../../../shared/ui/primitivos/Tabla";
-import { useLotes } from "../hooks/useLotes";
+import {
+  useCultivosDelActor,
+  useLotes,
+  useMoverLote,
+  useRegistrarLote,
+} from "../hooks/useLotes";
 
 const TONO_ESTADO = {
   EN_BODEGA: "exito",
@@ -20,48 +29,37 @@ const TONO_ESTADO = {
   DESTRUIDO: "peligro",
 } as const;
 
-const COLUMNAS: readonly Columna<Lote>[] = [
-  {
-    clave: "codigo",
-    encabezado: "Lote",
-    render: (lote) => (
-      <span>
-        <strong className="mono">{lote.codigo}</strong>
-        <br />
-        <span style={{ fontSize: "var(--texto-xs)", color: "var(--texto-tenue)" }}>{lote.bodega}</span>
-      </span>
-    ),
-  },
-  { clave: "tipo", encabezado: "Tipo", render: (lote) => lote.tipo.replaceAll("_", " ") },
-  {
-    clave: "cantidad",
-    encabezado: "Cantidad",
-    numerica: true,
-    render: (lote) => (
-      <span className="mono">
-        {numero(lote.cantidad)} {lote.unidad}
-      </span>
-    ),
-  },
-  {
-    clave: "cannabinoides",
-    encabezado: "THC / CBD",
-    numerica: true,
-    render: (lote) => (
-      <span className="mono">
-        {lote.thc.toFixed(2)}% / {lote.cbd.toFixed(2)}%
-      </span>
-    ),
-  },
-  { clave: "departamento", encabezado: "Departamento", render: (lote) => lote.departamento },
-  {
-    clave: "estado",
-    encabezado: "Estado",
-    render: (lote) => <Insignia tono={TONO_ESTADO[lote.estado]}>{lote.estado.replace("_", " ")}</Insignia>,
-  },
-  { clave: "fecha", encabezado: "Creado", render: (lote) => <span className="dato">{fechaCorta(lote.fecha)}</span> },
-  { clave: "vencimiento", encabezado: "Vence", render: (lote) => <span className="dato">{fechaCorta(lote.vencimiento)}</span> },
-];
+const UNIDAD_POR_TIPO: Record<TipoLote, string> = {
+  FLOR_SECA: "kg",
+  BIOMASA: "kg",
+  EXTRACTO: "L",
+  ACEITE: "L",
+  FORMULA_MAGISTRAL: "unidades",
+};
+
+type FormLote = {
+  cultivoId: string;
+  tipo: TipoLote;
+  cantidad: string;
+  thc: string;
+  cbd: string;
+  bodega: string;
+  departamento: string;
+  vencimiento: string;
+};
+
+const LOTE_INICIAL: FormLote = {
+  cultivoId: "",
+  tipo: "FLOR_SECA",
+  cantidad: "",
+  thc: "",
+  cbd: "",
+  bodega: "",
+  departamento: "",
+  vencimiento: "",
+};
+
+type FormMovimiento = { estado: EstadoLote; bodega: string; motivo: string };
 
 export const Inventario = () => {
   const [busqueda, setBusqueda] = useState("");
@@ -69,12 +67,158 @@ export const Inventario = () => {
   const [tipo, setTipo] = useState("");
   const [departamento, setDepartamento] = useState("");
   const [pagina, setPagina] = useState(1);
+  const [creando, setCreando] = useState(false);
+  const [moviendo, setMoviendo] = useState<Lote | null>(null);
+  const [valores, setValores] = useState<FormLote>(LOTE_INICIAL);
+  const [errores, setErrores] = useState<Partial<Record<keyof FormLote, string>>>({});
+  const [movimiento, setMovimiento] = useState<FormMovimiento>({
+    estado: "EN_TRANSITO",
+    bodega: "",
+    motivo: "",
+  });
+  const [erroresMovimiento, setErroresMovimiento] = useState<
+    Partial<Record<keyof FormMovimiento, string>>
+  >({});
+
   const consulta = useLotes({ busqueda, estado, tipo, departamento, pagina, porPagina: 10 });
+  const cultivos = useCultivosDelActor();
+  const registrar = useRegistrarLote();
+  const mover = useMoverLote();
+  const autor = useAutor();
+  const puedeEscribir = usePermiso("inventario:lote:escribir");
 
   const visibles = consulta.data?.datos ?? [];
   const enBodega = visibles.filter((lote) => lote.estado === "EN_BODEGA").length;
   const retenidos = visibles.filter((lote) => lote.estado === "RETENIDO").length;
   const enTransito = visibles.filter((lote) => lote.estado === "EN_TRANSITO").length;
+
+  const cerrarCreacion = () => {
+    setCreando(false);
+    setValores(LOTE_INICIAL);
+    setErrores({});
+    registrar.reset();
+  };
+
+  const cerrarMovimiento = () => {
+    setMoviendo(null);
+    setMovimiento({ estado: "EN_TRANSITO", bodega: "", motivo: "" });
+    setErroresMovimiento({});
+    mover.reset();
+  };
+
+  const enviarLote = () => {
+    const encontrados: Partial<Record<keyof FormLote, string>> = {};
+    if (!valores.cultivoId) encontrados.cultivoId = "Selecciona el predio de origen.";
+    if (!(Number(valores.cantidad) > 0)) encontrados.cantidad = "La cantidad debe ser mayor que cero.";
+    if (valores.bodega.trim().length < 4) encontrados.bodega = "Indica la bodega de almacenamiento.";
+    if (!valores.departamento) encontrados.departamento = "Selecciona el departamento.";
+    if (!valores.vencimiento) encontrados.vencimiento = "Indica la fecha de vencimiento.";
+    setErrores(encontrados);
+    if (Object.keys(encontrados).length > 0) return;
+    registrar.mutate(
+      {
+        organizacionId: autor.organizacionId,
+        cultivoId: valores.cultivoId,
+        tipo: valores.tipo,
+        cantidad: Number(valores.cantidad),
+        unidad: UNIDAD_POR_TIPO[valores.tipo],
+        thc: Number(valores.thc || 0),
+        cbd: Number(valores.cbd || 0),
+        bodega: valores.bodega,
+        departamento: valores.departamento,
+        vencimiento: new Date(valores.vencimiento).toISOString(),
+        autor,
+      },
+      { onSuccess: cerrarCreacion },
+    );
+  };
+
+  const enviarMovimiento = () => {
+    if (!moviendo) return;
+    const encontrados: Partial<Record<keyof FormMovimiento, string>> = {};
+    if (movimiento.bodega.trim().length < 4)
+      encontrados.bodega = "Indica la bodega o el destino del lote.";
+    if (movimiento.motivo.trim().length < 8) encontrados.motivo = "Declara el motivo del movimiento.";
+    setErroresMovimiento(encontrados);
+    if (Object.keys(encontrados).length > 0) return;
+    mover.mutate(
+      {
+        id: moviendo.id,
+        estado: movimiento.estado,
+        bodega: movimiento.bodega,
+        motivo: movimiento.motivo,
+        autor,
+      },
+      { onSuccess: cerrarMovimiento },
+    );
+  };
+
+  const columnas: readonly Columna<Lote>[] = [
+    {
+      clave: "codigo",
+      encabezado: "Lote",
+      render: (lote) => (
+        <span>
+          <strong className="mono">{lote.codigo}</strong>
+          <br />
+          <span style={{ fontSize: "var(--texto-xs)", color: "var(--texto-tenue)" }}>{lote.bodega}</span>
+        </span>
+      ),
+    },
+    { clave: "tipo", encabezado: "Tipo", render: (lote) => lote.tipo.replaceAll("_", " ") },
+    {
+      clave: "cantidad",
+      encabezado: "Cantidad",
+      numerica: true,
+      render: (lote) => (
+        <span className="mono">
+          {numero(lote.cantidad)} {lote.unidad}
+        </span>
+      ),
+    },
+    {
+      clave: "cannabinoides",
+      encabezado: "THC / CBD",
+      numerica: true,
+      render: (lote) => (
+        <span className="mono">
+          {lote.thc.toFixed(2)}% / {lote.cbd.toFixed(2)}%
+        </span>
+      ),
+    },
+    { clave: "departamento", encabezado: "Departamento", render: (lote) => lote.departamento },
+    {
+      clave: "estado",
+      encabezado: "Estado",
+      render: (lote) => <Insignia tono={TONO_ESTADO[lote.estado]}>{lote.estado.replace("_", " ")}</Insignia>,
+    },
+    { clave: "fecha", encabezado: "Creado", render: (lote) => <span className="dato">{fechaCorta(lote.fecha)}</span> },
+    { clave: "vencimiento", encabezado: "Vence", render: (lote) => <span className="dato">{fechaCorta(lote.vencimiento)}</span> },
+    ...(puedeEscribir
+      ? [
+          {
+            clave: "acciones",
+            encabezado: "Custodia",
+            render: (lote: Lote) =>
+              lote.estado === "DESTRUIDO" ? (
+                <span className="enlace-fila__meta">Disposición final</span>
+              ) : (
+                <Boton
+                  variante="fantasma"
+                  tamano="sm"
+                  icono="flecha"
+                  onClick={() => {
+                    setMoviendo(lote);
+                    setMovimiento({ estado: "EN_TRANSITO", bodega: lote.bodega, motivo: "" });
+                  }}
+                >
+                  Mover
+                </Boton>
+              ),
+          } satisfies Columna<Lote>,
+        ]
+      : []),
+  ];
 
   return (
     <div className="pagina">
@@ -83,7 +227,9 @@ export const Inventario = () => {
         subtitulo="Lotes de producto con su cadena de custodia. Todo traslado entre bodegas genera un evento verificable en el ledger de trazabilidad."
         acciones={
           <SiTienePermiso permiso="inventario:lote:escribir">
-            <Boton icono="mas">Crear lote</Boton>
+            <Boton icono="mas" onClick={() => setCreando(true)}>
+              Crear lote
+            </Boton>
           </SiTienePermiso>
         }
       />
@@ -97,7 +243,7 @@ export const Inventario = () => {
 
       <TablaConFiltros
         descripcion="Listado de lotes en inventario"
-        columnas={COLUMNAS}
+        columnas={columnas}
         claveFila={(lote) => lote.id}
         consulta={consulta}
         busqueda={busqueda}
@@ -160,6 +306,160 @@ export const Inventario = () => {
           />
         }
       />
+
+      <DialogoFormulario
+        abierto={creando}
+        titulo="Crear lote"
+        descripcion="El lote hereda la cadena de origen del predio del que proviene. Su creación queda sellada en el ledger."
+        etiquetaEnviar="Crear lote"
+        cargando={registrar.isPending}
+        error={registrar.error}
+        ancho
+        onCerrar={cerrarCreacion}
+        onEnviar={enviarLote}
+        onLimpiarError={() => registrar.reset()}
+      >
+        <CampoSelect
+          etiqueta="Predio de origen"
+          requerido
+          vacio="Selecciona el predio"
+          value={valores.cultivoId}
+          error={errores.cultivoId}
+          opciones={(cultivos.data?.datos ?? []).map((cultivo) => ({
+            valor: cultivo.id,
+            etiqueta: `${cultivo.nombre} · ${cultivo.variedad}`,
+          }))}
+          onChange={(evento) =>
+            setValores((previos) => ({ ...previos, cultivoId: evento.target.value }))
+          }
+        />
+        <div className="rejilla rejilla--2">
+          <CampoSelect
+            etiqueta="Tipo de lote"
+            requerido
+            value={valores.tipo}
+            ayuda={`Unidad: ${UNIDAD_POR_TIPO[valores.tipo]}`}
+            opciones={[
+              { valor: "FLOR_SECA", etiqueta: "Flor seca" },
+              { valor: "BIOMASA", etiqueta: "Biomasa" },
+              { valor: "EXTRACTO", etiqueta: "Extracto" },
+              { valor: "ACEITE", etiqueta: "Aceite" },
+              { valor: "FORMULA_MAGISTRAL", etiqueta: "Fórmula magistral" },
+            ]}
+            onChange={(evento) =>
+              setValores((previos) => ({ ...previos, tipo: evento.target.value as TipoLote }))
+            }
+          />
+          <CampoTexto
+            etiqueta={`Cantidad (${UNIDAD_POR_TIPO[valores.tipo]})`}
+            requerido
+            type="number"
+            step="0.1"
+            min="0"
+            value={valores.cantidad}
+            error={errores.cantidad}
+            onChange={(evento) =>
+              setValores((previos) => ({ ...previos, cantidad: evento.target.value }))
+            }
+          />
+        </div>
+        <div className="rejilla rejilla--2">
+          <CampoTexto
+            etiqueta="THC (%)"
+            type="number"
+            step="0.01"
+            min="0"
+            value={valores.thc}
+            onChange={(evento) => setValores((previos) => ({ ...previos, thc: evento.target.value }))}
+          />
+          <CampoTexto
+            etiqueta="CBD (%)"
+            type="number"
+            step="0.01"
+            min="0"
+            value={valores.cbd}
+            onChange={(evento) => setValores((previos) => ({ ...previos, cbd: evento.target.value }))}
+          />
+        </div>
+        <div className="rejilla rejilla--2">
+          <CampoTexto
+            etiqueta="Bodega"
+            requerido
+            value={valores.bodega}
+            error={errores.bodega}
+            onChange={(evento) =>
+              setValores((previos) => ({ ...previos, bodega: evento.target.value }))
+            }
+          />
+          <CampoSelect
+            etiqueta="Departamento"
+            requerido
+            vacio="Selecciona un departamento"
+            value={valores.departamento}
+            error={errores.departamento}
+            opciones={DEPARTAMENTOS.map((d) => ({ valor: d.nombre, etiqueta: d.nombre }))}
+            onChange={(evento) =>
+              setValores((previos) => ({ ...previos, departamento: evento.target.value }))
+            }
+          />
+        </div>
+        <CampoTexto
+          etiqueta="Vencimiento"
+          requerido
+          type="date"
+          value={valores.vencimiento}
+          error={errores.vencimiento}
+          onChange={(evento) =>
+            setValores((previos) => ({ ...previos, vencimiento: evento.target.value }))
+          }
+        />
+      </DialogoFormulario>
+
+      <DialogoFormulario
+        abierto={moviendo !== null}
+        titulo={`Mover el lote ${moviendo?.codigo ?? ""}`}
+        descripcion="Todo cambio de custodia queda como evento en el ledger con el motivo declarado. Un lote destruido no admite movimientos."
+        etiquetaEnviar="Registrar movimiento"
+        cargando={mover.isPending}
+        error={mover.error}
+        onCerrar={cerrarMovimiento}
+        onEnviar={enviarMovimiento}
+        onLimpiarError={() => mover.reset()}
+      >
+        <CampoSelect
+          etiqueta="Nuevo estado"
+          requerido
+          value={movimiento.estado}
+          opciones={[
+            { valor: "EN_BODEGA", etiqueta: "En bodega" },
+            { valor: "EN_TRANSITO", etiqueta: "En tránsito" },
+            { valor: "DISPENSADO", etiqueta: "Dispensado" },
+            { valor: "RETENIDO", etiqueta: "Retenido" },
+          ]}
+          onChange={(evento) =>
+            setMovimiento((previo) => ({ ...previo, estado: evento.target.value as EstadoLote }))
+          }
+        />
+        <CampoTexto
+          etiqueta="Bodega o destino"
+          requerido
+          value={movimiento.bodega}
+          error={erroresMovimiento.bodega}
+          onChange={(evento) =>
+            setMovimiento((previo) => ({ ...previo, bodega: evento.target.value }))
+          }
+        />
+        <CampoTexto
+          etiqueta="Motivo del movimiento"
+          requerido
+          value={movimiento.motivo}
+          error={erroresMovimiento.motivo}
+          ayuda="Queda escrito en el evento de trazabilidad."
+          onChange={(evento) =>
+            setMovimiento((previo) => ({ ...previo, motivo: evento.target.value }))
+          }
+        />
+      </DialogoFormulario>
     </div>
   );
 };

@@ -13,6 +13,7 @@ import type {
   LecturaAmbiente,
   Oferta,
   Organizacion,
+  PasoVerificacion,
   Planta,
   ReglaVerificacion,
   TipoCannabis,
@@ -250,6 +251,33 @@ export const EXPEDIENTES: readonly Expediente[] = Array.from({ length: 28 }, (_,
   );
   const devuelto = documentos.some((documento) => documento.estado === "DEVUELTO");
   const enCurso = documentos.some((documento) => documento.estado === "EN_VERIFICACION");
+  const estado = devuelto ? "DEVUELTO" : enCurso ? "EN_VERIFICACION" : faltan ? "RADICADO" : "APROBADO";
+  const radicacion = -(10 + i * 4);
+
+  const pasos: readonly PasoVerificacion[] = [
+    {
+      id: `${identificador("EXP", i)}-P1`,
+      orden: 1,
+      rol: "ANALISTA_DOCUMENTAL",
+      veredicto: estado === "APROBADO" ? "VERIFICADO" : devuelto ? "DEVUELTO" : "PENDIENTE",
+      revisor: estado === "APROBADO" || devuelto ? (ANALISTAS[i % ANALISTAS.length] ?? null) : null,
+      resuelto: estado === "APROBADO" || devuelto ? fechaRelativa(radicacion + 3) : null,
+      observacion: devuelto ? "Documentación incompleta frente al checklist vigente." : null,
+      slaHoras: 72,
+      huella: estado === "APROBADO" || devuelto ? huella() : null,
+    },
+    {
+      id: `${identificador("EXP", i)}-P2`,
+      orden: 2,
+      rol: "ADMIN_INSTITUCIONAL",
+      veredicto: estado === "APROBADO" ? "VERIFICADO" : "PENDIENTE",
+      revisor: estado === "APROBADO" ? "Andrés Beltrán" : null,
+      resuelto: estado === "APROBADO" ? fechaRelativa(radicacion + 6) : null,
+      observacion: null,
+      slaHoras: 48,
+      huella: estado === "APROBADO" ? huella() : null,
+    },
+  ];
 
   return {
     id: identificador("EXP", i),
@@ -258,10 +286,12 @@ export const EXPEDIENTES: readonly Expediente[] = Array.from({ length: 28 }, (_,
     organizacion: organizacion.nombre,
     tipoActor: organizacion.tipo,
     departamento: organizacion.departamento,
-    estado: devuelto ? "DEVUELTO" : enCurso ? "EN_VERIFICACION" : faltan ? "RADICADO" : "APROBADO",
-    radicacion: fechaRelativa(-(10 + i * 4)),
+    estado,
+    radicacion: fechaRelativa(radicacion),
     analista: enCurso || devuelto ? (ANALISTAS[i % ANALISTAS.length] ?? null) : null,
     documentos,
+    pasos,
+    politicaVersion: "POL-2026.1",
   };
 });
 

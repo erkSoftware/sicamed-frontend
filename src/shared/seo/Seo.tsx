@@ -20,6 +20,8 @@ type Props = {
   noIndexar?: boolean;
   palabrasClave?: readonly string[];
   datosEstructurados?: readonly object[];
+  idioma?: string;
+  alternativas?: readonly { idioma: string; ruta: string }[];
 };
 
 export const Seo = ({
@@ -31,6 +33,8 @@ export const Seo = ({
   noIndexar = false,
   palabrasClave,
   datosEstructurados,
+  idioma = SITIO.idioma,
+  alternativas,
 }: Props) => {
   const tituloCompleto = titulo === SITIO.nombreLargo ? titulo : `${titulo} · ${SITIO.nombre}`;
   const canonica = `${SITIO.url}${ruta}`;
@@ -38,10 +42,18 @@ export const Seo = ({
 
   return (
     <Helmet prioritizeSeoTags>
-      <html lang={SITIO.idioma} />
+      <html lang={idioma} />
       <title>{tituloCompleto}</title>
       <meta name="description" content={descripcion} />
       <link rel="canonical" href={canonica} />
+      {(alternativas ?? []).map((alternativa) => (
+        <link
+          key={alternativa.idioma}
+          rel="alternate"
+          hrefLang={alternativa.idioma}
+          href={`${SITIO.url}${alternativa.ruta}`}
+        />
+      ))}
       {palabrasClave ? <meta name="keywords" content={palabrasClave.join(", ")} /> : null}
       <meta
         name="robots"

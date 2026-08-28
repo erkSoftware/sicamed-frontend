@@ -6,7 +6,11 @@ import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { Boton } from "../../../shared/ui/primitivos/Boton";
 import { Icono } from "../../../shared/ui/primitivos/Icono";
 import { fechaLarga, numero, porcentaje } from "../../../shared/i18n/formato";
-import { useRuedas } from "../hooks/useRuedas";
+import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
+import { ErrorNormativo } from "../../../shared/ui/patrones/ErrorNormativo";
+import { useAutor } from "../../../shared/auth/useAutor";
+import { aProblema } from "../../../shared/api/problemDetails";
+import { useInscribirRueda, useRuedas } from "../hooks/useRuedas";
 
 const TONO = {
   ABIERTA: "exito",
@@ -16,6 +20,8 @@ const TONO = {
 
 export const RuedasNegocio = () => {
   const consulta = useRuedas();
+  const inscribir = useInscribirRueda();
+  const autor = useAutor();
   const ruedas = consulta.data ?? [];
 
   return (
@@ -24,6 +30,10 @@ export const RuedasNegocio = () => {
         titulo="Ruedas de negocio"
         subtitulo="Convocatorias de encuentro entre actores habilitados. La plataforma facilita el contacto; ninguna transacción económica ocurre dentro de SICAMED."
       />
+
+      {inscribir.error ? (
+        <ErrorNormativo problema={aProblema(inscribir.error)} onReintentar={() => inscribir.reset()} />
+      ) : null}
 
       <EstadoConsulta
         cargando={consulta.isLoading}
@@ -44,14 +54,29 @@ export const RuedasNegocio = () => {
                 titulo={rueda.nombre}
                 descripcion={`${rueda.sede} · ${rueda.departamento}`}
                 pie={
-                  <Boton
-                    variante={rueda.estado === "ABIERTA" ? "primario" : "secundario"}
-                    tamano="sm"
-                    bloque
-                    disabled={rueda.estado !== "ABIERTA"}
+                  <SiTienePermiso
+                    permiso="ruedas:convocatoria:inscribir"
+                    alternativa={
+                      <span className="pie-region">
+                        {rueda.inscritos} de {rueda.cupos} cupos asignados
+                      </span>
+                    }
                   >
-                    {rueda.estado === "ABIERTA" ? "Inscribir organización" : "Convocatoria cerrada"}
-                  </Boton>
+                    <Boton
+                      variante={rueda.estado === "ABIERTA" ? "primario" : "secundario"}
+                      tamano="sm"
+                      bloque
+                      disabled={rueda.estado !== "ABIERTA" || rueda.inscritos >= rueda.cupos}
+                      cargando={inscribir.isPending && inscribir.variables?.id === rueda.id}
+                      onClick={() => inscribir.mutate({ id: rueda.id, autor })}
+                    >
+                      {rueda.estado !== "ABIERTA"
+                        ? "Convocatoria cerrada"
+                        : rueda.inscritos >= rueda.cupos
+                          ? "Sin cupos disponibles"
+                          : "Inscribir organización"}
+                    </Boton>
+                  </SiTienePermiso>
                 }
               >
                 <div className="pila" style={{ gap: "var(--e3)" }}>

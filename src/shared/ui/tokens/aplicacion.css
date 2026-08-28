@@ -2913,3 +2913,213 @@ a.genealogia__nombre:hover {
     display: none;
   }
 }
+
+.dialogo__descripcion {
+  margin: 0;
+  font-size: var(--texto-sm);
+  line-height: 1.55;
+  color: var(--texto-tenue);
+  padding-bottom: var(--e2);
+  border-bottom: 1px solid var(--borde-suave);
+}
+
+.campo__control--compacto {
+  padding: var(--e2) var(--e3);
+  font-size: var(--texto-xs);
+  max-width: 220px;
+}
+
+.aviso-interno {
+  margin: 0 0 var(--e4);
+  font-size: var(--texto-sm);
+  line-height: 1.55;
+  color: var(--texto-tenue);
+}
+
+.pasos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: paso;
+}
+
+.pasos__paso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e3);
+  padding: var(--e4);
+  border: 1px solid var(--borde-suave);
+  border-left: 3px solid var(--borde);
+  border-radius: var(--radio-sm);
+  background: var(--superficie-alt);
+}
+
+.pasos__paso[data-veredicto="VERIFICADO"] {
+  border-left-color: var(--exito-borde);
+}
+
+.pasos__paso[data-veredicto="DEVUELTO"] {
+  border-left-color: var(--peligro-borde);
+}
+
+.pasos__orden {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--piedra-100);
+  color: var(--texto-tenue);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.pasos__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pasos__meta {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.pasos__decision {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--e2);
+  flex: none;
+}
+
+.politica__pendiente {
+  color: var(--acento-texto, var(--verde-600));
+  font-weight: 500;
+  font-size: var(--texto-xs);
+}
+
+.barra-cupo {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 120px;
+  height: 20px;
+  border-radius: var(--radio-xs);
+  background: var(--piedra-100);
+  overflow: hidden;
+}
+
+.barra-cupo__relleno {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--verde-500, var(--verde-600));
+}
+
+.barra-cupo__relleno[data-estado="POR_VENCER"] {
+  background: var(--alerta-borde);
+}
+
+.barra-cupo__relleno[data-estado="AGOTADO"],
+.barra-cupo__relleno[data-estado="SIN_CUPO"] {
+  background: var(--peligro-borde);
+}
+
+.barra-cupo__cifra {
+  position: relative;
+  display: block;
+  text-align: center;
+  line-height: 20px;
+  font-size: var(--texto-xs);
+  color: var(--texto);
+}
+
+.discrepancias {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.discrepancias__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e4);
+  flex-wrap: wrap;
+  padding: var(--e4);
+  border-bottom: 1px solid var(--borde-suave);
+}
+
+.discrepancias__item:last-child {
+  border-bottom: none;
+}
+
+.discrepancias__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.discrepancias__meta {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.discrepancias__cotejo {
+  display: flex;
+  gap: var(--e3);
+  flex-wrap: wrap;
+  margin-top: var(--e2);
+}
+
+.discrepancias__valor {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--e2) var(--e3);
+  border-radius: var(--radio-xs);
+  background: var(--piedra-100);
+  border-left: 3px solid var(--borde);
+  font-size: var(--texto-xs);
+}
+
+.discrepancias__valor[data-lado="externo"] {
+  border-left-color: var(--info-borde);
+}
+
+.discrepancias__rotulo {
+  color: var(--texto-tenue);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
+
+.discrepancias__decision {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--e2);
+  flex: none;
+}
+
+@media (max-width: 840px) {
+  .pasos__paso,
+  .discrepancias__item {
+    flex-direction: column;
+  }
+
+  .pasos__decision,
+  .discrepancias__decision {
+    align-items: flex-start;
+  }
+}

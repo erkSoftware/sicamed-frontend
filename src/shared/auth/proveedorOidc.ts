@@ -12,6 +12,7 @@ type Reclamaciones = {
   name?: string;
   email?: string;
   rol?: string;
+  rol_plataforma?: string;
   organizacion?: string;
   organizacion_id?: string;
   tenant_id?: string;
@@ -57,6 +58,7 @@ const aSesion = (token: RespuestaToken): Sesion => {
       nombre: reclamaciones.name ?? reclamaciones.email ?? "Usuario SICAMED",
       correo: reclamaciones.email ?? "",
       rol: reclamaciones.rol ?? "Usuario autenticado",
+      rolPlataforma: (reclamaciones.rol_plataforma ?? "OBSERVADOR_INSTITUCIONAL") as Sesion["usuario"]["rolPlataforma"],
       organizacionId: reclamaciones.organizacion_id ?? "",
       organizacion: reclamaciones.organizacion ?? "Organización sin asignar",
       tenantId: reclamaciones.tenant_id ?? "sicamed-co",

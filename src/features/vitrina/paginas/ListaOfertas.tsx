@@ -11,11 +11,15 @@ import type { Columna } from "../../../shared/ui/primitivos/Tabla";
 import { Tarjeta } from "../../../shared/ui/primitivos/Tarjeta";
 import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { EnlaceBoton } from "../../../shared/ui/primitivos/EnlaceBoton";
+import { Boton } from "../../../shared/ui/primitivos/Boton";
 import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
 import { fechaCorta, numero } from "../../../shared/i18n/formato";
 import { aOfertaVista } from "../modelo/mapeo";
 import type { OfertaVista } from "../modelo/mapeo";
-import { useManifestaciones, useOfertas } from "../hooks/useOfertas";
+import { ErrorNormativo } from "../../../shared/ui/patrones/ErrorNormativo";
+import { useAutor } from "../../../shared/auth/useAutor";
+import { aProblema } from "../../../shared/api/problemDetails";
+import { useHabilitarContacto, useManifestaciones, useOfertas } from "../hooks/useOfertas";
 
 const ESTADOS = [
   { valor: "", etiqueta: "Todas" },
@@ -58,6 +62,8 @@ export const ListaOfertas = () => {
   const [pagina, setPagina] = useState(1);
   const consulta = useOfertas({ busqueda, estado, pagina, porPagina: 10 });
   const manifestaciones = useManifestaciones();
+  const habilitar = useHabilitarContacto();
+  const autor = useAutor();
 
   const filas = (consulta.data?.datos ?? []).map(aOfertaVista);
 
@@ -138,6 +144,13 @@ export const ListaOfertas = () => {
         titulo="Manifestaciones de interés"
         descripcion="Actores que solicitaron contacto. La habilitación de contacto no es una transacción comercial"
       >
+        {habilitar.error ? (
+          <ErrorNormativo problema={aProblema(habilitar.error)} onReintentar={() => habilitar.reset()} />
+        ) : null}
+        <p className="aviso-interno">
+          Habilitar el contacto es el último acto que ocurre dentro de SICAMED. De ahí en adelante
+          la operación se cierra por fuera: ante el FNE si es psicoactivo, o por acuerdo directo.
+        </p>
         <EstadoConsulta cargando={manifestaciones.isLoading} error={manifestaciones.error}>
           <Tabla
             descripcion="Manifestaciones de interés recibidas"
@@ -162,6 +175,28 @@ export const ListaOfertas = () => {
                     {item.estado.replace("_", " ")}
                   </Insignia>
                 ),
+              },
+              {
+                clave: "acciones",
+                encabezado: "Canal de contacto",
+                render: (item) =>
+                  item.estado === "HABILITADA" ? (
+                    <span className="enlace-fila__meta">Datos revelados al solicitante</span>
+                  ) : item.estado === "DESCARTADA" ? (
+                    <span className="enlace-fila__meta">Descartada</span>
+                  ) : (
+                    <SiTienePermiso permiso="vitrina:contacto:habilitar">
+                      <Boton
+                        variante="secundario"
+                        tamano="sm"
+                        icono="cadena"
+                        cargando={habilitar.isPending && habilitar.variables?.id === item.id}
+                        onClick={() => habilitar.mutate({ id: item.id, autor })}
+                      >
+                        Habilitar contacto
+                      </Boton>
+                    </SiTienePermiso>
+                  ),
               },
             ]}
             filas={manifestaciones.data ?? []}

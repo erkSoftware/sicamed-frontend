@@ -1,12 +1,13 @@
 import { ErrorApi, esProblemDetail, problemaDesconocido } from "./problemDetails";
 
-export type Zona = "comercial" | "clinico";
+export type Zona = "comercial" | "clinico" | "publico";
 
 export const modoMock = (import.meta.env.VITE_MODO_API ?? "mock") !== "http";
 
 const BASES: Record<Zona, string> = {
   comercial: import.meta.env.VITE_URL_API_COMERCIAL ?? "/api/comercial",
   clinico: import.meta.env.VITE_URL_API_CLINICA ?? "/api/clinico",
+  publico: import.meta.env.VITE_URL_API_PUBLICA ?? "/api/v1/publico",
 };
 
 let obtenerCredencial: () => string | undefined = () => undefined;
@@ -22,7 +23,7 @@ const encabezados = (zona: Zona): HeadersInit => {
     "Content-Type": "application/json",
     "Accept-Language": "es-CO",
   };
-  if (credencial) base.Authorization = `Bearer ${credencial}`;
+  if (credencial && zona !== "publico") base.Authorization = `Bearer ${credencial}`;
   if (zona === "clinico") base["Cache-Control"] = "no-store";
   return base;
 };

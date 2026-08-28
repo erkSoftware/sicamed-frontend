@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiComercial } from "../../../shared/api/clienteComercial";
 
 export const useOrganizacionActual = (id?: string) =>
@@ -21,3 +21,15 @@ export const useAtestacionesDe = (organizacionId: string) =>
     select: (pagina) => pagina.datos.filter((a) => a.organizacionId === organizacionId),
     enabled: Boolean(organizacionId),
   });
+
+export const useActualizarOrganizacion = () => {
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: apiComercial.actualizarOrganizacion,
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: ["comercial", "organizacion"] });
+      void cliente.invalidateQueries({ queryKey: ["comercial", "organizaciones"] });
+      void cliente.invalidateQueries({ queryKey: ["comercial", "eventos"] });
+    },
+  });
+};

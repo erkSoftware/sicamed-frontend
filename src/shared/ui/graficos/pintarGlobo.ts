@@ -1,6 +1,6 @@
 import { ANILLOS_COLOMBIA, ANILLOS_MUNDO, CENTRO_COLOMBIA } from "../../api/mock/mundo";
 import { CONTORNOS } from "../../api/mock/contornos";
-import { proyectarOrtografica, type Camara } from "../../geo/proyecciones";
+import { proyectarEn, proyectarOrtografica, type Camara } from "../../geo/proyecciones";
 
 export type MarcaGlobo = {
   codigo: string;
@@ -52,7 +52,9 @@ export const leerPaletaGlobo = (elemento: HTMLElement): PaletaGlobo => ({
   departamentoAlto: leerColor(elemento, "--globo-departamento-alto"),
 });
 
-const aCanal = (hex: string): readonly [number, number, number] => {
+const canales = new Map<string, readonly [number, number, number]>();
+
+const leerCanal = (hex: string): readonly [number, number, number] => {
   const limpio = hex.replace("#", "");
   const ancho = limpio.length === 3 ? 1 : 2;
   const leer = (indice: number) => {
@@ -62,11 +64,49 @@ const aCanal = (hex: string): readonly [number, number, number] => {
   return [leer(0), leer(1), leer(2)];
 };
 
+const aCanal = (hex: string): readonly [number, number, number] => {
+  const guardado = canales.get(hex);
+  if (guardado) return guardado;
+  const calculado = leerCanal(hex);
+  canales.set(hex, calculado);
+  return calculado;
+};
+
 export const mezclar = (desde: string, hasta: string, t: number): string => {
   const a = aCanal(desde);
   const b = aCanal(hasta);
   const canal = (indice: 0 | 1 | 2) => Math.round(a[indice] + (b[indice] - a[indice]) * t);
   return `rgb(${canal(0)}, ${canal(1)}, ${canal(2)})`;
+};
+
+type Trazo = {
+  moveTo: (x: number, y: number) => void;
+  lineTo: (x: number, y: number) => void;
+  closePath: () => void;
+};
+
+const trazarEn = (
+  destino: Trazo,
+  anillos: readonly (readonly number[])[],
+  camara: Camara,
+): void => {
+  const punto = { x: 0, y: 0, visible: false };
+  for (const anillo of anillos) {
+    let dibujando = false;
+    for (let i = 0; i < anillo.length; i += 2) {
+      proyectarEn(anillo[i] as number, anillo[i + 1] as number, camara, punto);
+      if (!punto.visible) {
+        dibujando = false;
+        continue;
+      }
+      if (dibujando) destino.lineTo(punto.x, punto.y);
+      else {
+        destino.moveTo(punto.x, punto.y);
+        dibujando = true;
+      }
+    }
+    destino.closePath();
+  }
 };
 
 export const trazarAnillos = (
@@ -75,32 +115,27 @@ export const trazarAnillos = (
   camara: Camara,
 ): void => {
   contexto.beginPath();
-  for (const anillo of anillos) {
-    let dibujando = false;
-    for (let i = 0; i < anillo.length; i += 2) {
-      const punto = proyectarOrtografica(anillo[i] as number, anillo[i + 1] as number, camara);
-      if (!punto.visible) {
-        dibujando = false;
-        continue;
-      }
-      if (dibujando) contexto.lineTo(punto.x, punto.y);
-      else {
-        contexto.moveTo(punto.x, punto.y);
-        dibujando = true;
-      }
-    }
-    contexto.closePath();
-  }
+  trazarEn(contexto, anillos, camara);
+};
+
+export const rutaAnillos = (
+  anillos: readonly (readonly number[])[],
+  camara: Camara,
+): Path2D => {
+  const ruta = new Path2D();
+  trazarEn(ruta, anillos, camara);
+  return ruta;
 };
 
 const dibujarMalla = (contexto: CanvasRenderingContext2D, camara: Camara, paso: number, color: string) => {
   contexto.strokeStyle = color;
   contexto.lineWidth = 1;
   contexto.beginPath();
+  const punto = { x: 0, y: 0, visible: false };
   for (let lat = -80; lat <= 80; lat += paso) {
     let dibujando = false;
     for (let lon = -180; lon <= 180; lon += 2) {
-      const punto = proyectarOrtografica(lon, lat, camara);
+      proyectarEn(lon, lat, camara, punto);
       if (!punto.visible) {
         dibujando = false;
         continue;
@@ -115,7 +150,7 @@ const dibujarMalla = (contexto: CanvasRenderingContext2D, camara: Camara, paso: 
   for (let lon = -180; lon < 180; lon += paso) {
     let dibujando = false;
     for (let lat = -90; lat <= 90; lat += 2) {
-      const punto = proyectarOrtografica(lon, lat, camara);
+      proyectarEn(lon, lat, camara, punto);
       if (!punto.visible) {
         dibujando = false;
         continue;
@@ -174,7 +209,7 @@ export const pintarGlobo = (contexto: CanvasRenderingContext2D, pintura: Pintura
 
   dibujarMalla(contexto, camara, revelado > 0.5 ? 5 : 20, paleta.malla);
 
-  trazarAnillos(contexto, ANILLOS_MUNDO, camara);
+  const mundo = rutaAnillos(ANILLOS_MUNDO, camara);
   const tierra = contexto.createLinearGradient(
     camara.centroX - visor,
     camara.centroY - visor,
@@ -184,10 +219,10 @@ export const pintarGlobo = (contexto: CanvasRenderingContext2D, pintura: Pintura
   tierra.addColorStop(0, paleta.tierraLuz);
   tierra.addColorStop(1, paleta.tierra);
   contexto.fillStyle = tierra;
-  contexto.fill();
+  contexto.fill(mundo);
   contexto.strokeStyle = paleta.tierraBorde;
   contexto.lineWidth = 1 + revelado * 0.4;
-  contexto.stroke();
+  contexto.stroke(mundo);
 
   if (revelado < 0.98) {
     contexto.globalAlpha = 1 - revelado;
@@ -198,9 +233,8 @@ export const pintarGlobo = (contexto: CanvasRenderingContext2D, pintura: Pintura
   }
 
   if (revelado > 0.02) {
-    trazarAnillos(contexto, ANILLOS_MUNDO, camara);
     contexto.fillStyle = `rgba(6, 38, 27, ${0.52 * revelado})`;
-    contexto.fill();
+    contexto.fill(mundo);
 
     for (const contorno of CONTORNOS) {
       const marca = porCodigo.get(contorno.codigo);

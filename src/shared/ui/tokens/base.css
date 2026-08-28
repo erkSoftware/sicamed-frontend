@@ -211,3 +211,8 @@ a {
   background-position: 0 88%;
   background-size: 100% 0.24em;
 }
+
+[data-fuera-de-vista="si"],
+[data-fuera-de-vista="si"] * {
+  animation-play-state: paused !important;
+}

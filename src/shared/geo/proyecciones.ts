@@ -63,24 +63,43 @@ export type Camara = {
   centroY: number;
 };
 
+export type PuntoProyectado = { x: number; y: number; visible: boolean };
+
+let latBase = Number.NaN;
+let senoBase = 0;
+let cosenoBase = 1;
+
+const fijarBase = (lat: number): void => {
+  if (lat === latBase) return;
+  latBase = lat;
+  const fi0 = lat * GRADOS;
+  senoBase = Math.sin(fi0);
+  cosenoBase = Math.cos(fi0);
+};
+
+export const proyectarEn = (
+  lon: number,
+  lat: number,
+  camara: Camara,
+  salida: PuntoProyectado,
+): PuntoProyectado => {
+  fijarBase(camara.lat);
+  const fi = lat * GRADOS;
+  const lambda = (lon - camara.lon) * GRADOS;
+  const senoFi = Math.sin(fi);
+  const cosenoFi = Math.cos(fi);
+  const cosenoLambda = Math.cos(lambda);
+  salida.x = camara.centroX + camara.radio * cosenoFi * Math.sin(lambda);
+  salida.y = camara.centroY - camara.radio * (cosenoBase * senoFi - senoBase * cosenoFi * cosenoLambda);
+  salida.visible = senoBase * senoFi + cosenoBase * cosenoFi * cosenoLambda >= 0;
+  return salida;
+};
+
 export const proyectarOrtografica = (
   lon: number,
   lat: number,
   camara: Camara,
-): { x: number; y: number; visible: boolean } => {
-  const fi = lat * GRADOS;
-  const lambda = (lon - camara.lon) * GRADOS;
-  const fi0 = camara.lat * GRADOS;
-  const senoFi = Math.sin(fi);
-  const cosenoFi = Math.cos(fi);
-  const cosenoLambda = Math.cos(lambda);
-  const coseno = Math.sin(fi0) * senoFi + Math.cos(fi0) * cosenoFi * cosenoLambda;
-  return {
-    x: camara.centroX + camara.radio * cosenoFi * Math.sin(lambda),
-    y: camara.centroY - camara.radio * (Math.cos(fi0) * senoFi - Math.sin(fi0) * cosenoFi * cosenoLambda),
-    visible: coseno >= 0,
-  };
-};
+): PuntoProyectado => proyectarEn(lon, lat, camara, { x: 0, y: 0, visible: false });
 
 export const invertirOrtografica = (
   x: number,

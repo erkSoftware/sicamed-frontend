@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CENTRO_COLOMBIA } from "../../api/mock/mundo";
 import { CONTORNOS } from "../../api/mock/contornos";
 import { invertirOrtografica, puntoEnAnillo, type Camara } from "../../geo/proyecciones";
@@ -55,14 +55,20 @@ export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
     impulsoLat: 0,
   });
 
-  const maximo = Math.max(...marcas.map((marca) => marca.valor), 1);
+  const datos = useMemo(
+    () => ({
+      maximo: Math.max(...marcas.map((marca) => marca.valor), 1),
+      porCodigo: new Map(marcas.map((marca) => [marca.codigo, marca])),
+    }),
+    [marcas],
+  );
   const destacadoRef = useRef<string | null>(null);
   const punteroRef = useRef<((x: number, y: number) => string | null) | null>(null);
   const sobreRef = useRef<string | null>(null);
-  const datosRef = useRef({ maximo, porCodigo: new Map(marcas.map((marca) => [marca.codigo, marca])) });
+  const datosRef = useRef(datos);
   const marcasRef = useRef(marcas);
   destacadoRef.current = destacado?.codigo ?? null;
-  datosRef.current = { maximo, porCodigo: new Map(marcas.map((marca) => [marca.codigo, marca])) };
+  datosRef.current = datos;
   marcasRef.current = marcas;
 
   const alSobrevolar = useCallback((codigo: string | null) => {
@@ -103,17 +109,35 @@ export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
     let ultimoX = 0;
     let ultimoY = 0;
     let punteroActivo: number | null = null;
+    let caja = raiz.getBoundingClientRect();
+    let cajaVieja = false;
+    let enPantalla = true;
+    let sucio = true;
+    let ultimoDestacado: string | null = null;
+    let punteroX = 0;
+    let punteroY = 0;
+    let punteroSucio = false;
 
     const paleta = leerPaletaGlobo(raiz);
 
+    const situar = () => {
+      caja = raiz.getBoundingClientRect();
+      cajaVieja = false;
+    };
+
+    const invalidarCaja = () => {
+      cajaVieja = true;
+    };
+
     const medir = () => {
-      const caja = raiz.getBoundingClientRect();
+      situar();
       const densidad = Math.min(window.devicePixelRatio || 1, 2);
       ancho = Math.max(caja.width, 1);
       alto = Math.max(caja.height, 1);
       elemento.width = Math.round(ancho * densidad);
       elemento.height = Math.round(alto * densidad);
       contexto.setTransform(densidad, 0, 0, densidad, 0, 0);
+      sucio = true;
     };
 
     const radioVisor = () => Math.min(ancho, alto) * RADIO_BASE;
@@ -141,10 +165,41 @@ export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
 
     punteroRef.current = departamentoEn;
 
+    const resolverPuntero = () => {
+      if (!punteroSucio) return;
+      punteroSucio = false;
+      const codigo = departamentoEn(punteroX, punteroY);
+      raiz.setAttribute("data-sobre", codigo ? "departamento" : sobrevolando ? "esfera" : "fuera");
+      if (codigo !== sobreRef.current) {
+        sobreRef.current = codigo;
+        alSobrevolar(codigo);
+      }
+    };
+
     const dibujar = (ahora: number) => {
       const s = estado.current;
       const transcurrido = Math.min(ahora - previo, 64);
       previo = ahora;
+
+      resolverPuntero();
+
+      if (destacadoRef.current !== ultimoDestacado) {
+        ultimoDestacado = destacadoRef.current;
+        sucio = true;
+      }
+
+      const enMovimiento =
+        s.animando ||
+        s.arrastrando ||
+        Math.abs(s.impulsoLon) > 0.01 ||
+        Math.abs(s.impulsoLat) > 0.01 ||
+        s.objetivoRevelado === 0;
+
+      if (!enMovimiento && !sucio) {
+        cuadro = requestAnimationFrame(dibujar);
+        return;
+      }
+      sucio = false;
 
       if (s.animando) {
         const avance = Math.min(1, (ahora - s.inicio) / (reducido ? 1 : DURACION));
@@ -153,7 +208,10 @@ export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
         s.lat = s.desdeLat + (s.hastaLat - s.desdeLat) * t;
         s.acercamiento = s.desdeAcercamiento + (s.hastaAcercamiento - s.desdeAcercamiento) * t;
         s.revelado = s.objetivoRevelado === 1 ? t : 1 - t;
-        if (avance === 1) s.animando = false;
+        if (avance === 1) {
+          s.animando = false;
+          sucio = true;
+        }
       } else if (!s.arrastrando) {
         if (Math.abs(s.impulsoLon) > 0.01 || Math.abs(s.impulsoLat) > 0.01) {
           s.lon += s.impulsoLon;
@@ -192,7 +250,7 @@ export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
 
     const alBajar = (evento: PointerEvent) => {
       if (estado.current.objetivoRevelado === 1) return;
-      const caja = raiz.getBoundingClientRect();
+      if (cajaVieja) situar();
       if (!dentroDeLaEsfera(evento.clientX - caja.left, evento.clientY - caja.top)) return;
       punteroActivo = evento.pointerId;
       ultimoX = evento.clientX;
@@ -204,7 +262,7 @@ export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
     };
 
     const alMover = (evento: PointerEvent) => {
-      const caja = raiz.getBoundingClientRect();
+      if (cajaVieja) situar();
       const x = evento.clientX - caja.left;
       const y = evento.clientY - caja.top;
       sobrevolando = dentroDeLaEsfera(x, y) && estado.current.objetivoRevelado === 0;
@@ -223,12 +281,9 @@ export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
         return;
       }
 
-      const codigo = departamentoEn(x, y);
-      raiz.setAttribute("data-sobre", codigo ? "departamento" : sobrevolando ? "esfera" : "fuera");
-      if (codigo !== sobreRef.current) {
-        sobreRef.current = codigo;
-        alSobrevolar(codigo);
-      }
+      punteroX = x;
+      punteroY = y;
+      punteroSucio = true;
     };
 
     const soltarArrastre = () => {
@@ -239,6 +294,7 @@ export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
 
     const alSalir = () => {
       sobrevolando = false;
+      punteroSucio = false;
       soltarArrastre();
       raiz.removeAttribute("data-sobre");
       if (sobreRef.current !== null) {
@@ -251,17 +307,43 @@ export const GloboColombia = ({ marcas, unidad, onAbrirFicha }: Props) => {
     window.addEventListener("pointermove", alMover);
     window.addEventListener("pointerup", soltarArrastre);
     raiz.addEventListener("pointerleave", alSalir);
+    window.addEventListener("scroll", invalidarCaja, { passive: true });
 
     const observador = new ResizeObserver(medir);
     observador.observe(raiz);
 
+    const vigia =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver(
+            (entradas) => {
+              for (const entrada of entradas) {
+                if (entrada.isIntersecting === enPantalla) continue;
+                enPantalla = entrada.isIntersecting;
+                if (!enPantalla) {
+                  cancelAnimationFrame(cuadro);
+                  cuadro = 0;
+                  continue;
+                }
+                invalidarCaja();
+                previo = performance.now();
+                sucio = true;
+                cuadro = requestAnimationFrame(dibujar);
+              }
+            },
+            { rootMargin: "120px" },
+          );
+    vigia?.observe(raiz);
+
     return () => {
       cancelAnimationFrame(cuadro);
       observador.disconnect();
+      vigia?.disconnect();
       raiz.removeEventListener("pointerdown", alBajar);
       window.removeEventListener("pointermove", alMover);
       window.removeEventListener("pointerup", soltarArrastre);
       raiz.removeEventListener("pointerleave", alSalir);
+      window.removeEventListener("scroll", invalidarCaja);
       punteroRef.current = null;
     };
   }, [alSobrevolar]);

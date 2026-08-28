@@ -1,11 +1,19 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { iniciarSesionComo } from "./apoyo";
+import { iniciarSesionComo, omitirCinematica } from "./apoyo";
 
-const RUTAS_PUBLICAS = ["/", "/vitrina", "/actores", "/normativa", "/transparencia"];
+const RUTAS_PUBLICAS = [
+  "/",
+  "/vitrina",
+  "/vitrina?modo=resultados",
+  "/actores",
+  "/normativa",
+  "/transparencia",
+];
 
 for (const ruta of RUTAS_PUBLICAS) {
   test(`sin violaciones criticas ni serias en ${ruta}`, async ({ page }) => {
+    await omitirCinematica(page);
     await page.goto(ruta);
     await expect(page.locator("html")).toHaveAttribute("data-intro", "listo");
     const resultado = await new AxeBuilder({ page })

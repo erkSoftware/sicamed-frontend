@@ -4,6 +4,8 @@ import type { FiltroListado } from "./mock/servidorMock";
 
 type Parametros = Record<string, string | number | undefined>;
 
+type Metodo = "POST" | "PUT" | "PATCH";
+
 const aParametros = (filtro: FiltroListado): Parametros => ({
   busqueda: filtro.busqueda,
   estado: filtro.estado,
@@ -12,6 +14,18 @@ const aParametros = (filtro: FiltroListado): Parametros => ({
   pagina: filtro.pagina,
   porPagina: filtro.porPagina,
 });
+
+const escribir = <F extends (entrada: never) => Promise<unknown>>(
+  operacion: F,
+  ruta: string,
+  metodo: Metodo = "POST",
+) =>
+  ((cuerpo: Parameters<F>[0]) =>
+    modoMock
+      ? operacion(cuerpo)
+      : solicitar<Awaited<ReturnType<F>>>("comercial", ruta, { metodo, cuerpo })) as (
+    cuerpo: Parameters<F>[0],
+  ) => Promise<Awaited<ReturnType<F>>>;
 
 export const apiComercial = {
   indicadoresNacionales: () =>
@@ -75,13 +89,137 @@ export const apiComercial = {
       ? servidorMock.oferta(id)
       : solicitar<Awaited<ReturnType<typeof servidorMock.oferta>>>("comercial", `/ofertas/${id}`),
 
-  publicarOferta: (borrador: Parameters<typeof servidorMock.publicarOferta>[0]) =>
+  publicarOferta: escribir(servidorMock.publicarOferta, "/ofertas"),
+
+  actualizarOrganizacion: escribir(
+    servidorMock.actualizarOrganizacion,
+    "/organizaciones/actual",
+    "PATCH",
+  ),
+
+  registrarAtestacion: escribir(servidorMock.registrarAtestacion, "/atestaciones"),
+
+  registrarCultivo: escribir(servidorMock.registrarCultivo, "/cultivos"),
+
+  cambiarEtapaCultivo: escribir(servidorMock.cambiarEtapaCultivo, "/cultivos/etapa", "PATCH"),
+
+  registrarLote: escribir(servidorMock.registrarLote, "/lotes"),
+
+  moverLote: escribir(servidorMock.moverLote, "/lotes/movimiento", "PATCH"),
+
+  registrarPlanta: escribir(servidorMock.registrarPlanta, "/produccion/plantas"),
+
+  registrarLabor: escribir(servidorMock.registrarLabor, "/produccion/labores"),
+
+  cosecharPlanta: escribir(servidorMock.cosecharPlanta, "/produccion/plantas/cosecha", "PATCH"),
+
+  registrarBeneficio: escribir(servidorMock.registrarBeneficio, "/produccion/beneficios"),
+
+  avanzarBeneficio: escribir(servidorMock.avanzarBeneficio, "/produccion/beneficios/avance", "PATCH"),
+
+  transformaciones: (filtro: FiltroListado = {}) =>
     modoMock
-      ? servidorMock.publicarOferta(borrador)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.publicarOferta>>>("comercial", "/ofertas", {
-          metodo: "POST",
-          cuerpo: borrador,
+      ? servidorMock.transformaciones(filtro)
+      : solicitar<Awaited<ReturnType<typeof servidorMock.transformaciones>>>(
+          "comercial",
+          "/produccion/transformaciones",
+          { parametros: aParametros(filtro) },
+        ),
+
+  registrarTransformacion: escribir(
+    servidorMock.registrarTransformacion,
+    "/produccion/transformaciones",
+  ),
+
+  destrucciones: (filtro: FiltroListado = {}) =>
+    modoMock
+      ? servidorMock.destrucciones(filtro)
+      : solicitar<Awaited<ReturnType<typeof servidorMock.destrucciones>>>(
+          "comercial",
+          "/produccion/destrucciones",
+          { parametros: aParametros(filtro) },
+        ),
+
+  registrarDestruccion: escribir(servidorMock.registrarDestruccion, "/produccion/destrucciones"),
+
+  decidirDocumento: escribir(
+    servidorMock.decidirDocumento,
+    "/cumplimiento/expedientes/documentos",
+    "PATCH",
+  ),
+
+  resolverPaso: escribir(servidorMock.resolverPaso, "/cumplimiento/expedientes/pasos", "PATCH"),
+
+  guardarPolitica: escribir(
+    servidorMock.guardarPolitica,
+    "/cumplimiento/politica-verificacion",
+    "PUT",
+  ),
+
+  solicitudes: (filtro: FiltroListado = {}) =>
+    modoMock
+      ? servidorMock.solicitudes(filtro)
+      : solicitar<Awaited<ReturnType<typeof servidorMock.solicitudes>>>(
+          "comercial",
+          "/actores/solicitudes",
+          { parametros: aParametros(filtro) },
+        ),
+
+  radicarSolicitud: escribir(servidorMock.radicarSolicitud, "/actores/solicitudes"),
+
+  abrirExpediente: escribir(servidorMock.abrirExpediente, "/cumplimiento/expedientes"),
+
+  cuentas: (filtro: FiltroListado = {}) =>
+    modoMock
+      ? servidorMock.cuentas(filtro)
+      : solicitar<Awaited<ReturnType<typeof servidorMock.cuentas>>>("comercial", "/iam/cuentas", {
+          parametros: aParametros(filtro),
         }),
+
+  invitarCuenta: escribir(servidorMock.invitarCuenta, "/iam/cuentas"),
+
+  cambiarCuenta: escribir(servidorMock.cambiarCuenta, "/iam/cuentas", "PATCH"),
+
+  cupos: (filtro: FiltroListado = {}) =>
+    modoMock
+      ? servidorMock.cupos(filtro)
+      : solicitar<Awaited<ReturnType<typeof servidorMock.cupos>>>("comercial", "/produccion/cupos", {
+          parametros: aParametros(filtro),
+        }),
+
+  conciliarCupos: escribir(servidorMock.conciliarCupos, "/produccion/cupos/conciliacion"),
+
+  declararMovimiento: escribir(servidorMock.declararMovimiento, "/vitrina/cierres", "PATCH"),
+
+  manifestarInteres: escribir(servidorMock.manifestarInteres, "/vitrina/manifestaciones"),
+
+  habilitarContacto: escribir(
+    servidorMock.habilitarContacto,
+    "/vitrina/manifestaciones/habilitacion",
+    "PATCH",
+  ),
+
+  inscribirRueda: escribir(servidorMock.inscribirRueda, "/ruedas-negocio/inscripciones"),
+
+  discrepancias: (filtro: FiltroListado = {}) =>
+    modoMock
+      ? servidorMock.discrepancias(filtro)
+      : solicitar<Awaited<ReturnType<typeof servidorMock.discrepancias>>>(
+          "comercial",
+          "/interoperabilidad/discrepancias",
+          { parametros: aParametros(filtro) },
+        ),
+
+  resolverDiscrepancia: escribir(
+    servidorMock.resolverDiscrepancia,
+    "/interoperabilidad/discrepancias",
+    "PATCH",
+  ),
+
+  sincronizarConexion: escribir(
+    servidorMock.sincronizarConexion,
+    "/interoperabilidad/conexiones/sincronizacion",
+  ),
 
   manifestaciones: () =>
     modoMock

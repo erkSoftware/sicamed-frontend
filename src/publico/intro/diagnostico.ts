@@ -2,7 +2,7 @@ export const CLAVE_INTRO = "SICAMED_intro_animation_seen";
 export const CLAVE_TRAZA = "SICAMED_intro_debug";
 export const CANAL_INTRO = "sicamed:intro";
 
-const SELLO = "cinematica-5";
+const SELLO = "cinematica-6";
 const MARCA = "[SICAMED intro]";
 const LIMITE = 300;
 
@@ -78,8 +78,8 @@ const estadoIntro = (): Record<string, unknown> => {
     atributoCinematica: document.documentElement.getAttribute("data-cinematica"),
     atributoIntro: document.documentElement.getAttribute("data-intro"),
     atributoMovimiento: document.documentElement.getAttribute("data-movimiento"),
-    capasEnDom: document.querySelectorAll(".cinematica").length,
-    lienzosEnDom: document.querySelectorAll(".cinematica__lienzo").length,
+    capasEnDom: document.querySelectorAll(".cine").length,
+    lienzosEnDom: document.querySelectorAll(".cine__globo").length,
     visibilidadSitio: visibilidadSitio(),
     ventana: `${raiz.innerWidth}x${raiz.innerHeight}`,
     agente: raiz.navigator.userAgent,

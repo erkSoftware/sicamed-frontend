@@ -1,14 +1,7 @@
 import { CENTRO_COLOMBIA } from "../../shared/api/mock/mundo";
 
 export type FaseIntro =
-  | "aparicion"
-  | "giro"
-  | "colombia"
-  | "zoom"
-  | "seleccion"
-  | "entrada"
-  | "ecosistema"
-  | "salida";
+  "aparicion" | "giro" | "colombia" | "zoom" | "seleccion" | "entrada" | "ecosistema" | "salida";
 
 export type Tramo = {
   fase: FaseIntro;

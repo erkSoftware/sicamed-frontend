@@ -301,6 +301,8 @@ export type Expediente = {
   radicacion: string;
   analista: string | null;
   documentos: readonly DocumentoExpediente[];
+  pasos: readonly PasoVerificacion[];
+  politicaVersion: string;
 };
 
 export type ReglaVerificacion = {
@@ -354,6 +356,149 @@ export type Conexion = {
   discrepancias: number;
   mecanismo: string;
   norma: string;
+};
+
+export type EstadoDiscrepancia = "ABIERTA" | "RESUELTA_EXTERNO" | "RESUELTA_LOCAL";
+
+export type Discrepancia = {
+  id: string;
+  conexionId: string;
+  sigla: string;
+  organizacionId: string;
+  organizacion: string;
+  campo: string;
+  valorLocal: string;
+  valorExterno: string;
+  autoritativo: "EXTERNO" | "LOCAL";
+  estado: EstadoDiscrepancia;
+  detectada: string;
+  resuelta: string | null;
+  resueltaPor: string | null;
+};
+
+export type RolPlataforma =
+  | "SUPER_ADMIN"
+  | "ADMIN_INSTITUCIONAL"
+  | "ANALISTA_DOCUMENTAL"
+  | "REPRESENTANTE_LEGAL"
+  | "OPERARIO_CAMPO"
+  | "EQUIPO_CLINICO"
+  | "OBSERVADOR_INSTITUCIONAL";
+
+export type EstadoCuenta = "ACTIVA" | "INVITADA" | "SUSPENDIDA" | "INACTIVA";
+
+export type CuentaUsuario = {
+  id: string;
+  nombre: string;
+  correo: string;
+  rol: RolPlataforma;
+  organizacionId: string;
+  organizacion: string;
+  estado: EstadoCuenta;
+  creada: string;
+  ultimoAcceso: string | null;
+  invitadaPor: string;
+  autenticacion: "OIDC" | "CLOUDFLARE" | "DEMOSTRACION";
+};
+
+export type EstadoSolicitud = "RECIBIDA" | "EXPEDIENTE_ABIERTO" | "DESCARTADA";
+
+export type SolicitudRegistro = {
+  id: string;
+  nit: string;
+  organizacion: string;
+  tipoActor: TipoActor;
+  departamento: string;
+  municipio: string;
+  representante: string;
+  correo: string;
+  telefono: string;
+  estado: EstadoSolicitud;
+  recibida: string;
+  expedienteId: string | null;
+  huella: string;
+};
+
+export type VeredictoPaso = "PENDIENTE" | "VERIFICADO" | "DEVUELTO";
+
+export type PasoVerificacion = {
+  id: string;
+  orden: number;
+  rol: Extract<RolPlataforma, "ANALISTA_DOCUMENTAL" | "ADMIN_INSTITUCIONAL">;
+  veredicto: VeredictoPaso;
+  revisor: string | null;
+  resuelto: string | null;
+  observacion: string | null;
+  slaHoras: number;
+  huella: string | null;
+};
+
+export type EstadoCupo = "VIGENTE" | "AGOTADO" | "POR_VENCER" | "SIN_CUPO";
+
+export type CupoMicc = {
+  id: string;
+  organizacionId: string;
+  organizacion: string;
+  modalidad: TipoAtestacion;
+  actoAsignacion: string;
+  plantasAutorizadas: number;
+  plantasSembradas: number;
+  vigencia: string;
+  estado: EstadoCupo;
+  conciliado: string;
+  norma: string;
+};
+
+export type EstadoTransformacion = "EN_PROCESO" | "LIBERADA" | "RECHAZADA";
+
+export type Transformacion = {
+  id: string;
+  codigo: string;
+  organizacionId: string;
+  organizacion: string;
+  departamento: string;
+  loteOrigen: string;
+  loteOrigenId: string;
+  producto: string;
+  formula: string;
+  entradaKg: number;
+  salida: number;
+  unidadSalida: string;
+  rendimiento: number;
+  registroInvima: string | null;
+  estado: EstadoTransformacion;
+  loteResultante: string | null;
+  responsable: string;
+  fecha: string;
+  huella: string;
+};
+
+export type CausalDestruccion =
+  | "PLAGA_NO_CONTROLABLE"
+  | "FUERA_DE_ESPECIFICACION"
+  | "VENCIMIENTO"
+  | "ORDEN_AUTORIDAD"
+  | "EXCEDENTE_DE_CUPO";
+
+export type ActaDestruccion = {
+  id: string;
+  acta: string;
+  organizacionId: string;
+  organizacion: string;
+  departamento: string;
+  entidad: "PLANTA" | "LOTE";
+  entidadId: string;
+  referencia: string;
+  cantidad: number;
+  unidad: string;
+  causal: CausalDestruccion;
+  metodo: string;
+  testigo: string;
+  cargoTestigo: string;
+  responsable: string;
+  fecha: string;
+  norma: string;
+  huella: string;
 };
 
 export type EstadoLectura = "EN_RANGO" | "FUERA_DE_RANGO" | "SIN_SENAL";

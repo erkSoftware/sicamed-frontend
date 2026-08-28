@@ -121,7 +121,9 @@ export const EscenaCadena = ({ modo = "interactivo", onFinal }: Props) => {
   const [rama, setRama] = useState<Rama | null>(null);
   const [sellos, setSellos] = useState<readonly ClaveSello[]>([]);
   const [sobrio, setSobrio] = useState(false);
-  const { referencia, visible } = useRevelado<HTMLDivElement>();
+  const { referencia, visible, enPantalla } = useRevelado<HTMLDivElement>("0px 0px -12% 0px", {
+    seguir: true,
+  });
 
   useEffect(() => {
     setSobrio(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -265,7 +267,7 @@ export const EscenaCadena = ({ modo = "interactivo", onFinal }: Props) => {
       : ((rama && RELATO_RAMA[rama][fase]) ?? RELATO[fase]);
 
   return (
-    <div className="escena" ref={referencia}>
+    <div className="escena" ref={referencia} data-fuera-de-vista={enPantalla ? "no" : "si"}>
       <div className="escena__lienzo" style={estilo} data-modo={modo} data-fase={fase} data-acto={acto} data-obra={orden >= indiceDe("rama-obra") ? "si" : "no"} data-rama={rama ?? "ninguna"} data-andando={ANDANDO.includes(fase) ? "si" : "no"} data-llevando={llevando ? "si" : "no"}>
         <svg viewBox="0 130 640 380" aria-hidden="true" focusable="false">
           <defs>
