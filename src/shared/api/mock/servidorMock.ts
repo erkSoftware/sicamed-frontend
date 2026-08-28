@@ -13,6 +13,7 @@ import {
 } from "./almacen";
 import { OFERTAS_PUBLICAS, SERIE_PUBLICACIONES } from "./datos";
 import { NOMBRE_DOCUMENTO } from "./datosProceso";
+import type { DocumentoAdjunto } from "./tipos";
 import { DEPARTAMENTOS, ETAPAS_PROCESO, TOTALES_NACIONALES } from "./catalogos";
 import { CITAS, INDICADORES_CLINICOS, NOTAS, PACIENTES, PRESCRIPCIONES } from "./datosClinicos";
 import type {
@@ -1471,6 +1472,7 @@ export const servidorMock = {
     representante: string;
     correo: string;
     telefono: string;
+    documentos?: readonly DocumentoAdjunto[];
   }) => {
     const repetida = almacen.organizaciones.find(
       (organizacion) => normalizar(organizacion.nit) === normalizar(entrada.nit),
@@ -1500,6 +1502,7 @@ export const servidorMock = {
       estado: "RECIBIDA" as const,
       recibida: ahora(),
       expedienteId: null,
+      documentos: entrada.documentos ?? [],
       huella: nuevaHuella(),
     };
     almacen.solicitudes.unshift(solicitud);
