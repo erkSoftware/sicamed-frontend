@@ -47,6 +47,7 @@ export const SelectorPerfil = () => {
       <button
         type="button"
         className="selector-perfil__disparador"
+        aria-label={`Perfil en demostración: ${actual?.rol ?? "sin definir"}`}
         aria-haspopup="menu"
         aria-expanded={abierto}
         disabled={cambiando}

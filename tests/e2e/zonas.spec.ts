@@ -1,12 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { abrirMenuSiEsMovil, iniciarSesionComo } from "./apoyo";
 
-test("un productor no ve la navegacion clinica", async ({ page }) => {
+test("un productor no ve el modulo clinico ni sus opciones", async ({ page }) => {
   await iniciarSesionComo(page, "PRODUCTOR_HABILITADO");
   await abrirMenuSiEsMovil(page);
-  const navegacion = page.getByRole("navigation", { name: "Navegación principal" });
-  await expect(navegacion.getByRole("link", { name: /Pacientes/ })).toHaveCount(0);
-  await expect(navegacion.getByRole("link", { name: "Vitrina" })).toBeVisible();
+
+  const modulos = page.getByRole("navigation", { name: "Módulos del sistema" });
+  await expect(modulos.getByRole("button", { name: "Telemedicina" })).toHaveCount(0);
+  await expect(modulos.getByRole("button", { name: "Mercado" })).toBeVisible();
+
+  const opciones = page.getByRole("navigation", { name: "Opciones del módulo activo" });
+  await expect(opciones.getByRole("link", { name: /Pacientes/ })).toHaveCount(0);
 });
 
 test("un productor que fuerza la ruta clinica es rechazado", async ({ page }) => {
@@ -33,8 +37,9 @@ test("la zona clinica no persiste nada en el dispositivo", async ({ page }) => {
     sesion: Object.keys(window.sessionStorage),
   }));
 
+  const PREFERENCIAS_DE_INTERFAZ = ["sicamed.perfil-demo", "sicamed.tema."];
   const sospechosas = [...almacenamiento.local, ...almacenamiento.sesion].filter(
-    (clave) => !clave.startsWith("sicamed.perfil-demo"),
+    (clave) => !PREFERENCIAS_DE_INTERFAZ.some((permitido) => clave.startsWith(permitido)),
   );
   expect(sospechosas).toEqual([]);
 });

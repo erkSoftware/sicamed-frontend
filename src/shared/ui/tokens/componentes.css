@@ -778,7 +778,7 @@ select.campo__control {
   stroke: var(--mapa-borde);
   stroke-width: 2.5;
   stroke-linejoin: round;
-  transition: fill var(--transicion);
+  transition: fill 620ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .mapa__departamento[data-nivel="0"] { fill: var(--verde-100); }
@@ -1108,4 +1108,156 @@ button.mapa__fila {
 .ficha-dpto__eventos li {
   grid-template-columns: minmax(92px, auto) minmax(0, 1fr);
   align-items: baseline;
+}
+
+.ficha-dpto {
+  gap: var(--e5);
+}
+
+.ficha-dpto__intro {
+  font-size: var(--texto-sm);
+  line-height: 1.55;
+  color: var(--texto-suave);
+  max-width: 74ch;
+}
+
+.ficha-dpto__red {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+}
+
+.ficha-dpto__rotulo {
+  font-family: var(--fuente-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: var(--rastreo-etiqueta);
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.ficha-dpto__pestanas {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--superficie);
+  margin: 0 calc(var(--e5) * -1);
+  padding: 0 var(--e5);
+}
+
+.ficha-dpto__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e5);
+  animation: ficha-entrar 320ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.ficha-dpto__panel:focus-visible {
+  outline: 2px solid var(--marca);
+  outline-offset: 4px;
+  border-radius: var(--radio-xs);
+}
+
+@keyframes ficha-entrar {
+  from {
+    transform: translateY(6px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.ficha-dpto__ayuda {
+  font-size: var(--texto-sm);
+  line-height: 1.5;
+  color: var(--texto-suave);
+  padding-left: var(--e3);
+  border-left: 2px solid var(--marca);
+}
+
+.ficha-dpto__datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1px;
+  margin: 0;
+  background: var(--borde);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-xs);
+  overflow: hidden;
+}
+
+.ficha-dpto__dato {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--e3) var(--e4);
+  background: var(--superficie-alt);
+}
+
+.ficha-dpto__dato dt {
+  font-family: var(--fuente-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.ficha-dpto__dato dd {
+  margin: 0;
+  font-family: var(--fuente-display);
+  font-size: var(--texto-lg);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ficha-dpto__dato[data-alerta="si"] dd {
+  color: var(--peligro-texto);
+}
+
+.ficha-dpto__eventos li {
+  position: relative;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  gap: 2px var(--e3);
+  padding: 0 0 var(--e4);
+  border-bottom: 0;
+}
+
+.ficha-dpto__marca {
+  grid-row: 1 / span 2;
+  grid-column: 1;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--acento-fondo);
+  border: 1px solid var(--acento-borde);
+  color: var(--marca);
+}
+
+.ficha-dpto__eventos li::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 22px;
+  bottom: 0;
+  width: 1px;
+  background: var(--borde);
+}
+
+.ficha-dpto__eventos li:last-child::after {
+  display: none;
+}
+
+.ficha-dpto__eventos .ficha-dpto__principal,
+.ficha-dpto__eventos .ficha-dpto__meta {
+  grid-column: 2;
+}
+
+.ficha-dpto__variedades li {
+  border-radius: var(--radio-xs);
 }

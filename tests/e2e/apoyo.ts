@@ -12,7 +12,7 @@ export const iniciarSesionComo = async (page: Page, perfil: string) => {
   const etiqueta = nombres[perfil];
   if (!etiqueta) throw new Error(`Perfil de demostración desconocido: ${perfil}`);
   await page.getByRole("button", { name: new RegExp(etiqueta) }).click();
-  await page.getByRole("button", { name: "Entrar con este perfil" }).click();
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/app/);
 };
 
@@ -28,5 +28,8 @@ export const diligenciarOfertaValida = async (page: Page) => {
 
 export const abrirMenuSiEsMovil = async (page: Page) => {
   const boton = page.getByRole("button", { name: "Abrir el menú de navegación" });
-  if (await boton.isVisible()) await boton.click();
+  if (!(await boton.isVisible())) return;
+  if ((await boton.getAttribute("aria-expanded")) === "true") return;
+  await boton.click();
+  await expect(page.locator("#navegacion-lateral")).toHaveAttribute("data-abierto", "true");
 };

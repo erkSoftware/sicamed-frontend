@@ -10,6 +10,8 @@ import "../shared/ui/tokens/tokens.css";
 import "../shared/ui/tokens/base.css";
 import "../shared/ui/tokens/componentes.css";
 import "../shared/ui/tokens/aplicacion.css";
+import "../shared/ui/tokens/temas.css";
+import "../shared/ui/tokens/panel.css";
 import "../shared/ui/tokens/publico.css";
 import "../shared/ui/tokens/cinematica.css";
 

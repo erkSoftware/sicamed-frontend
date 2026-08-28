@@ -39,7 +39,12 @@ export const BarrasHorizontales = ({ datos, unidad = "", titulo, encabezado = "D
                     className="barra-fila__pista"
                     data-destacada={dato.destacada ? "si" : undefined}
                   >
-                    <span style={{ width: `${(dato.valor / maximo) * 100}%` }} />
+                    <span
+                      style={{
+                        width: `${(dato.valor / maximo) * 100}%`,
+                        animationDelay: `${Math.min(indice, 22) * 32}ms`,
+                      }}
+                    />
                   </span>
                 </span>
               </span>

@@ -76,6 +76,7 @@ export const MapaColombia = ({
                 data-nivel={nivel}
                 data-activo={resaltado === contorno.codigo ? "si" : undefined}
                 data-pulsable={onAbrirFicha && punto ? "si" : undefined}
+                style={{ transitionDelay: `${Math.max(nivel, 0) * 70}ms` }}
                 aria-hidden="true"
                 onMouseEnter={punto ? () => setActivo(contorno.codigo) : undefined}
                 onMouseLeave={punto ? () => setActivo(null) : undefined}

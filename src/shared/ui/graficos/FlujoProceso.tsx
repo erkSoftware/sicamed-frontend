@@ -25,6 +25,11 @@ export const FlujoProceso = ({ etapas, activa }: Props) => (
       {etapas.map((etapa, indice) => (
         <li key={etapa.clave} className="flujo__elemento">
           <div className={`flujo__paso${activa === etapa.clave ? " flujo__paso--activo" : ""}`}>
+            <span
+              className="flujo__lote"
+              aria-hidden="true"
+              style={{ animationDelay: `${indice * 340}ms` }}
+            />
             <span className="flujo__etapa">
               {indice + 1}. {etapa.etiqueta}
             </span>

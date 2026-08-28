@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { numero } from "../../i18n/formato";
 
 export type PuntoSerie = {
@@ -15,6 +16,7 @@ const GUIAS = [0, 25, 50, 75, 100] as const;
 const CORTES = [1, 0.5, 0] as const;
 
 export const LineaTendencia = ({ serie, titulo }: Props) => {
+  const corte = `corte-${useId().replace(/:/g, "")}`;
   const maximo = Math.max(...serie.map((punto) => Math.max(punto.valor, punto.rechazos)), 1);
   const paso = 100 / Math.max(serie.length - 1, 1);
   const coordenadas = serie.map((punto, indice) => ({
@@ -58,19 +60,30 @@ export const LineaTendencia = ({ serie, titulo }: Props) => {
             role="img"
             aria-label={titulo}
           >
-            <path className="tendencia__area" d={area} />
-            <path className="tendencia__linea" d={linea} vectorEffect="non-scaling-stroke" />
-            <path
-              className="tendencia__linea tendencia__linea--rechazo"
-              d={trazo("yRechazo")}
-              vectorEffect="non-scaling-stroke"
-            />
+            <defs>
+              <clipPath id={corte} clipPathUnits="userSpaceOnUse">
+                <rect className="tendencia__cortina" x="0" y="-2" width="100" height="104" />
+              </clipPath>
+            </defs>
+            <g clipPath={`url(#${corte})`}>
+              <path className="tendencia__area" d={area} />
+              <path className="tendencia__linea" d={linea} vectorEffect="non-scaling-stroke" />
+              <path
+                className="tendencia__linea tendencia__linea--rechazo"
+                d={trazo("yRechazo")}
+                vectorEffect="non-scaling-stroke"
+              />
+            </g>
           </svg>
-          {coordenadas.map((c) => (
+          {coordenadas.map((c, indice) => (
             <span
               key={c.punto.etiqueta}
               className="tendencia__nodo"
-              style={{ left: `${c.x}%`, top: `${c.y}%` }}
+              style={{
+                left: `${c.x}%`,
+                top: `${c.y}%`,
+                animationDelay: `${140 + indice * 90}ms`,
+              }}
               aria-hidden="true"
             />
           ))}
