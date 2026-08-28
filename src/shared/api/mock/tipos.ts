@@ -403,6 +403,12 @@ export type CuentaUsuario = {
 
 export type EstadoSolicitud = "RECIBIDA" | "EXPEDIENTE_ABIERTO" | "DESCARTADA";
 
+export type DocumentoAdjunto = {
+  tipo: TipoDocumento;
+  nombre: string;
+  peso: number;
+};
+
 export type SolicitudRegistro = {
   id: string;
   nit: string;
@@ -416,6 +422,7 @@ export type SolicitudRegistro = {
   estado: EstadoSolicitud;
   recibida: string;
   expedienteId: string | null;
+  documentos: readonly DocumentoAdjunto[];
   huella: string;
 };
 

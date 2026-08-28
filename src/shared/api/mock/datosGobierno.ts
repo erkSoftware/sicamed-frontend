@@ -1,7 +1,7 @@
 import { crearAzar, enteroEntre, fechaRelativa, identificador } from "./aleatorio";
 import { NOMBRES } from "./catalogos";
 import { ATESTACIONES, CULTIVOS, LOTES, ORGANIZACIONES } from "./datos";
-import { PLANTAS } from "./datosProceso";
+import { PLANTAS, POLITICA_VERIFICACION } from "./datosProceso";
 import type {
   ActaDestruccion,
   Atestacion,
@@ -345,6 +345,16 @@ export const SOLICITUDES: readonly SolicitudRegistro[] = Array.from({ length: 9 
     estado,
     recibida: fechaRelativa(-(1 + i * 6)),
     expedienteId: estado === "EXPEDIENTE_ABIERTO" ? identificador("EXP", i) : null,
+    documentos: POLITICA_VERIFICACION.filter(
+      (regla) =>
+        regla.tipoActor ===
+          ((["CULTIVADOR", "TRANSFORMADOR", "DISPENSADOR", "LABORATORIO", "IPS"] as const)[i % 5] ??
+            "CULTIVADOR") && regla.obligatorio,
+    ).map((regla) => ({
+      tipo: regla.documento,
+      nombre: `${regla.documento.toLowerCase()}-${identificador("SOL", i)}.pdf`,
+      peso: enteroEntre(azar, 180_000, 4_200_000),
+    })),
     huella: huella(),
   };
 });

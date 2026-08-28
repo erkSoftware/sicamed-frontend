@@ -21,6 +21,7 @@ export type NombreIcono =
   | "chevron"
   | "mas"
   | "descargar"
+  | "subir"
   | "filtro"
   | "alerta"
   | "check"
@@ -68,6 +69,7 @@ const TRAZOS: Record<NombreIcono, string> = {
   chevron: "M6 9l6 6 6-6",
   mas: "M12 5v14M5 12h14",
   descargar: "M12 3v12M7 11l5 5 5-5M4 21h16",
+  subir: "M12 21V9M7 13l5-5 5 5M4 3h16",
   filtro: "M3 5h18l-7 8v6l-4 2v-8z",
   alerta: "M12 3l9 16H3zM12 9v5M12 17h.01",
   check: "M4 12l5 5L20 6",
