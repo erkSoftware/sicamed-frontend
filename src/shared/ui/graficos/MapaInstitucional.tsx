@@ -108,7 +108,9 @@ const ENTIDADES: readonly Entidad[] = [
 ];
 
 export const MapaInstitucional = () => {
-  const { referencia, visible } = useRevelado<HTMLDivElement>();
+  const { referencia, visible, enPantalla } = useRevelado<HTMLDivElement>("0px 0px -12% 0px", {
+    seguir: true,
+  });
   const [indice, setIndice] = useState(0);
   const [detenido, setDetenido] = useState(false);
   const sobrio = useRef(false);
@@ -119,21 +121,22 @@ export const MapaInstitucional = () => {
   }, []);
 
   useEffect(() => {
-    if (!visible || detenido) return undefined;
+    if (!visible || !enPantalla || detenido) return undefined;
     const reloj = window.setTimeout(
       () => setIndice((anterior) => (anterior + 1) % ENTIDADES.length),
       sobrio.current ? COMPAS + 2800 : COMPAS,
     );
     return () => window.clearTimeout(reloj);
-  }, [visible, detenido, indice]);
+  }, [visible, enPantalla, detenido, indice]);
 
   const entidad = ENTIDADES[indice] ?? ENTIDADES[0]!;
-  const corriendo = visible && !detenido;
+  const corriendo = visible && enPantalla && !detenido;
 
   return (
     <div
       className="instituciones"
       ref={referencia}
+      data-fuera-de-vista={enPantalla ? "no" : "si"}
       onMouseEnter={() => setDetenido(true)}
       onMouseLeave={() => setDetenido(false)}
     >

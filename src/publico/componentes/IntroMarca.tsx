@@ -43,7 +43,11 @@ export const IntroMarca = () => {
     <div className="intro" data-fase={fase} aria-hidden="true">
       <p className="intro__marca">
         {LETRAS.map((letra, indice) => (
-          <span key={`${letra}-${indice}`} className="intro__letra" data-vivo={indice >= 4 ? "si" : undefined}>
+          <span
+            key={`${letra}-${indice}`}
+            className="intro__letra"
+            data-vivo={indice >= 4 ? "si" : undefined}
+          >
             <span style={{ animationDelay: `${indice * 62}ms` }}>{letra}</span>
           </span>
         ))}

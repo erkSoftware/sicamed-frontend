@@ -3,6 +3,7 @@ import { StaticRouter } from "react-router-dom/server";
 import { Route, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import type { HelmetServerState } from "react-helmet-async";
+import { QueryProviderComercial } from "./app/providers/QueryProviderComercial";
 import { seccionPublica } from "./publico/rutas";
 import { NoEncontrado } from "./publico/paginas/NoEncontrado";
 
@@ -17,12 +18,14 @@ export const renderizar = (ruta: string): ResultadoRender => {
 
   const html = renderToString(
     <HelmetProvider context={contexto}>
-      <StaticRouter location={ruta}>
-        <Routes>
-          {seccionPublica()}
-          <Route path="*" element={<NoEncontrado />} />
-        </Routes>
-      </StaticRouter>
+      <QueryProviderComercial>
+        <StaticRouter location={ruta}>
+          <Routes>
+            {seccionPublica()}
+            <Route path="*" element={<NoEncontrado />} />
+          </Routes>
+        </StaticRouter>
+      </QueryProviderComercial>
     </HelmetProvider>,
   );
 

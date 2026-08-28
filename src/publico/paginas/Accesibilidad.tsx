@@ -29,16 +29,30 @@ export const Accesibilidad = () => (
 
       <h2>Medidas aplicadas</h2>
       <ul>
-        <li>Contraste mínimo de 4.5:1 en texto normal y 3:1 en texto grande, verificado sobre los tokens del sistema de diseño.</li>
+        <li>
+          Contraste mínimo de 4.5:1 en texto normal y 3:1 en texto grande, verificado sobre los
+          tokens del sistema de diseño.
+        </li>
         <li>Navegación completa por teclado con foco visible en todo elemento interactivo.</li>
         <li>Enlace de salto al contenido principal al inicio de cada página.</li>
-        <li>Formularios con etiqueta real asociada; nunca se usa el texto de marcador como etiqueta.</li>
-        <li>Errores anunciados con <span className="mono">role=&quot;alert&quot;</span> y regiones activas.</li>
+        <li>
+          Formularios con etiqueta real asociada; nunca se usa el texto de marcador como etiqueta.
+        </li>
+        <li>
+          Errores anunciados con <span className="mono">role=&quot;alert&quot;</span> y regiones
+          activas.
+        </li>
         <li>Tablas de datos con encabezados asociados y descripción accesible.</li>
-        <li>Gráficos con alternativa textual: toda visualización tiene su tabla o resumen equivalente.</li>
-        <li>Respeto de <span className="mono">prefers-reduced-motion</span> en todas las animaciones.</li>
+        <li>
+          Gráficos con alternativa textual: toda visualización tiene su tabla o resumen equivalente.
+        </li>
+        <li>
+          Respeto de <span className="mono">prefers-reduced-motion</span> en todas las animaciones.
+        </li>
         <li>Diseño adaptable hasta 320 píxeles de ancho.</li>
-        <li>Idioma declarado como <span className="mono">es-CO</span>.</li>
+        <li>
+          Idioma declarado como <span className="mono">es-CO</span>.
+        </li>
       </ul>
 
       <h2>Verificación continua</h2>

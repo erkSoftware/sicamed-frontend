@@ -8,8 +8,19 @@ import { Kpi } from "../../../shared/ui/patrones/Kpi";
 import { Tarjeta } from "../../../shared/ui/primitivos/Tarjeta";
 import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { Icono } from "../../../shared/ui/primitivos/Icono";
-import { fechaHora, numero } from "../../../shared/i18n/formato";
-import { useAmbiente, useConexiones } from "../hooks/useConexiones";
+import { Boton } from "../../../shared/ui/primitivos/Boton";
+import { ErrorNormativo } from "../../../shared/ui/patrones/ErrorNormativo";
+import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
+import { useAutor } from "../../../shared/auth/useAutor";
+import { aProblema } from "../../../shared/api/problemDetails";
+import { fechaCorta, fechaHora, numero } from "../../../shared/i18n/formato";
+import {
+  useAmbiente,
+  useConexiones,
+  useDiscrepancias,
+  useResolverDiscrepancia,
+  useSincronizarConexion,
+} from "../hooks/useConexiones";
 
 const TONO_CONEXION = {
   OPERATIVA: "exito",
@@ -55,6 +66,12 @@ export const Conexiones = () => {
 
   const lecturas = ambiente.data ?? [];
   const alertas = lecturas.filter((lectura) => lectura.estado === "FUERA_DE_RANGO").length;
+
+  const listaDiscrepancias = useDiscrepancias({ estado: "ABIERTA" });
+  const sincronizar = useSincronizarConexion();
+  const resolver = useResolverDiscrepancia();
+  const autor = useAutor();
+  const abiertas = listaDiscrepancias.data ?? [];
 
   return (
     <div className="pagina">
@@ -124,11 +141,114 @@ export const Conexiones = () => {
                 <span className="conexiones__meta mono">
                   Última lectura: {fechaHora(conexion.ultimaLectura)}
                 </span>
+                <SiTienePermiso permiso="interoperabilidad:conexion:conciliar">
+                  <Boton
+                    variante="fantasma"
+                    tamano="sm"
+                    icono="mundo"
+                    cargando={sincronizar.isPending && sincronizar.variables?.id === conexion.id}
+                    onClick={() => sincronizar.mutate({ id: conexion.id, autor })}
+                  >
+                    Sincronizar ahora
+                  </Boton>
+                </SiTienePermiso>
               </span>
             </li>
           ))}
         </ul>
       </EstadoConsulta>
+
+      {sincronizar.error ? (
+        <ErrorNormativo
+          problema={aProblema(sincronizar.error)}
+          onReintentar={() => sincronizar.reset()}
+        />
+      ) : null}
+
+      <Tarjeta
+        titulo="Discrepancias abiertas"
+        descripcion="Cuando el registro externo contradice lo declarado, hay que decidir cuál manda. La norma designa la fuente autoritativa de cada campo: el sistema no permite imponer el valor local sobre ella."
+        sinRelleno
+        pie={
+          <p className="pie-region mono">
+            {numero(abiertas.length)} discrepancias sin resolver · resolverlas queda en el ledger
+          </p>
+        }
+      >
+        {resolver.error ? (
+          <div style={{ padding: "var(--e4)" }}>
+            <ErrorNormativo problema={aProblema(resolver.error)} onReintentar={() => resolver.reset()} />
+          </div>
+        ) : null}
+        {abiertas.length === 0 ? (
+          <EstadoVacio
+            icono="check"
+            titulo="No hay discrepancias abiertas"
+            texto="Todos los registros comparados coinciden con su fuente autoritativa."
+          />
+        ) : (
+          <RegionDesplazable etiqueta="Discrepancias abiertas con registros externos" alto={380}>
+            <ul className="discrepancias">
+              {abiertas.map((discrepancia) => (
+                <li key={discrepancia.id} className="discrepancias__item">
+                  <span className="discrepancias__cuerpo">
+                    <strong>{discrepancia.campo}</strong>
+                    <span className="discrepancias__meta">
+                      {discrepancia.organizacion} · detectada el {fechaCorta(discrepancia.detectada)}
+                    </span>
+                    <span className="discrepancias__cotejo">
+                      <span className="discrepancias__valor" data-lado="local">
+                        <span className="discrepancias__rotulo">En SICAMED</span>
+                        <span className="mono">{discrepancia.valorLocal}</span>
+                      </span>
+                      <span className="discrepancias__valor" data-lado="externo">
+                        <span className="discrepancias__rotulo">En {discrepancia.sigla}</span>
+                        <span className="mono">{discrepancia.valorExterno}</span>
+                      </span>
+                    </span>
+                  </span>
+                  <span className="discrepancias__decision">
+                    <Insignia tono={discrepancia.autoritativo === "EXTERNO" ? "info" : "alerta"}>
+                      Autoritativo: {discrepancia.autoritativo === "EXTERNO" ? discrepancia.sigla : "SICAMED"}
+                    </Insignia>
+                    <SiTienePermiso permiso="interoperabilidad:conexion:conciliar">
+                      <span className="expediente__acciones">
+                        <Boton
+                          variante="secundario"
+                          tamano="sm"
+                          cargando={resolver.isPending && resolver.variables?.id === discrepancia.id}
+                          onClick={() =>
+                            resolver.mutate({
+                              id: discrepancia.id,
+                              resolucion: "RESUELTA_EXTERNO",
+                              autor,
+                            })
+                          }
+                        >
+                          Adoptar el externo
+                        </Boton>
+                        <Boton
+                          variante="fantasma"
+                          tamano="sm"
+                          onClick={() =>
+                            resolver.mutate({
+                              id: discrepancia.id,
+                              resolucion: "RESUELTA_LOCAL",
+                              autor,
+                            })
+                          }
+                        >
+                          Mantener el local
+                        </Boton>
+                      </span>
+                    </SiTienePermiso>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </RegionDesplazable>
+        )}
+      </Tarjeta>
 
       <Tarjeta
         titulo="Telemetría ambiental de los predios"

@@ -42,7 +42,9 @@ const huella = (semilla: string): string => {
 };
 
 export const CadenaViva = ({ etapas }: Props) => {
-  const { referencia, visible } = useRevelado<HTMLDivElement>();
+  const { referencia, visible, enPantalla } = useRevelado<HTMLDivElement>("0px 0px -12% 0px", {
+    seguir: true,
+  });
   const [activa, setActiva] = useState(0);
   const [detenida, setDetenida] = useState(false);
   const reducido = useRef(false);
@@ -54,12 +56,12 @@ export const CadenaViva = ({ etapas }: Props) => {
   }, [etapas.length]);
 
   useEffect(() => {
-    if (!visible || detenida || reducido.current) return undefined;
+    if (!visible || !enPantalla || detenida || reducido.current) return undefined;
     const reloj = window.setInterval(() => {
       setActiva((anterior) => (anterior + 1) % (etapas.length + 1));
     }, COMPAS);
     return () => window.clearInterval(reloj);
-  }, [visible, detenida, etapas.length]);
+  }, [visible, enPantalla, detenida, etapas.length]);
 
   const indice = Math.min(activa, etapas.length - 1);
   const completa = activa >= etapas.length;
@@ -70,6 +72,7 @@ export const CadenaViva = ({ etapas }: Props) => {
     <div
       className="cadena"
       ref={referencia}
+      data-fuera-de-vista={enPantalla ? "no" : "si"}
       data-completa={completa ? "si" : "no"}
       onMouseEnter={() => setDetenida(true)}
       onMouseLeave={() => setDetenida(false)}

@@ -18,9 +18,13 @@ import { Reportes } from "../../features/reportes";
 import { RuedasNegocio } from "../../features/ruedas-negocio";
 import { DetallePlanta, Plantas } from "../../features/plantas";
 import { Beneficio } from "../../features/beneficio";
-import { Expedientes, PoliticaVerificacion } from "../../features/expedientes";
+import { Expedientes, PoliticaVerificacion, Solicitudes } from "../../features/expedientes";
 import { CierreOperacion } from "../../features/cierre";
 import { Conexiones } from "../../features/interoperabilidad";
+import { Cupos } from "../../features/cupos";
+import { Transformacion } from "../../features/transformacion";
+import { Destruccion } from "../../features/destruccion";
+import { Usuarios } from "../../features/usuarios";
 
 export const Enrutador = () => (
   <Routes>
@@ -131,6 +135,46 @@ export const Enrutador = () => (
         element={
           <GuardaDeRuta permiso="admin:politica:gestionar">
             <PoliticaVerificacion />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="solicitudes"
+        element={
+          <GuardaDeRuta permiso="cumplimiento:solicitud:tramitar">
+            <Solicitudes />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="usuarios"
+        element={
+          <GuardaDeRuta permiso="admin:usuario:gestionar">
+            <Usuarios />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="cupos"
+        element={
+          <GuardaDeRuta permiso="produccion:cupo:leer">
+            <Cupos />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="transformacion"
+        element={
+          <GuardaDeRuta permiso="produccion:transformacion:leer">
+            <Transformacion />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="destruccion"
+        element={
+          <GuardaDeRuta permiso="produccion:destruccion:leer">
+            <Destruccion />
           </GuardaDeRuta>
         }
       />

@@ -1,5 +1,11 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { EncabezadoPagina } from "../../../shared/ui/patrones/EncabezadoPagina";
+import { DialogoFormulario } from "../../../shared/ui/patrones/DialogoFormulario";
+import { Boton } from "../../../shared/ui/primitivos/Boton";
+import { CampoTexto } from "../../../shared/ui/primitivos/Campo";
+import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
+import { useAutor } from "../../../shared/auth/useAutor";
 import { EstadoConsulta } from "../../../shared/ui/patrones/EstadoConsulta";
 import { EstadoVacio } from "../../../shared/ui/patrones/EstadoVacio";
 import { Kpi } from "../../../shared/ui/patrones/Kpi";
@@ -9,7 +15,7 @@ import { Tabla } from "../../../shared/ui/primitivos/Tabla";
 import { Icono } from "../../../shared/ui/primitivos/Icono";
 import { useAuth } from "../../../shared/auth/useAuth";
 import { fecha, fechaCorta, numero } from "../../../shared/i18n/formato";
-import { useAtestacionesDe, useOrganizacionActual } from "../hooks/useOrganizacion";
+import { useActualizarOrganizacion, useAtestacionesDe, useOrganizacionActual } from "../hooks/useOrganizacion";
 
 const TONO = {
   HABILITADA: "exito",
@@ -32,6 +38,46 @@ export const MiOrganizacion = () => {
   const consulta = useOrganizacionActual(id ?? sesion?.usuario.organizacionId);
   const organizacion = consulta.data;
   const atestaciones = useAtestacionesDe(organizacion?.id ?? "");
+  const actualizar = useActualizarOrganizacion();
+  const autor = useAutor();
+  const [editando, setEditando] = useState(false);
+  const [ficha, setFicha] = useState({
+    representante: "",
+    correo: "",
+    telefono: "",
+    municipio: "",
+  });
+  const [errores, setErrores] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!organizacion) return;
+    setFicha({
+      representante: organizacion.representante,
+      correo: organizacion.correo,
+      telefono: organizacion.telefono,
+      municipio: organizacion.municipio,
+    });
+  }, [organizacion]);
+
+  const cerrarEdicion = () => {
+    setEditando(false);
+    setErrores({});
+    actualizar.reset();
+  };
+
+  const guardarFicha = () => {
+    if (!organizacion) return;
+    const encontrados: Record<string, string> = {};
+    if (ficha.representante.trim().length < 6)
+      encontrados.representante = "Indica el nombre del representante legal.";
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ficha.correo))
+      encontrados.correo = "Indica un correo válido.";
+    if (ficha.telefono.trim().length < 7) encontrados.telefono = "Indica un teléfono de contacto.";
+    if (ficha.municipio.trim().length < 3) encontrados.municipio = "Indica el municipio.";
+    setErrores(encontrados);
+    if (Object.keys(encontrados).length > 0) return;
+    actualizar.mutate({ id: organizacion.id, ...ficha, autor }, { onSuccess: cerrarEdicion });
+  };
 
   return (
     <div className="pagina">
@@ -46,9 +92,16 @@ export const MiOrganizacion = () => {
               titulo={organizacion.nombre}
               subtitulo={`NIT ${organizacion.nit} · ${organizacion.municipio}, ${organizacion.departamento}`}
               acciones={
-                <Link to="/app/licencias" className="boton boton--primario">
-                  Gestionar licencias
-                </Link>
+                <>
+                  <SiTienePermiso permiso="actores:org:escribir">
+                    <Boton variante="secundario" icono="documento" onClick={() => setEditando(true)}>
+                      Editar ficha
+                    </Boton>
+                  </SiTienePermiso>
+                  <Link to="/app/licencias" className="boton boton--primario">
+                    Gestionar licencias
+                  </Link>
+                </>
               }
             />
 
@@ -159,6 +212,60 @@ export const MiOrganizacion = () => {
           </>
         ) : null}
       </EstadoConsulta>
+
+      <DialogoFormulario
+        abierto={editando}
+        titulo="Editar ficha de la organización"
+        descripcion="El NIT, la razón social y el tipo de actor provienen del registro y no se editan aquí: se corrigen ante el RUES y se concilian por interoperabilidad."
+        etiquetaEnviar="Guardar cambios"
+        cargando={actualizar.isPending}
+        error={actualizar.error}
+        ancho
+        onCerrar={cerrarEdicion}
+        onEnviar={guardarFicha}
+        onLimpiarError={() => actualizar.reset()}
+      >
+        <div className="rejilla rejilla--2">
+          <CampoTexto
+            etiqueta="Representante legal"
+            requerido
+            value={ficha.representante}
+            error={errores.representante}
+            onChange={(evento) =>
+              setFicha((previa) => ({ ...previa, representante: evento.target.value }))
+            }
+          />
+          <CampoTexto
+            etiqueta="Municipio"
+            requerido
+            value={ficha.municipio}
+            error={errores.municipio}
+            onChange={(evento) =>
+              setFicha((previa) => ({ ...previa, municipio: evento.target.value }))
+            }
+          />
+        </div>
+        <div className="rejilla rejilla--2">
+          <CampoTexto
+            etiqueta="Correo de contacto"
+            requerido
+            type="email"
+            value={ficha.correo}
+            error={errores.correo}
+            onChange={(evento) => setFicha((previa) => ({ ...previa, correo: evento.target.value }))}
+          />
+          <CampoTexto
+            etiqueta="Teléfono"
+            requerido
+            value={ficha.telefono}
+            error={errores.telefono}
+            onChange={(evento) =>
+              setFicha((previa) => ({ ...previa, telefono: evento.target.value }))
+            }
+          />
+        </div>
+      </DialogoFormulario>
+
     </div>
   );
 };

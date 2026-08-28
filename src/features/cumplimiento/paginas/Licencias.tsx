@@ -3,15 +3,20 @@ import { EncabezadoPagina } from "../../../shared/ui/patrones/EncabezadoPagina";
 import { TablaConFiltros } from "../../../shared/ui/patrones/TablaConFiltros";
 import { EstadoVacio } from "../../../shared/ui/patrones/EstadoVacio";
 import { Kpi } from "../../../shared/ui/patrones/Kpi";
+import { DialogoFormulario } from "../../../shared/ui/patrones/DialogoFormulario";
 import { Boton } from "../../../shared/ui/primitivos/Boton";
-import { Dialogo } from "../../../shared/ui/primitivos/Dialogo";
 import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { CampoSelect, CampoTexto } from "../../../shared/ui/primitivos/Campo";
 import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
+import { useAutor } from "../../../shared/auth/useAutor";
 import { diasHasta, fechaCorta, numero } from "../../../shared/i18n/formato";
 import type { Atestacion } from "../../../shared/api/mock/tipos";
 import type { Columna } from "../../../shared/ui/primitivos/Tabla";
-import { useAtestaciones } from "../hooks/useAtestaciones";
+import {
+  useAtestaciones,
+  useExpedientesAprobados,
+  useRegistrarAtestacion,
+} from "../hooks/useAtestaciones";
 
 const TONO = {
   VIGENTE: "exito",
@@ -63,13 +68,77 @@ const COLUMNAS: readonly Columna<Atestacion>[] = [
   },
 ];
 
+type Formulario = {
+  expedienteId: string;
+  tipo: string;
+  acto: string;
+  autoridad: string;
+  expedicion: string;
+  vencimiento: string;
+  evidencia: string;
+};
+
+const INICIAL: Formulario = {
+  expedienteId: "",
+  tipo: "",
+  acto: "",
+  autoridad: "",
+  expedicion: "",
+  vencimiento: "",
+  evidencia: "",
+};
+
 export const Licencias = () => {
   const [busqueda, setBusqueda] = useState("");
   const [estado, setEstado] = useState("");
   const [tipo, setTipo] = useState("");
   const [pagina, setPagina] = useState(1);
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
+  const [valores, setValores] = useState<Formulario>(INICIAL);
+  const [errores, setErrores] = useState<Partial<Record<keyof Formulario, string>>>({});
+
   const consulta = useAtestaciones({ busqueda, estado, tipo, pagina, porPagina: 10 });
+  const expedientes = useExpedientesAprobados();
+  const registrar = useRegistrarAtestacion();
+  const autor = useAutor();
+
+  const cerrar = () => {
+    setDialogoAbierto(false);
+    setValores(INICIAL);
+    setErrores({});
+    registrar.reset();
+  };
+
+  const actualizar = (campo: keyof Formulario) => (valor: string) =>
+    setValores((previos) => ({ ...previos, [campo]: valor }));
+
+  const enviar = () => {
+    const encontrados: Partial<Record<keyof Formulario, string>> = {};
+    if (!valores.tipo) encontrados.tipo = "Selecciona el tipo de licencia.";
+    if (valores.acto.trim().length < 8) encontrados.acto = "Indica el acto administrativo.";
+    if (valores.autoridad.trim().length < 3)
+      encontrados.autoridad = "Indica la autoridad que lo expide.";
+    if (!valores.expedicion) encontrados.expedicion = "Indica la fecha de expedición.";
+    if (!valores.vencimiento) encontrados.vencimiento = "Indica la fecha de vencimiento.";
+    if (valores.evidencia.trim().length < 5)
+      encontrados.evidencia = "Adjunta el archivo del acto administrativo.";
+    setErrores(encontrados);
+    if (Object.keys(encontrados).length > 0) return;
+    registrar.mutate(
+      {
+        organizacionId: autor.organizacionId,
+        tipo: valores.tipo as Atestacion["tipo"],
+        acto: valores.acto,
+        autoridad: valores.autoridad,
+        expedicion: new Date(valores.expedicion).toISOString(),
+        vencimiento: new Date(valores.vencimiento).toISOString(),
+        evidencia: valores.evidencia,
+        expedienteId: valores.expedienteId || null,
+        autor,
+      },
+      { onSuccess: cerrar },
+    );
+  };
 
   const todas = consulta.data?.datos ?? [];
   const porVencer = todas.filter((a) => a.estado === "POR_VENCER").length;
@@ -147,35 +216,84 @@ export const Licencias = () => {
         }
       />
 
-      <Dialogo
+      <DialogoFormulario
         abierto={dialogoAbierto}
         titulo="Registrar atestación de licencia"
-        onCerrar={() => setDialogoAbierto(false)}
-        pie={
-          <>
-            <Boton variante="secundario" onClick={() => setDialogoAbierto(false)}>
-              Cancelar
-            </Boton>
-            <Boton onClick={() => setDialogoAbierto(false)}>Registrar</Boton>
-          </>
-        }
+        descripcion="Una atestación no nace de un formulario: nace de una fuente autoritativa o de un expediente cuya evidencia documental ya fue verificada. SICAMED no expide la licencia, atestigua que existe."
+        etiquetaEnviar="Registrar atestación"
+        cargando={registrar.isPending}
+        error={registrar.error}
+        ancho
+        onCerrar={cerrar}
+        onEnviar={enviar}
+        onLimpiarError={() => registrar.reset()}
       >
-        <form className="pila" style={{ gap: "var(--e4)" }}>
-          <CampoSelect etiqueta="Tipo de licencia" requerido vacio="Selecciona un tipo" opciones={TIPOS} />
-          <CampoTexto etiqueta="Acto administrativo" requerido placeholder="Resolución 1234 de 2026" />
-          <CampoTexto etiqueta="Autoridad que expide" requerido placeholder="INVIMA" />
-          <div className="rejilla rejilla--2">
-            <CampoTexto etiqueta="Fecha de expedición" type="date" requerido />
-            <CampoTexto etiqueta="Fecha de vencimiento" type="date" requerido />
-          </div>
+        <CampoSelect
+          etiqueta="Origen probatorio"
+          vacio="Sincronización con fuente autoritativa"
+          value={valores.expedienteId}
+          ayuda="Si eliges un expediente, su evidencia debe estar verificada; la atestación quedará marcada como DOCUMENTAL_VERIFICADA."
+          opciones={(expedientes.data?.datos ?? []).map((expediente) => ({
+            valor: expediente.id,
+            etiqueta: `${expediente.radicado} · ${expediente.organizacion}`,
+          }))}
+          onChange={(evento) => actualizar("expedienteId")(evento.target.value)}
+        />
+        <CampoSelect
+          etiqueta="Tipo de licencia"
+          requerido
+          vacio="Selecciona un tipo"
+          value={valores.tipo}
+          error={errores.tipo}
+          opciones={TIPOS}
+          onChange={(evento) => actualizar("tipo")(evento.target.value)}
+        />
+        <div className="rejilla rejilla--2">
           <CampoTexto
-            etiqueta="Evidencia documental"
-            type="file"
+            etiqueta="Acto administrativo"
             requerido
-            ayuda="PDF del acto administrativo. Queda sellado en la cadena de trazabilidad."
+            placeholder="Resolución 1234 de 2026"
+            value={valores.acto}
+            error={errores.acto}
+            onChange={(evento) => actualizar("acto")(evento.target.value)}
           />
-        </form>
-      </Dialogo>
+          <CampoTexto
+            etiqueta="Autoridad que expide"
+            requerido
+            placeholder="INVIMA"
+            value={valores.autoridad}
+            error={errores.autoridad}
+            onChange={(evento) => actualizar("autoridad")(evento.target.value)}
+          />
+        </div>
+        <div className="rejilla rejilla--2">
+          <CampoTexto
+            etiqueta="Fecha de expedición"
+            type="date"
+            requerido
+            value={valores.expedicion}
+            error={errores.expedicion}
+            onChange={(evento) => actualizar("expedicion")(evento.target.value)}
+          />
+          <CampoTexto
+            etiqueta="Fecha de vencimiento"
+            type="date"
+            requerido
+            value={valores.vencimiento}
+            error={errores.vencimiento}
+            onChange={(evento) => actualizar("vencimiento")(evento.target.value)}
+          />
+        </div>
+        <CampoTexto
+          etiqueta="Evidencia documental"
+          requerido
+          value={valores.evidencia}
+          error={errores.evidencia}
+          placeholder="resolucion-1234-2026.pdf"
+          ayuda="Nombre del archivo del acto administrativo. Su huella queda sellada en la cadena de trazabilidad."
+          onChange={(evento) => actualizar("evidencia")(evento.target.value)}
+        />
+      </DialogoFormulario>
     </div>
   );
 };

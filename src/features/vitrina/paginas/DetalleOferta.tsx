@@ -1,17 +1,51 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { EncabezadoPagina } from "../../../shared/ui/patrones/EncabezadoPagina";
 import { EstadoConsulta } from "../../../shared/ui/patrones/EstadoConsulta";
+import { DialogoFormulario } from "../../../shared/ui/patrones/DialogoFormulario";
 import { Tarjeta } from "../../../shared/ui/primitivos/Tarjeta";
 import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { Icono } from "../../../shared/ui/primitivos/Icono";
+import { Boton } from "../../../shared/ui/primitivos/Boton";
+import { CampoSelect, CampoTexto } from "../../../shared/ui/primitivos/Campo";
+import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
+import { useAutor } from "../../../shared/auth/useAutor";
+import { DEPARTAMENTOS } from "../../../shared/api/mock/catalogos";
 import { fecha, numero } from "../../../shared/i18n/formato";
 import { aOfertaVista } from "../modelo/mapeo";
-import { useOferta } from "../hooks/useOfertas";
+import { useManifestarInteres, useOferta } from "../hooks/useOfertas";
 
 export const DetalleOferta = () => {
   const { id = "" } = useParams();
   const consulta = useOferta(id);
   const oferta = consulta.data ? aOfertaVista(consulta.data) : null;
+  const manifestar = useManifestarInteres();
+  const autor = useAutor();
+  const [abierto, setAbierto] = useState(false);
+  const [solicitante, setSolicitante] = useState("");
+  const [departamento, setDepartamento] = useState("");
+  const [errores, setErrores] = useState<{ solicitante?: string; departamento?: string }>({});
+
+  const cerrar = () => {
+    setAbierto(false);
+    setSolicitante("");
+    setDepartamento("");
+    setErrores({});
+    manifestar.reset();
+  };
+
+  const enviar = () => {
+    const encontrados: { solicitante?: string; departamento?: string } = {};
+    if (solicitante.trim().length < 5)
+      encontrados.solicitante = "Identifica a la organización interesada.";
+    if (!departamento) encontrados.departamento = "Selecciona el departamento.";
+    setErrores(encontrados);
+    if (Object.keys(encontrados).length > 0) return;
+    manifestar.mutate(
+      { ofertaId: id, solicitante: solicitante.trim(), departamento, autor },
+      { onSuccess: cerrar },
+    );
+  };
 
   return (
     <div className="pagina">
@@ -27,6 +61,11 @@ export const DetalleOferta = () => {
               subtitulo={`${oferta.organizacion} · ${oferta.ubicacion}`}
               acciones={
                 <>
+                  <SiTienePermiso permiso="vitrina:oferta:leer">
+                    <Boton icono="mas" onClick={() => setAbierto(true)}>
+                      Manifestar interés
+                    </Boton>
+                  </SiTienePermiso>
                   <Link to="/app/vitrina" className="boton boton--secundario">
                     Volver a la vitrina
                   </Link>
@@ -98,6 +137,36 @@ export const DetalleOferta = () => {
           </>
         ) : null}
       </EstadoConsulta>
+
+      <DialogoFormulario
+        abierto={abierto}
+        titulo="Manifestar interés"
+        descripcion="Manifestar interés deja constancia ante el oferente, que decidirá si revela sus datos de contacto. No es una orden de compra ni compromete condición económica alguna."
+        etiquetaEnviar="Manifestar interés"
+        cargando={manifestar.isPending}
+        error={manifestar.error}
+        onCerrar={cerrar}
+        onEnviar={enviar}
+        onLimpiarError={() => manifestar.reset()}
+      >
+        <CampoTexto
+          etiqueta="Organización interesada"
+          requerido
+          value={solicitante}
+          error={errores.solicitante}
+          onChange={(evento) => setSolicitante(evento.target.value)}
+        />
+        <CampoSelect
+          etiqueta="Departamento"
+          requerido
+          vacio="Selecciona un departamento"
+          value={departamento}
+          error={errores.departamento}
+          opciones={DEPARTAMENTOS.map((d) => ({ valor: d.nombre, etiqueta: d.nombre }))}
+          onChange={(evento) => setDepartamento(evento.target.value)}
+        />
+      </DialogoFormulario>
+
     </div>
   );
 };

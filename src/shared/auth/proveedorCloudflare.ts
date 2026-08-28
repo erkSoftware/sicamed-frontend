@@ -69,6 +69,10 @@ const aSesion = (identidad: IdentidadCloudflare): Sesion => {
       nombre: textoDe(identidad.name, textoDe(identidad.email, "Usuario SICAMED")),
       correo: textoDe(identidad.email, ""),
       rol: textoDe(personalizado.rol, "Usuario autenticado"),
+      rolPlataforma: textoDe(
+        personalizado.rol_plataforma,
+        "OBSERVADOR_INSTITUCIONAL",
+      ) as Sesion["usuario"]["rolPlataforma"],
       organizacionId: textoDe(personalizado.organizacion_id, ""),
       organizacion: textoDe(personalizado.organizacion, "Organización sin asignar"),
       tenantId: textoDe(personalizado.tenant_id, "sicamed-co"),

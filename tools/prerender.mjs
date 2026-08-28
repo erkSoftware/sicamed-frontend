@@ -22,6 +22,7 @@ const RUTAS_BASE = [
   "/transparencia",
   "/accesibilidad",
   "/privacidad",
+  "/registro",
 ];
 
 const rutas = [...RUTAS_BASE, ...OFERTAS_PUBLICAS.map((oferta) => `/vitrina/${oferta.id}`)];

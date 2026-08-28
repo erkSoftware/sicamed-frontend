@@ -88,7 +88,9 @@ const ESCENAS = [
 ] as const;
 
 export const RelatoTrazabilidad = () => {
-  const { referencia, visible } = useRevelado<HTMLDivElement>();
+  const { referencia, visible, enPantalla } = useRevelado<HTMLDivElement>("0px 0px -12% 0px", {
+    seguir: true,
+  });
   const [indice, setIndice] = useState(0);
   const [pausado, setPausado] = useState(false);
   const [rondando, setRondando] = useState(false);
@@ -101,21 +103,22 @@ export const RelatoTrazabilidad = () => {
   }, []);
 
   useEffect(() => {
-    if (!visible || pausado || rondando) return undefined;
+    if (!visible || !enPantalla || pausado || rondando) return undefined;
     const compas = reducido.current ? COMPAS + 2600 : COMPAS;
     const reloj = window.setTimeout(() => {
       setIndice((anterior) => (anterior + 1) % ESCENAS.length);
     }, compas);
     return () => window.clearTimeout(reloj);
-  }, [visible, pausado, rondando, indice]);
+  }, [visible, enPantalla, pausado, rondando, indice]);
 
   const escena = ESCENAS[indice] ?? ESCENAS[0];
-  const corriendo = visible && !pausado && !rondando;
+  const corriendo = visible && enPantalla && !pausado && !rondando;
 
   return (
     <div
       className="relato"
       ref={referencia}
+      data-fuera-de-vista={enPantalla ? "no" : "si"}
       onMouseEnter={() => setRondando(true)}
       onMouseLeave={() => setRondando(false)}
     >

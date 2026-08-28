@@ -8,7 +8,12 @@ export const BotonIntro = () => {
   if (!esPortada) return null;
 
   return (
-    <button type="button" className="intro-flotante" onClick={pedirCinematica}>
+    <button
+      type="button"
+      className="intro-flotante"
+      aria-label="Ver la introducción"
+      onClick={pedirCinematica}
+    >
       <span className="intro-flotante__disco" aria-hidden="true">
         <Icono nombre="reproducir" tamano={13} />
       </span>

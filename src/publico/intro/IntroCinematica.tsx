@@ -133,8 +133,14 @@ const senalarDepartamento = (
   for (const grados of [0, 90, 180, 270]) {
     const angulo = (grados * Math.PI) / 180;
     contexto.beginPath();
-    contexto.moveTo(punto.x + Math.cos(angulo) * (radio - 11), punto.y + Math.sin(angulo) * (radio - 11));
-    contexto.lineTo(punto.x + Math.cos(angulo) * (radio + 13), punto.y + Math.sin(angulo) * (radio + 13));
+    contexto.moveTo(
+      punto.x + Math.cos(angulo) * (radio - 11),
+      punto.y + Math.sin(angulo) * (radio - 11),
+    );
+    contexto.lineTo(
+      punto.x + Math.cos(angulo) * (radio + 13),
+      punto.y + Math.sin(angulo) * (radio + 13),
+    );
     contexto.stroke();
   }
   contexto.globalAlpha = intensidad * (1 - pulso) * 0.7;
@@ -183,7 +189,12 @@ export const IntroCinematica = () => {
   useEffect(() => {
     const activa = cinematicaActiva();
     anotar("capa-montada", { activa });
-    if (activa) iniciar();
+    if (activa) {
+      iniciar();
+      return;
+    }
+    document.documentElement.removeAttribute("data-cinematica");
+    document.documentElement.setAttribute("data-intro", "listo");
   }, []);
 
   useEffect(() => {
@@ -301,11 +312,13 @@ export const IntroCinematica = () => {
           paleta,
           porCodigo: POR_CODIGO,
           maximo: MAXIMO,
-          destacado: actual.fase === "seleccion" || actual.fase === "entrada" ? elegido.codigo : null,
+          destacado:
+            actual.fase === "seleccion" || actual.fase === "entrada" ? elegido.codigo : null,
         });
 
         if (actual.fase === "colombia") resaltarColombia(contexto, camara, actual.avance, paleta);
-        if (actual.fase === "zoom") resaltarColombia(contexto, camara, 1 - actual.avance * 0.6, paleta);
+        if (actual.fase === "zoom")
+          resaltarColombia(contexto, camara, 1 - actual.avance * 0.6, paleta);
         const lienzoActual = { ancho, alto, visor };
         if (actual.fase === "seleccion")
           senalarDepartamento(
@@ -319,7 +332,16 @@ export const IntroCinematica = () => {
             true,
           );
         if (actual.fase === "entrada")
-          senalarDepartamento(contexto, camara, elegido, 1 - actual.avance, pulso, paleta, lienzoActual, false);
+          senalarDepartamento(
+            contexto,
+            camara,
+            elegido,
+            1 - actual.avance,
+            pulso,
+            paleta,
+            lienzoActual,
+            false,
+          );
         contexto.restore();
       }
 

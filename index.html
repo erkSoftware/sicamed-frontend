@@ -30,19 +30,35 @@
           }
           var reducido = matchMedia("(prefers-reduced-motion: reduce)").matches;
           anotar("guardia", { ruta: ruta, hash: hash, pedida: pedida, vista: vista, reducido: reducido });
-          if (ruta !== "/") return;
-          if (!pedida && (reducido || vista === true)) return;
-          document.documentElement.setAttribute("data-cinematica", "corriendo");
-          document.documentElement.setAttribute("data-intro", "corriendo");
-          anotar("guardia-activa");
+          if (ruta === "/") {
+            if (pedida || (!reducido && vista !== true)) {
+              document.documentElement.setAttribute("data-cinematica", "corriendo");
+              document.documentElement.setAttribute("data-intro", "corriendo");
+              anotar("guardia-activa");
+            }
+          } else if (ruta.replace(/\/+$/, "") === "/vitrina") {
+            var pedidaOrigen = /^#origen$/i.test(hash);
+            var vistaOrigen = false;
+            try {
+              vistaOrigen = localStorage.getItem("SICAMED_vitrina_origen_seen") === "true";
+            } catch (error) {
+              vistaOrigen = "sin acceso";
+            }
+            anotar("guardia-origen", { pedida: pedidaOrigen, vista: vistaOrigen });
+            if (pedidaOrigen || (!reducido && vistaOrigen !== true)) {
+              document.documentElement.setAttribute("data-pelicula", "corriendo");
+              anotar("guardia-origen-activa");
+            }
+          }
           setTimeout(function () {
-            if (document.documentElement.getAttribute("data-cinematica") !== "corriendo") return;
             anotar("guardia-rescate");
             document.documentElement.removeAttribute("data-cinematica");
-          }, 40000);
+            document.documentElement.removeAttribute("data-pelicula");
+          }, 70000);
         } catch (error) {
           anotar("guardia-error", { error: String(error) });
           document.documentElement.removeAttribute("data-cinematica");
+          document.documentElement.removeAttribute("data-pelicula");
         }
       })();
     </script>

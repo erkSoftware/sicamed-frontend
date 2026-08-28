@@ -1,5 +1,6 @@
-import { Route } from "react-router-dom";
+import { Outlet, Route } from "react-router-dom";
 import { LayoutPublico } from "./componentes/LayoutPublico";
+import { ProveedorIdioma } from "../shared/i18n/ProveedorIdioma";
 import { Inicio } from "./paginas/Inicio";
 import { VitrinaPublica } from "./paginas/VitrinaPublica";
 import { DetalleOfertaPublica } from "./paginas/DetalleOfertaPublica";
@@ -8,6 +9,7 @@ import { Normativa } from "./paginas/Normativa";
 import { Transparencia } from "./paginas/Transparencia";
 import { Accesibilidad } from "./paginas/Accesibilidad";
 import { Privacidad } from "./paginas/Privacidad";
+import { Registro } from "./paginas/Registro";
 
 export const RUTAS_PUBLICAS_ESTATICAS: readonly string[] = [
   "/",
@@ -17,17 +19,28 @@ export const RUTAS_PUBLICAS_ESTATICAS: readonly string[] = [
   "/transparencia",
   "/accesibilidad",
   "/privacidad",
+  "/registro",
 ];
 
 export const seccionPublica = () => (
   <Route element={<LayoutPublico />}>
     <Route index element={<Inicio />} />
-    <Route path="vitrina" element={<VitrinaPublica />} />
-    <Route path="vitrina/:id" element={<DetalleOfertaPublica />} />
+    <Route
+      path="vitrina"
+      element={
+        <ProveedorIdioma>
+          <Outlet />
+        </ProveedorIdioma>
+      }
+    >
+      <Route index element={<VitrinaPublica />} />
+      <Route path=":id" element={<DetalleOfertaPublica />} />
+    </Route>
     <Route path="actores" element={<ActoresPublico />} />
     <Route path="normativa" element={<Normativa />} />
     <Route path="transparencia" element={<Transparencia />} />
     <Route path="accesibilidad" element={<Accesibilidad />} />
     <Route path="privacidad" element={<Privacidad />} />
+    <Route path="registro" element={<Registro />} />
   </Route>
 );

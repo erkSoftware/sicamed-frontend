@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { App } from "./App";
 import { cinematicaActiva, limpiarHashIntro } from "../publico/intro/decision";
+import { peliculaActiva } from "../publico/origen/decision";
 import { anotar, instalarConsolaIntro } from "../publico/intro/diagnostico";
 import "../shared/ui/tokens/fuentes.css";
 import "../shared/ui/tokens/tokens.css";
@@ -14,6 +15,7 @@ import "../shared/ui/tokens/temas.css";
 import "../shared/ui/tokens/panel.css";
 import "../shared/ui/tokens/publico.css";
 import "../shared/ui/tokens/cinematica.css";
+import "../shared/ui/tokens/origen.css";
 
 document.documentElement.setAttribute("data-movimiento", "si");
 
@@ -25,6 +27,13 @@ if (cinematicaActiva()) {
   document.documentElement.setAttribute("data-intro", "corriendo");
 } else {
   document.documentElement.removeAttribute("data-cinematica");
+}
+
+if (peliculaActiva()) {
+  document.documentElement.setAttribute("data-pelicula", "corriendo");
+  document.documentElement.setAttribute("data-origen", "corriendo");
+} else {
+  document.documentElement.removeAttribute("data-pelicula");
 }
 
 limpiarHashIntro();

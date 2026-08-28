@@ -9,10 +9,13 @@ import { Tarjeta } from "../../../shared/ui/primitivos/Tarjeta";
 import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { Boton } from "../../../shared/ui/primitivos/Boton";
 import { Icono } from "../../../shared/ui/primitivos/Icono";
+import { DialogoFormulario } from "../../../shared/ui/patrones/DialogoFormulario";
+import { CampoTexto } from "../../../shared/ui/primitivos/Campo";
+import { useAutor } from "../../../shared/auth/useAutor";
 import { fechaCorta, numero } from "../../../shared/i18n/formato";
 import type { NombreIcono } from "../../../shared/ui/primitivos/Icono";
-import type { ViaCierre } from "../../../shared/api/mock/tipos";
-import { useCierres } from "../hooks/useCierres";
+import type { CierreExterno, ViaCierre } from "../../../shared/api/mock/tipos";
+import { useCierres, useDeclararMovimiento } from "../hooks/useCierres";
 
 const PASOS = [
   { clave: "oferta", etiqueta: "Oferta publicada", detalle: "El actor habilitado la publica en la vitrina", dentro: true },
@@ -85,13 +88,37 @@ const ETIQUETA_VIA = {
 
 export const CierreOperacion = () => {
   const [via, setVia] = useState("");
-  const [declarados, setDeclarados] = useState<readonly string[]>([]);
+  const [declarando, setDeclarando] = useState<CierreExterno | null>(null);
+  const [movimiento, setMovimiento] = useState("");
+  const [errorMovimiento, setErrorMovimiento] = useState<string | undefined>(undefined);
+  const declarar = useDeclararMovimiento();
+  const autor = useAutor();
+
+  const cerrarDeclaracion = () => {
+    setDeclarando(null);
+    setMovimiento("");
+    setErrorMovimiento(undefined);
+    declarar.reset();
+  };
+
+  const enviarDeclaracion = () => {
+    if (!declarando) return;
+    if (movimiento.trim().length < 6) {
+      setErrorMovimiento("Indica el número del movimiento de inventario.");
+      return;
+    }
+    setErrorMovimiento(undefined);
+    declarar.mutate(
+      { id: declarando.id, movimiento: movimiento.trim(), autor },
+      { onSuccess: cerrarDeclaracion },
+    );
+  };
   const consulta = useCierres({ tipo: via });
 
   const cierres = consulta.data ?? [];
   const psicoactivos = cierres.filter((cierre) => cierre.via === "FNE").length;
   const conMovimiento = cierres.filter(
-    (cierre) => cierre.estado === "MOVIMIENTO_DECLARADO" || declarados.includes(cierre.id),
+    (cierre) => cierre.estado === "MOVIMIENTO_DECLARADO",
   ).length;
 
   return (
@@ -208,7 +235,7 @@ export const CierreOperacion = () => {
               <ul className="cierre-lista">
                 {cierres.map((cierre) => {
                   const declarado =
-                    cierre.estado === "MOVIMIENTO_DECLARADO" || declarados.includes(cierre.id);
+                    cierre.estado === "MOVIMIENTO_DECLARADO";
                   return (
                     <li key={cierre.id} className="cierre-lista__item" data-via={cierre.via}>
                       <span className="cierre-lista__cuerpo">
@@ -245,9 +272,10 @@ export const CierreOperacion = () => {
                             variante="secundario"
                             tamano="sm"
                             icono="inventario"
-                            onClick={() =>
-                              setDeclarados((previos) => [...previos, cierre.id])
-                            }
+                            onClick={() => {
+                              setDeclarando(cierre);
+                              setMovimiento("");
+                            }}
                           >
                             Declarar movimiento
                           </Boton>
@@ -261,6 +289,32 @@ export const CierreOperacion = () => {
           )}
         </EstadoConsulta>
       </Tarjeta>
+
+      <DialogoFormulario
+        abierto={declarando !== null}
+        titulo="Declarar movimiento"
+        descripcion={
+          declarando
+            ? `El trámite se surtió ante ${declarando.entidad}. Declarar el resultado es voluntario y no tiene efectos: exigirlo convertiría la vitrina en un registro transaccional, contra el Art. 8c.`
+            : ""
+        }
+        etiquetaEnviar="Declarar movimiento"
+        cargando={declarar.isPending}
+        error={declarar.error}
+        onCerrar={cerrarDeclaracion}
+        onEnviar={enviarDeclaracion}
+        onLimpiarError={() => declarar.reset()}
+      >
+        <CampoTexto
+          etiqueta="Número del movimiento de inventario"
+          requerido
+          value={movimiento}
+          error={errorMovimiento}
+          placeholder="MOV-2026-0001"
+          ayuda="Queda como salida de inventario y evento de trazabilidad. SICAMED no conoce las condiciones del acuerdo."
+          onChange={(evento) => setMovimiento(evento.target.value)}
+        />
+      </DialogoFormulario>
     </div>
   );
 };

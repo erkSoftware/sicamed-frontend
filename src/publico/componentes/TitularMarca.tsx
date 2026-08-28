@@ -12,7 +12,12 @@ export const TitularMarca = () => (
           className="heroe__letra"
           data-vivo={indice >= 4 ? "si" : undefined}
         >
-          <span style={{ animationDelay: `${indice * 70}ms`, ["--onda" as string]: `${indice * 130}ms` }}>
+          <span
+            style={{
+              animationDelay: `${indice * 70}ms`,
+              ["--onda" as string]: `${indice * 130}ms`,
+            }}
+          >
             {letra}
           </span>
         </span>

@@ -50,6 +50,23 @@ const MUNICIPIOS: Record<string, readonly string[]> = {
   Meta: ["Villavicencio", "Acacías", "Granada"],
   Huila: ["Neiva", "Pitalito", "Garzón"],
   Bolívar: ["Cartagena", "Magangué", "Turbaco"],
+  "Bogotá D.C.": ["Bogotá D.C."],
+  Córdoba: ["Montería", "Cereté", "Sahagún"],
+  Cesar: ["Valledupar", "Aguachica", "Bosconia"],
+  Magdalena: ["Santa Marta", "Ciénaga", "Fundación"],
+  "Norte de Santander": ["Cúcuta", "Ocaña", "Pamplona"],
+  Sucre: ["Sincelejo", "Corozal", "Sampués"],
+  "La Guajira": ["Riohacha", "Maicao", "Fonseca"],
+  Chocó: ["Quibdó", "Istmina", "Condoto"],
+  Casanare: ["Yopal", "Aguazul", "Villanueva"],
+  Caquetá: ["Florencia", "San Vicente del Caguán", "Belén de los Andaquíes"],
+  Putumayo: ["Mocoa", "Puerto Asís", "Sibundoy"],
+  Arauca: ["Arauca", "Tame", "Saravena"],
+  Vichada: ["Puerto Carreño", "La Primavera"],
+  Guaviare: ["San José del Guaviare", "El Retorno"],
+  Amazonas: ["Leticia", "Puerto Nariño"],
+  Guainía: ["Inírida"],
+  Vaupés: ["Mitú"],
 };
 
 const municipioDe = (departamento: string, indice: number): string => {

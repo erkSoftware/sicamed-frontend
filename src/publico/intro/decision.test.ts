@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decidirCinematica, pedidaPorHash } from "./decision";
+import { decidirCinematica, motivoCinematica, pedidaPorHash } from "./decision";
 
 const entorno = (parcial: Partial<Parameters<typeof decidirCinematica>[0]>) => ({
   ruta: "/",
@@ -12,10 +12,12 @@ const entorno = (parcial: Partial<Parameters<typeof decidirCinematica>[0]>) => (
 describe("decision de la introduccion cinematografica", () => {
   it("corre en la portada la primera vez que se entra sin hash", () => {
     expect(decidirCinematica(entorno({}))).toBe(true);
+    expect(motivoCinematica(entorno({}))).toBe("corre");
   });
 
   it("no vuelve a correr sin hash una vez vista", () => {
     expect(decidirCinematica(entorno({ vista: true }))).toBe(false);
+    expect(motivoCinematica(entorno({ vista: true }))).toBe("ya-vista");
   });
 
   it("corre siempre con el hash de animacion aunque ya se haya visto", () => {
@@ -25,10 +27,12 @@ describe("decision de la introduccion cinematografica", () => {
 
   it("nunca corre fuera de la portada", () => {
     expect(decidirCinematica(entorno({ ruta: "/vitrina", hash: "#Animation" }))).toBe(false);
+    expect(motivoCinematica(entorno({ ruta: "/vitrina" }))).toBe("ruta-sin-intro");
   });
 
   it("no arranca sola con movimiento reducido", () => {
     expect(decidirCinematica(entorno({ reducido: true }))).toBe(false);
+    expect(motivoCinematica(entorno({ reducido: true }))).toBe("movimiento-reducido");
   });
 
   it("obedece la peticion explicita del hash aunque haya movimiento reducido", () => {

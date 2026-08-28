@@ -2,6 +2,9 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { IntroMarca } from "./IntroMarca";
 import { IntroCinematica } from "../intro/IntroCinematica";
 import { BotonIntro } from "../intro/BotonIntro";
+import { PeliculaOrigen } from "../origen/PeliculaOrigen";
+import { BotonPorQue } from "../origen/BotonPorQue";
+import { DiagnosticoAnimaciones } from "./DiagnosticoAnimaciones";
 import { useRevelarSeccion } from "../../shared/ui/movimiento/useRevelarSeccion";
 
 const ANIO = new Date().getFullYear();
@@ -20,6 +23,9 @@ export const LayoutPublico = () => {
       <IntroCinematica />
       <IntroMarca />
       <BotonIntro />
+      <PeliculaOrigen />
+      <BotonPorQue />
+      <DiagnosticoAnimaciones />
 
       <header className="cabecera-sitio">
         <div className="contenedor cabecera-sitio__interior">
@@ -51,6 +57,9 @@ export const LayoutPublico = () => {
               className={({ isActive }) => (isActive ? "activo" : undefined)}
             >
               Transparencia
+            </NavLink>
+            <NavLink to="/registro" className={({ isActive }) => (isActive ? "activo" : undefined)}>
+              Registrarme
             </NavLink>
           </nav>
 
@@ -109,6 +118,9 @@ export const LayoutPublico = () => {
               <ul>
                 <li>
                   <Link to="/acceso">Ingresar</Link>
+                </li>
+                <li>
+                  <Link to="/registro">Registrar mi organización</Link>
                 </li>
                 <li>
                   <Link to="/accesibilidad">Accesibilidad</Link>

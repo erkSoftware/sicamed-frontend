@@ -1,9 +1,10 @@
 const LOCALE = "es-CO";
 
-export const numero = (valor: number): string => new Intl.NumberFormat(LOCALE).format(valor);
+export const numero = (valor: number, locale: string = LOCALE): string =>
+  new Intl.NumberFormat(locale).format(valor);
 
-export const compacto = (valor: number): string =>
-  new Intl.NumberFormat(LOCALE, { notation: "compact", maximumFractionDigits: 1 }).format(valor);
+export const compacto = (valor: number, locale: string = LOCALE): string =>
+  new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(valor);
 
 export const porcentaje = (valor: number, decimales = 1): string =>
   new Intl.NumberFormat(LOCALE, {
@@ -12,8 +13,8 @@ export const porcentaje = (valor: number, decimales = 1): string =>
     maximumFractionDigits: decimales,
   }).format(valor);
 
-export const fecha = (iso: string): string =>
-  new Intl.DateTimeFormat(LOCALE, { day: "2-digit", month: "short", year: "numeric" }).format(
+export const fecha = (iso: string, locale: string = LOCALE): string =>
+  new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" }).format(
     new Date(iso),
   );
 
@@ -33,8 +34,8 @@ export const fechaHora = (iso: string): string =>
     minute: "2-digit",
   }).format(new Date(iso));
 
-export const fechaLarga = (iso: string): string =>
-  new Intl.DateTimeFormat(LOCALE, { dateStyle: "long" }).format(new Date(iso));
+export const fechaLarga = (iso: string, locale: string = LOCALE): string =>
+  new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(new Date(iso));
 
 export const diasHasta = (iso: string): number =>
   Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000);

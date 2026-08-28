@@ -11,13 +11,26 @@ export type EntornoIntro = {
   reducido: boolean;
 };
 
+export type MotivoIntro =
+  | "corre"
+  | "pedida-por-hash"
+  | "ruta-sin-intro"
+  | "movimiento-reducido"
+  | "ya-vista";
+
 export const pedidaPorHash = (hash: string): boolean => HASH_INTRO.test(hash);
 
+export const motivoCinematica = (entorno: EntornoIntro): MotivoIntro => {
+  if (entorno.ruta !== "/") return "ruta-sin-intro";
+  if (pedidaPorHash(entorno.hash)) return "pedida-por-hash";
+  if (entorno.reducido) return "movimiento-reducido";
+  if (entorno.vista) return "ya-vista";
+  return "corre";
+};
+
 export const decidirCinematica = (entorno: EntornoIntro): boolean => {
-  if (entorno.ruta !== "/") return false;
-  if (pedidaPorHash(entorno.hash)) return true;
-  if (entorno.reducido) return false;
-  return !entorno.vista;
+  const motivo = motivoCinematica(entorno);
+  return motivo === "corre" || motivo === "pedida-por-hash";
 };
 
 export const introVista = (): boolean => {
@@ -37,19 +50,30 @@ export const marcarIntroVista = (): void => {
   }
 };
 
+export const olvidarIntro = (): void => {
+  try {
+    window.localStorage.removeItem(CLAVE_INTRO);
+  } catch (error) {
+    void error;
+  }
+  anotar("marca-borrada");
+};
+
+export const entornoIntro = (): EntornoIntro => ({
+  ruta: window.location.pathname,
+  hash: window.location.hash,
+  vista: introVista(),
+  reducido: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+});
+
 let resuelta: boolean | null = null;
 
 export const cinematicaActiva = (): boolean => {
   if (typeof window === "undefined") return false;
   if (resuelta === null) {
-    const entorno: EntornoIntro = {
-      ruta: window.location.pathname,
-      hash: window.location.hash,
-      vista: introVista(),
-      reducido: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    };
+    const entorno = entornoIntro();
     resuelta = decidirCinematica(entorno);
-    anotar("decision", { ...entorno, resultado: resuelta });
+    anotar("decision", { ...entorno, motivo: motivoCinematica(entorno), resultado: resuelta });
   }
   return resuelta;
 };
