@@ -7237,20 +7237,17 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
   animation-direction: alternate;
 }
 
+.paisaje__follaje[data-plano="fondo"] .paisaje__mece,
+.paisaje__follaje[data-plano="medio"] .paisaje__mece {
+  animation-play-state: paused;
+}
+
 .paisaje__luz {
   position: absolute;
   inset: 0;
   background: radial-gradient(58% 62% at 16% 24%, var(--luz-lateral) 0%, transparent 64%);
   mix-blend-mode: screen;
   animation: alentar-luz 34s ease-in-out infinite alternate;
-}
-
-.paisaje__grano {
-  position: absolute;
-  inset: 0;
-  opacity: 0.1;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='r'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/></filter><rect width='180' height='180' filter='url(%23r)'/></svg>");
 }
 
 .paisaje__velo {

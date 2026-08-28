@@ -244,7 +244,6 @@ export const PaisajeAndino = ({ momento }: Props) => {
       </div>
 
       <div className="paisaje__luz" />
-      <div className="paisaje__grano" />
       <div className="paisaje__velo" />
     </div>
   );
