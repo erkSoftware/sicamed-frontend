@@ -1,34 +1,22 @@
-import { NOMBRE_DOCUMENTO, POLITICA_VERIFICACION } from "../../shared/api/mock/datosProceso";
-import type { TipoActor, TipoDocumento } from "../../shared/api/mock/tipos";
+import { useQuery } from "@tanstack/react-query";
+import { apiComercial } from "../../shared/api/clienteComercial";
+import type { DocumentoRequeridoApi } from "../../shared/api/rest/contrato";
+import type { TipoActor } from "../../shared/api/mock/tipos";
 
-export type Requisito = {
-  documento: TipoDocumento;
-  nombre: string;
-  obligatorio: boolean;
-  automatico: boolean;
-  norma: string;
-  vigenciaMeses: number | null;
-};
+export type Requisito = DocumentoRequeridoApi;
 
-export const requisitosDe = (tipoActor: TipoActor): readonly Requisito[] =>
-  POLITICA_VERIFICACION.filter((regla) => regla.tipoActor === tipoActor).map((regla) => ({
-    documento: regla.documento,
-    nombre: NOMBRE_DOCUMENTO[regla.documento],
-    obligatorio: regla.obligatorio,
-    automatico: regla.modo === "AUTOMATICO",
-    norma: regla.norma,
-    vigenciaMeses: regla.vigenciaMeses,
-  }));
+const CONTRASTADOS_CONTRA_RUES: readonly string[] = ["RUT", "CAMARA_COMERCIO"];
 
-export const porAportar = (tipoActor: TipoActor): readonly Requisito[] =>
-  requisitosDe(tipoActor).filter((requisito) => !requisito.automatico);
+export const seContrastaContraRues = (tipo: string): boolean =>
+  CONTRASTADOS_CONTRA_RUES.includes(tipo);
 
-export const consultadosSolos = (tipoActor: TipoActor): readonly Requisito[] =>
-  requisitosDe(tipoActor).filter((requisito) => requisito.automatico);
+export const useRequisitos = (tipoActor: TipoActor, habilitado = true) =>
+  useQuery({
+    queryKey: ["actores", "requisitos", tipoActor],
+    queryFn: () => apiComercial.requisitosDeActor(tipoActor),
+    enabled: habilitado,
+    staleTime: 10 * 60_000,
+  });
 
-export const vigenciaLegible = (meses: number | null): string | null => {
-  if (meses === null) return null;
-  if (meses < 12) return `Vigencia ${meses} ${meses === 1 ? "mes" : "meses"}`;
-  const anios = meses / 12;
-  return `Vigencia ${Number.isInteger(anios) ? anios : anios.toFixed(1)} ${anios === 1 ? "año" : "años"}`;
-};
+export const obligatoriosDe = (requisitos: readonly Requisito[]): readonly Requisito[] =>
+  requisitos.filter((requisito) => requisito.obligatorio);

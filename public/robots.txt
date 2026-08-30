@@ -4,4 +4,4 @@ Disallow: /app/
 Disallow: /acceso
 Disallow: /app/salud/
 
-Sitemap: https://sicamed.co/sitemap.xml
+Sitemap: https://sicamed.com.co/sitemap.xml

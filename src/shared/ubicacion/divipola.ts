@@ -1,0 +1,397 @@
+export type Departamento = {
+  codigo: string;
+  nombre: string;
+};
+
+export type Municipio = {
+  codigo: string;
+  nombre: string;
+  departamento: string;
+};
+
+type Fila = readonly [codigo: string, nombre: string, municipios: string];
+
+const CATALOGO: readonly Fila[] = [
+  [
+    "05",
+    "Antioquia",
+    "001 Medellín|002 Abejorral|004 Abriaquí|021 Alejandría|030 Amagá|031 Amalfi|034 Andes|" +
+      "036 Angelópolis|038 Angostura|040 Anorí|042 Santa Fe de Antioquia|044 Anzá|045 Apartadó|" +
+      "051 Arboletes|055 Argelia|059 Armenia|079 Barbosa|086 Belmira|088 Bello|091 Betania|" +
+      "093 Betulia|101 Ciudad Bolívar|107 Briceño|113 Buriticá|120 Cáceres|125 Caicedo|" +
+      "129 Caldas|134 Campamento|138 Cañasgordas|142 Caracolí|145 Caramanta|147 Carepa|" +
+      "148 El Carmen de Viboral|150 Carolina del Príncipe|154 Caucasia|172 Chigorodó|" +
+      "190 Cisneros|197 Cocorná|206 Concepción|209 Concordia|212 Copacabana|234 Dabeiba|" +
+      "237 Donmatías|240 Ebéjico|250 El Bagre|264 Entrerríos|266 Envigado|282 Fredonia|" +
+      "284 Frontino|306 Giraldo|308 Girardota|310 Gómez Plata|313 Granada|315 Guadalupe|" +
+      "318 Guarne|321 Guatapé|347 Heliconia|353 Hispania|360 Itagüí|361 Ituango|364 Jardín|" +
+      "368 Jericó|376 La Ceja|380 La Estrella|390 La Pintada|400 La Unión|411 Liborina|" +
+      "425 Maceo|440 Marinilla|467 Montebello|475 Murindó|480 Mutatá|483 Nariño|490 Necoclí|" +
+      "495 Nechí|501 Olaya|541 Peñol|543 Peque|576 Pueblorrico|579 Puerto Berrío|" +
+      "585 Puerto Nare|591 Puerto Triunfo|604 Remedios|607 Retiro|615 Rionegro|" +
+      "628 Sabanalarga|631 Sabaneta|642 Salgar|647 San Andrés de Cuerquia|649 San Carlos|" +
+      "652 San Francisco|656 San Jerónimo|658 San José de la Montaña|659 San Juan de Urabá|" +
+      "660 San Luis|664 San Pedro de los Milagros|665 San Pedro de Urabá|667 San Rafael|" +
+      "670 San Roque|674 San Vicente Ferrer|679 Santa Bárbara|686 Santa Rosa de Osos|" +
+      "690 Santo Domingo|697 El Santuario|736 Segovia|756 Sonsón|761 Sopetrán|789 Támesis|" +
+      "790 Tarazá|792 Tarso|809 Titiribí|819 Toledo|837 Turbo|842 Uramita|847 Urrao|" +
+      "854 Valdivia|856 Valparaíso|858 Vegachí|861 Venecia|873 Vigía del Fuerte|885 Yalí|" +
+      "887 Yarumal|890 Yolombó|893 Yondó|895 Zaragoza",
+  ],
+  [
+    "08",
+    "Atlántico",
+    "001 Barranquilla|078 Baranoa|137 Campo de la Cruz|141 Candelaria|296 Galapa|" +
+      "372 Juan de Acosta|421 Luruaco|433 Malambo|436 Manatí|520 Palmar de Varela|549 Piojó|" +
+      "558 Polonuevo|560 Ponedera|573 Puerto Colombia|606 Repelón|634 Sabanagrande|" +
+      "638 Sabanalarga|675 Santa Lucía|685 Santo Tomás|758 Soledad|770 Suan|832 Tubará|" +
+      "849 Usiacurí",
+  ],
+  ["11", "Bogotá D.C.", "001 Bogotá D.C."],
+  [
+    "13",
+    "Bolívar",
+    "001 Cartagena de Indias|006 Achí|030 Altos del Rosario|042 Arenal|052 Arjona|" +
+      "062 Arroyohondo|074 Barranco de Loba|140 Calamar|160 Cantagallo|188 Cicuco|" +
+      "212 Córdoba|222 Clemencia|244 El Carmen de Bolívar|248 El Guamo|268 El Peñón|" +
+      "300 Hatillo de Loba|430 Magangué|433 Mahates|440 Margarita|442 María la Baja|" +
+      "458 Montecristo|468 Santa Cruz de Mompox|473 Morales|490 Norosí|549 Pinillos|" +
+      "580 Regidor|600 Río Viejo|620 San Cristóbal|647 San Estanislao|650 San Fernando|" +
+      "654 San Jacinto|655 San Jacinto del Cauca|657 San Juan Nepomuceno|" +
+      "667 San Martín de Loba|670 San Pablo|673 Santa Catalina|683 Santa Rosa|" +
+      "688 Santa Rosa del Sur|744 Simití|760 Soplaviento|780 Talaigua Nuevo|810 Tiquisio|" +
+      "836 Turbaco|838 Turbaná|873 Villanueva|894 Zambrano",
+  ],
+  [
+    "15",
+    "Boyacá",
+    "001 Tunja|022 Almeida|047 Aquitania|051 Arcabuco|087 Belén|090 Berbeo|092 Betéitiva|" +
+      "097 Boavita|104 Boyacá|106 Briceño|109 Buenavista|114 Busbanzá|131 Caldas|" +
+      "135 Campohermoso|162 Cerinza|172 Chinavita|176 Chiquinquirá|180 Chiscas|183 Chita|" +
+      "185 Chitaraque|187 Chivatá|189 Ciénega|204 Cómbita|212 Coper|215 Corrales|" +
+      "218 Covarachía|223 Cubará|224 Cucaita|226 Cuítiva|232 Chíquiza|236 Chivor|238 Duitama|" +
+      "244 El Cocuy|248 El Espino|272 Firavitoba|276 Floresta|293 Gachantivá|296 Gámeza|" +
+      "299 Garagoa|317 Guacamayas|322 Guateque|325 Guayatá|332 Güicán de la Sierra|362 Iza|" +
+      "367 Jenesano|368 Jericó|377 Labranzagrande|380 La Capilla|401 La Victoria|403 La Uvita|" +
+      "407 Villa de Leyva|425 Macanal|442 Maripí|455 Miraflores|464 Mongua|466 Monguí|" +
+      "469 Moniquirá|476 Motavita|480 Muzo|491 Nobsa|494 Nuevo Colón|500 Oicatá|507 Otanche|" +
+      "511 Pachavita|514 Páez|516 Paipa|518 Pajarito|522 Panqueba|531 Pauna|533 Paya|" +
+      "537 Paz de Río|542 Pesca|550 Pisba|572 Puerto Boyacá|580 Quípama|599 Ramiriquí|" +
+      "600 Ráquira|621 Rondón|632 Saboyá|638 Sáchica|646 Samacá|660 San Eduardo|" +
+      "664 San José de Pare|667 San Luis de Gaceno|673 San Mateo|676 San Miguel de Sema|" +
+      "681 San Pablo de Borbur|686 Santana|690 Santa María|693 Santa Rosa de Viterbo|" +
+      "696 Santa Sofía|720 Sativanorte|723 Sativasur|740 Siachoque|753 Soatá|755 Socotá|" +
+      "757 Socha|759 Sogamoso|761 Somondoco|762 Sora|763 Sotaquirá|764 Soracá|774 Susacón|" +
+      "776 Sutamarchán|778 Sutatenza|790 Tasco|798 Tenza|804 Tibaná|806 Tibasosa|808 Tinjacá|" +
+      "810 Tipacoque|814 Toca|816 Togüí|820 Tópaga|822 Tota|832 Tununguá|835 Turmequé|" +
+      "837 Tuta|839 Tutazá|842 Úmbita|861 Ventaquemada|879 Viracachá|897 Zetaquira",
+  ],
+  [
+    "17",
+    "Caldas",
+    "001 Manizales|013 Aguadas|042 Anserma|050 Aranzazu|088 Belalcázar|174 Chinchiná|" +
+      "272 Filadelfia|380 La Dorada|388 La Merced|433 Manzanares|442 Marmato|444 Marquetalia|" +
+      "446 Marulanda|486 Neira|495 Norcasia|513 Pácora|524 Palestina|541 Pensilvania|" +
+      "614 Riosucio|616 Risaralda|653 Salamina|662 Samaná|665 San José|777 Supía|" +
+      "867 Victoria|873 Villamaría|877 Viterbo",
+  ],
+  [
+    "18",
+    "Caquetá",
+    "001 Florencia|029 Albania|094 Belén de los Andaquíes|150 Cartagena del Chairá|" +
+      "205 Curillo|247 El Doncello|256 El Paujil|410 La Montañita|460 Milán|479 Morelia|" +
+      "592 Puerto Rico|610 San José del Fragua|753 San Vicente del Caguán|756 Solano|" +
+      "785 Solita|860 Valparaíso",
+  ],
+  [
+    "19",
+    "Cauca",
+    "001 Popayán|022 Almaguer|050 Argelia|075 Balboa|100 Bolívar|110 Buenos Aires|" +
+      "130 Cajibío|137 Caldono|142 Caloto|212 Corinto|256 El Tambo|290 Florencia|" +
+      "300 Guachené|318 Guapi|355 Inzá|364 Jambaló|392 La Sierra|397 La Vega|" +
+      "418 López de Micay|450 Mercaderes|455 Miranda|473 Morales|513 Padilla|517 Páez|" +
+      "532 Patía|533 Piamonte|548 Piendamó|573 Puerto Tejada|585 Puracé|622 Rosas|" +
+      "693 San Sebastián|698 Santander de Quilichao|701 Santa Rosa|743 Silvia|760 Sotará|" +
+      "780 Suárez|785 Sucre|807 Timbío|809 Timbiquí|821 Toribío|824 Totoró|845 Villa Rica",
+  ],
+  [
+    "20",
+    "Cesar",
+    "001 Valledupar|011 Aguachica|013 Agustín Codazzi|032 Astrea|045 Becerril|060 Bosconia|" +
+      "175 Chimichagua|178 Chiriguaná|228 Curumaní|238 El Copey|250 El Paso|295 Gamarra|" +
+      "310 González|383 La Gloria|400 La Jagua de Ibirico|443 Manaure Balcón del Cesar|" +
+      "517 Pailitas|550 Pelaya|570 Pueblo Bello|614 Río de Oro|621 La Paz|710 San Alberto|" +
+      "750 San Diego|770 San Martín|787 Tamalameque",
+  ],
+  [
+    "23",
+    "Córdoba",
+    "001 Montería|068 Ayapel|079 Buenavista|090 Canalete|162 Cereté|168 Chimá|182 Chinú|" +
+      "189 Ciénaga de Oro|300 Cotorra|350 La Apartada|417 Lorica|419 Los Córdobas|466 Momil|" +
+      "464 Montelíbano|500 Moñitos|555 Planeta Rica|570 Pueblo Nuevo|574 Puerto Escondido|" +
+      "580 Puerto Libertador|586 Purísima|660 Sahagún|670 San Andrés de Sotavento|" +
+      "672 San Antero|675 San Bernardo del Viento|678 San Carlos|682 San José de Uré|" +
+      "686 San Pelayo|807 Tierralta|815 Tuchín|855 Valencia",
+  ],
+  [
+    "25",
+    "Cundinamarca",
+    "001 Agua de Dios|019 Albán|035 Anapoima|040 Anolaima|053 Arbeláez|086 Beltrán|" +
+      "095 Bituima|099 Bojacá|120 Cabrera|123 Cachipay|126 Cajicá|148 Caparrapí|151 Cáqueza|" +
+      "154 Carmen de Carupa|168 Chaguaní|175 Chía|178 Chipaque|181 Choachí|183 Chocontá|" +
+      "200 Cogua|214 Cota|224 Cucunubá|245 El Colegio|258 El Peñón|260 El Rosal|" +
+      "269 Facatativá|279 Fómeque|281 Fosca|286 Funza|288 Fúquene|290 Fusagasugá|" +
+      "293 Gachalá|295 Gachancipá|297 Gachetá|299 Gama|307 Girardot|312 Granada|" +
+      "317 Guachetá|320 Guaduas|322 Guasca|324 Guataquí|326 Guatavita|" +
+      "328 Guayabal de Síquima|335 Guayabetal|339 Gutiérrez|368 Jerusalén|372 Junín|" +
+      "377 La Calera|386 La Mesa|394 La Palma|398 La Peña|402 La Vega|407 Lenguazaque|" +
+      "426 Machetá|430 Madrid|436 Manta|438 Medina|473 Mosquera|483 Nariño|486 Nemocón|" +
+      "488 Nilo|489 Nimaima|491 Nocaima|506 Venecia|513 Pacho|518 Paime|524 Pandi|" +
+      "530 Paratebueno|535 Pasca|572 Puerto Salgar|580 Pulí|592 Quebradanegra|594 Quetame|" +
+      "596 Quipile|599 Apulo|612 Ricaurte|645 San Antonio del Tequendama|649 San Bernardo|" +
+      "653 San Cayetano|658 San Francisco|662 San Juan de Rioseco|718 Sasaima|736 Sesquilé|" +
+      "740 Sibaté|743 Silvania|745 Simijaca|754 Soacha|758 Sopó|769 Subachoque|772 Suesca|" +
+      "777 Supatá|779 Susa|781 Sutatausa|785 Tabio|793 Tausa|797 Tena|799 Tenjo|" +
+      "805 Tibacuy|807 Tibirita|815 Tocaima|817 Tocancipá|823 Topaipí|839 Ubalá|841 Ubaque|" +
+      "843 Villa de San Diego de Ubaté|845 Une|851 Útica|862 Vergara|867 Vianí|" +
+      "871 Villagómez|873 Villapinzón|875 Villeta|878 Viotá|885 Yacopí|898 Zipacón|" +
+      "899 Zipaquirá",
+  ],
+  [
+    "27",
+    "Chocó",
+    "001 Quibdó|006 Acandí|025 Alto Baudó|050 Atrato|073 Bagadó|075 Bahía Solano|" +
+      "077 Bajo Baudó|099 Bojayá|135 El Cantón del San Pablo|150 Carmen del Darién|" +
+      "160 Cértegui|205 Condoto|245 El Carmen de Atrato|250 El Litoral del San Juan|" +
+      "361 Istmina|372 Juradó|413 Lloró|425 Medio Atrato|430 Medio Baudó|450 Medio San Juan|" +
+      "491 Nóvita|495 Nuquí|580 Río Iró|600 Río Quito|615 Riosucio|660 San José del Palmar|" +
+      "745 Sipí|787 Tadó|800 Unguía|810 Unión Panamericana",
+  ],
+  [
+    "41",
+    "Huila",
+    "001 Neiva|006 Acevedo|013 Agrado|016 Aipe|020 Algeciras|026 Altamira|078 Baraya|" +
+      "132 Campoalegre|206 Colombia|244 Elías|298 Garzón|306 Gigante|319 Guadalupe|" +
+      "349 Hobo|357 Íquira|359 Isnos|378 La Argentina|396 La Plata|483 Nátaga|" +
+      "503 Oporapa|518 Paicol|524 Palermo|530 Palestina|548 Pital|551 Pitalito|615 Rivera|" +
+      "660 Saladoblanco|668 San Agustín|676 Santa María|770 Suaza|791 Tarqui|797 Tesalia|" +
+      "799 Tello|801 Teruel|807 Timaná|872 Villavieja|885 Yaguará",
+  ],
+  [
+    "44",
+    "La Guajira",
+    "001 Riohacha|035 Albania|078 Barrancas|090 Dibulla|098 Distracción|110 El Molino|" +
+      "279 Fonseca|378 Hatonuevo|420 La Jagua del Pilar|430 Maicao|560 Manaure|" +
+      "650 San Juan del Cesar|847 Uribia|855 Urumita|874 Villanueva",
+  ],
+  [
+    "47",
+    "Magdalena",
+    "001 Santa Marta|030 Algarrobo|053 Aracataca|058 Ariguaní|161 Cerro de San Antonio|" +
+      "170 Chivolo|189 Ciénaga|205 Concordia|245 El Banco|258 El Piñón|268 El Retén|" +
+      "288 Fundación|318 Guamal|460 Nueva Granada|541 Pedraza|545 Pijiño del Carmen|" +
+      "551 Pivijay|555 Plato|570 Puebloviejo|605 Remolino|660 Sabanas de San Ángel|" +
+      "675 Salamina|692 San Sebastián de Buenavista|703 San Zenón|707 Santa Ana|" +
+      "720 Santa Bárbara de Pinto|745 Sitionuevo|798 Tenerife|960 Zapayán|980 Zona Bananera",
+  ],
+  [
+    "50",
+    "Meta",
+    "001 Villavicencio|006 Acacías|110 Barranca de Upía|124 Cabuyaro|150 Castilla la Nueva|" +
+      "223 Cubarral|226 Cumaral|245 El Calvario|251 El Castillo|270 El Dorado|" +
+      "287 Fuente de Oro|313 Granada|318 Guamal|325 Mapiripán|330 Mesetas|350 La Macarena|" +
+      "370 Uribe|400 Lejanías|450 Puerto Concordia|568 Puerto Gaitán|573 Puerto López|" +
+      "577 Puerto Lleras|590 Puerto Rico|606 Restrepo|680 San Carlos de Guaroa|" +
+      "683 San Juan de Arama|686 San Juanito|689 San Martín|711 Vistahermosa",
+  ],
+  [
+    "52",
+    "Nariño",
+    "001 Pasto|019 Albán|022 Aldana|036 Ancuyá|051 Arboleda|079 Barbacoas|083 Belén|" +
+      "110 Buesaco|203 Colón|207 Consacá|210 Contadero|215 Córdoba|224 Cuaspud|227 Cumbal|" +
+      "233 Cumbitara|240 Chachagüí|250 El Charco|254 El Peñol|256 El Rosario|" +
+      "258 El Tablón de Gómez|260 El Tambo|287 Funes|317 Guachucal|320 Guaitarilla|" +
+      "323 Gualmatán|352 Iles|354 Imués|356 Ipiales|378 La Cruz|381 La Florida|" +
+      "385 La Llanada|390 La Tola|399 La Unión|405 Leiva|411 Linares|418 Los Andes|" +
+      "427 Magüí|435 Mallama|473 Mosquera|480 Nariño|490 Olaya Herrera|506 Ospina|" +
+      "520 Francisco Pizarro|540 Policarpa|560 Potosí|565 Providencia|573 Puerres|" +
+      "585 Pupiales|612 Ricaurte|621 Roberto Payán|678 Samaniego|683 Sandoná|" +
+      "685 San Bernardo|687 San Lorenzo|693 San Pablo|694 San Pedro de Cartago|" +
+      "696 Santa Bárbara|699 Santacruz|720 Sapuyes|786 Taminango|788 Tangua|" +
+      "835 San Andrés de Tumaco|838 Túquerres|885 Yacuanquer",
+  ],
+  [
+    "54",
+    "Norte de Santander",
+    "001 Cúcuta|003 Ábrego|051 Arboledas|099 Bochalema|109 Bucarasica|125 Cácota|" +
+      "128 Cáchira|172 Chinácota|174 Chitagá|206 Convención|223 Cucutilla|239 Durania|" +
+      "245 El Carmen|250 El Tarra|261 El Zulia|313 Gramalote|344 Hacarí|347 Herrán|" +
+      "377 Labateca|385 La Esperanza|398 La Playa|405 Los Patios|418 Lourdes|480 Mutiscua|" +
+      "498 Ocaña|518 Pamplona|520 Pamplonita|553 Puerto Santander|599 Ragonvalia|" +
+      "660 Salazar de Las Palmas|670 San Calixto|673 San Cayetano|680 Santiago|" +
+      "720 Sardinata|743 Silos|800 Teorama|810 Tibú|820 Toledo|871 Villa Caro|" +
+      "874 Villa del Rosario",
+  ],
+  [
+    "63",
+    "Quindío",
+    "001 Armenia|111 Buenavista|130 Calarcá|190 Circasia|212 Córdoba|272 Filandia|" +
+      "302 Génova|401 La Tebaida|470 Montenegro|548 Pijao|594 Quimbaya|690 Salento",
+  ],
+  [
+    "66",
+    "Risaralda",
+    "001 Pereira|045 Apía|075 Balboa|088 Belén de Umbría|170 Dosquebradas|318 Guática|" +
+      "383 La Celia|400 La Virginia|440 Marsella|456 Mistrató|572 Pueblo Rico|594 Quinchía|" +
+      "682 Santa Rosa de Cabal|687 Santuario",
+  ],
+  [
+    "68",
+    "Santander",
+    "001 Bucaramanga|013 Aguada|020 Albania|051 Aratoca|077 Barbosa|079 Barichara|" +
+      "081 Barrancabermeja|092 Betulia|101 Bolívar|121 Cabrera|132 California|" +
+      "147 Capitanejo|152 Carcasí|160 Cepitá|162 Cerrito|167 Charalá|169 Charta|176 Chimá|" +
+      "179 Chipatá|190 Cimitarra|207 Concepción|209 Confines|211 Contratación|" +
+      "217 Coromoro|229 Curití|235 El Carmen de Chucurí|245 El Guacamayo|250 El Peñón|" +
+      "255 El Playón|264 Encino|266 Enciso|271 Florián|276 Floridablanca|296 Galán|" +
+      "298 Gámbita|307 Girón|318 Guaca|320 Guadalupe|322 Guapotá|324 Guavatá|327 Güepsa|" +
+      "344 Hato|368 Jesús María|370 Jordán|377 La Belleza|385 Landázuri|397 La Paz|" +
+      "406 Lebrija|418 Los Santos|425 Macaravita|432 Málaga|444 Matanza|464 Mogotes|" +
+      "468 Molagavita|498 Ocamonte|500 Oiba|502 Onzaga|522 Palmar|524 Palmas del Socorro|" +
+      "533 Páramo|547 Piedecuesta|549 Pinchote|572 Puente Nacional|573 Puerto Parra|" +
+      "575 Puerto Wilches|615 Rionegro|655 Sabana de Torres|669 San Andrés|673 San Benito|" +
+      "679 San Gil|682 San Joaquín|684 San José de Miranda|686 San Miguel|" +
+      "689 San Vicente de Chucurí|705 Santa Bárbara|720 Santa Helena del Opón|745 Simacota|" +
+      "755 Socorro|770 Suaita|773 Sucre|780 Suratá|820 Tona|855 Valle de San José|" +
+      "861 Vélez|867 Vetas|872 Villanueva|895 Zapatoca",
+  ],
+  [
+    "70",
+    "Sucre",
+    "001 Sincelejo|110 Buenavista|124 Caimito|204 Colosó|215 Corozal|221 Coveñas|" +
+      "230 Chalán|233 El Roble|235 Galeras|265 Guaranda|400 La Unión|418 Los Palmitos|" +
+      "429 Majagual|473 Morroa|508 Ovejas|523 Palmito|670 Sampués|678 San Benito Abad|" +
+      "702 San Juan de Betulia|708 San Marcos|713 San Onofre|717 San Pedro|" +
+      "742 San Luis de Sincé|771 Sucre|820 Santiago de Tolú|823 Tolú Viejo",
+  ],
+  [
+    "73",
+    "Tolima",
+    "001 Ibagué|024 Alpujarra|026 Alvarado|030 Ambalema|043 Anzoátegui|055 Armero|" +
+      "067 Ataco|124 Cajamarca|148 Carmen de Apicalá|152 Casabianca|168 Chaparral|" +
+      "200 Coello|217 Coyaima|226 Cunday|236 Dolores|268 Espinal|270 Falan|275 Flandes|" +
+      "283 Fresno|319 Guamo|347 Herveo|349 Honda|352 Icononzo|396 Lérida|400 Líbano|" +
+      "411 San Sebastián de Mariquita|443 Melgar|449 Murillo|461 Natagaima|483 Ortega|" +
+      "504 Palocabildo|520 Piedras|547 Planadas|555 Prado|563 Purificación|585 Rioblanco|" +
+      "616 Roncesvalles|622 Rovira|624 Saldaña|671 San Antonio|675 San Luis|" +
+      "678 Santa Isabel|686 Suárez|770 Valle de San Juan|854 Venadillo|861 Villahermosa|" +
+      "870 Villarrica",
+  ],
+  [
+    "76",
+    "Valle del Cauca",
+    "001 Cali|020 Alcalá|036 Andalucía|041 Ansermanuevo|054 Argelia|100 Bolívar|" +
+      "109 Buenaventura|111 Guadalajara de Buga|113 Bugalagrande|122 Caicedonia|" +
+      "126 Calima|130 Candelaria|147 Cartago|233 Dagua|243 El Águila|246 El Cairo|" +
+      "248 El Cerrito|250 El Dovio|275 Florida|306 Ginebra|318 Guacarí|364 Jamundí|" +
+      "377 La Cumbre|400 La Unión|403 La Victoria|497 Obando|520 Palmira|563 Pradera|" +
+      "606 Restrepo|616 Riofrío|622 Roldanillo|670 San Pedro|736 Sevilla|823 Toro|" +
+      "828 Trujillo|834 Tuluá|845 Ulloa|863 Versalles|869 Vijes|890 Yotoco|892 Yumbo|" +
+      "895 Zarzal",
+  ],
+  [
+    "81",
+    "Arauca",
+    "001 Arauca|065 Arauquita|220 Cravo Norte|300 Fortul|591 Puerto Rondón|736 Saravena|" +
+      "794 Tame",
+  ],
+  [
+    "85",
+    "Casanare",
+    "001 Yopal|010 Aguazul|015 Chámeza|125 Hato Corozal|136 La Salina|139 Maní|" +
+      "162 Monterrey|225 Nunchía|230 Orocué|250 Paz de Ariporo|263 Pore|279 Recetor|" +
+      "300 Sabanalarga|315 Sácama|325 San Luis de Palenque|400 Támara|410 Tauramena|" +
+      "430 Trinidad|440 Villanueva",
+  ],
+  [
+    "86",
+    "Putumayo",
+    "001 Mocoa|219 Colón|320 Orito|568 Puerto Asís|569 Puerto Caicedo|571 Puerto Guzmán|" +
+      "573 Puerto Leguízamo|749 Sibundoy|755 San Francisco|757 San Miguel|760 Santiago|" +
+      "865 Valle del Guamuez|885 Villagarzón",
+  ],
+  [
+    "88",
+    "Archipiélago de San Andrés, Providencia y Santa Catalina",
+    "001 San Andrés|564 Providencia",
+  ],
+  [
+    "91",
+    "Amazonas",
+    "001 Leticia|263 El Encanto|405 La Chorrera|407 La Pedrera|430 La Victoria|" +
+      "460 Mirití-Paraná|530 Puerto Alegría|536 Puerto Arica|540 Puerto Nariño|" +
+      "669 Puerto Santander|798 Tarapacá",
+  ],
+  [
+    "94",
+    "Guainía",
+    "001 Inírida|343 Barranco Minas|663 Mapiripana|883 San Felipe|884 Puerto Colombia|" +
+      "885 La Guadalupe|886 Cacahual|887 Pana Pana|888 Morichal",
+  ],
+  [
+    "95",
+    "Guaviare",
+    "001 San José del Guaviare|015 Calamar|025 El Retorno|200 Miraflores",
+  ],
+  [
+    "97",
+    "Vaupés",
+    "001 Mitú|161 Carurú|511 Pacoa|666 Taraira|777 Papunahua|889 Yavaraté",
+  ],
+  [
+    "99",
+    "Vichada",
+    "001 Puerto Carreño|524 La Primavera|624 Santa Rosalía|773 Cumaribo",
+  ],
+];
+
+const separar = (fila: Fila): readonly Municipio[] =>
+  fila[2].split("|").map((entrada) => ({
+    codigo: `${fila[0]}${entrada.slice(0, 3)}`,
+    nombre: entrada.slice(4),
+    departamento: fila[0],
+  }));
+
+export const DEPARTAMENTOS: readonly Departamento[] = CATALOGO.map(([codigo, nombre]) => ({
+  codigo,
+  nombre,
+})).sort((uno, otro) => uno.nombre.localeCompare(otro.nombre, "es"));
+
+const POR_DEPARTAMENTO = new Map<string, readonly Municipio[]>(
+  CATALOGO.map((fila) => [
+    fila[0],
+    [...separar(fila)].sort((uno, otro) => uno.nombre.localeCompare(otro.nombre, "es")),
+  ]),
+);
+
+const POR_CODIGO = new Map<string, Municipio>(
+  CATALOGO.flatMap(separar).map((municipio) => [municipio.codigo, municipio]),
+);
+
+export const municipiosDe = (codigoDepartamento: string): readonly Municipio[] =>
+  POR_DEPARTAMENTO.get(codigoDepartamento) ?? [];
+
+export const municipio = (codigo: string): Municipio | null => POR_CODIGO.get(codigo) ?? null;
+
+export const departamento = (codigo: string): Departamento | null =>
+  DEPARTAMENTOS.find((entrada) => entrada.codigo === codigo) ?? null;
+
+export const nombreDeMunicipio = (codigo: string): string => POR_CODIGO.get(codigo)?.nombre ?? codigo;
+
+export const nombreDeDepartamento = (codigo: string): string =>
+  departamento(codigo)?.nombre ?? codigo;
+
+export const esMunicipioDe = (codigoMunicipio: string, codigoDepartamento: string): boolean =>
+  POR_CODIGO.get(codigoMunicipio)?.departamento === codigoDepartamento;
+
+export const TOTAL_MUNICIPIOS = POR_CODIGO.size;

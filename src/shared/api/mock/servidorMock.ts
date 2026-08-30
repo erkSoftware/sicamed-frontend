@@ -13,6 +13,7 @@ import {
 } from "./almacen";
 import { OFERTAS_PUBLICAS, SERIE_PUBLICACIONES } from "./datos";
 import { NOMBRE_DOCUMENTO } from "./datosProceso";
+import { requisitosDeActor } from "./requisitosActor";
 import type { DocumentoAdjunto } from "./tipos";
 import { DEPARTAMENTOS, ETAPAS_PROCESO, TOTALES_NACIONALES } from "./catalogos";
 import { CITAS, INDICADORES_CLINICOS, NOTAS, PACIENTES, PRESCRIPCIONES } from "./datosClinicos";
@@ -72,6 +73,15 @@ const rechazar = (problema: {
   accion?: { etiqueta: string; ruta: string };
 }): Promise<never> => Promise.reject(new ErrorApi(problema));
 
+const rechazarSinOrganizacion = (): Promise<never> =>
+  rechazar({
+    type: "https://sicamed.co/problemas/organizacion-no-asociada",
+    title: "Tu cuenta todavía no está asociada a una organización",
+    detail:
+      "Esta cuenta existe pero aún no cuelga de ninguna organización del padrón. Ocurre mientras el expediente de registro sigue en trámite: cuando se apruebe, la ficha aparecerá aquí con sus datos.",
+    status: 404,
+  });
+
 const rechazarNoEncontrado = (entidad: string, id: string): Promise<never> =>
   rechazar({
     type: "https://sicamed.co/problemas/recurso-no-encontrado",
@@ -112,11 +122,13 @@ export const servidorMock = {
       eventosLedger: almacen.eventos.length + 148_320,
     }),
 
-  organizacionActual: (id?: string) =>
-    demorar(
+  organizacionActual: (id?: string) => {
+    const encontrada =
       (id ? almacen.organizaciones.find((organizacion) => organizacion.id === id) : undefined) ??
-        (almacen.organizaciones[5] as Organizacion),
-    ),
+      almacen.organizaciones[5];
+    if (!encontrada) return rechazarSinOrganizacion();
+    return demorar(encontrada);
+  },
 
   organizaciones: (filtro: FiltroListado = {}) => {
     const resultado = almacen.organizaciones.filter(
@@ -1463,6 +1475,58 @@ export const servidorMock = {
     return demorar(paginar(resultado, filtro.pagina, filtro.porPagina ?? 10));
   },
 
+  requisitosDeActor: (tipoActor: TipoActor) => demorar(requisitosDeActor(tipoActor)),
+
+  prepararSoporte: (entrada: { tipo: string; nombre: string; mime: string; bytes: number }) => {
+    const soporteId = siguienteId("SOP");
+    almacen.soportes.push({ ...entrada, soporteId, estado: "PENDIENTE" });
+    return demorar({
+      soporteId,
+      subida: {
+        url: `mock://sicamed-originales/${soporteId}`,
+        metodo: "POST",
+        expira: new Date(Date.now() + 600_000).toISOString(),
+        campos: { key: `originales/radicacion/${soporteId}`, "Content-Type": entrada.mime },
+      },
+      mimesAdmitidos: ["application/pdf", "image/jpeg", "image/png", "image/webp"],
+      bytesMaximos: 10 * 1024 * 1024,
+    });
+  },
+
+  confirmarSoporte: (soporteId: string) => {
+    const soporte = almacen.soportes.find((una) => una.soporteId === soporteId);
+    if (!soporte)
+      return rechazar({
+        type: "https://sicamed.co/problemas/archivo-no-subido",
+        title: "El archivo no llegó al almacenamiento",
+        detail:
+          "La autorización de subida caducó antes de que el archivo terminara de llegar. Vuelve a " +
+          "elegir el archivo para reintentarlo.",
+        status: 409,
+      });
+    soporte.estado = "DISPONIBLE";
+    return demorar({ ...soporte });
+  },
+
+  verificarCorreo: (entrada: { solicitudId: string; token: string }) => {
+    const solicitud = almacen.solicitudes.find((una) => una.id === entrada.solicitudId);
+    if (!solicitud || solicitud.tokenVerificacion !== entrada.token)
+      return rechazar({
+        type: "https://sicamed.co/problemas/verificacion-de-correo-invalida",
+        title: "El enlace de verificación no es válido",
+        detail:
+          "El enlace no corresponde a ninguna solicitud radicada. Abre el enlace tal como llegó al " +
+          "correo, sin recortarlo.",
+        status: 400,
+      });
+    solicitud.correoVerificado = true;
+    return demorar({
+      id: solicitud.id,
+      correoVerificado: true,
+      mensaje: "El correo quedó verificado en la solicitud radicada.",
+    });
+  },
+
   radicarSolicitud: (entrada: {
     nit: string;
     organizacion: string;
@@ -1472,6 +1536,7 @@ export const servidorMock = {
     representante: string;
     correo: string;
     telefono: string;
+    clave: string;
     documentos?: readonly DocumentoAdjunto[];
   }) => {
     const repetida = almacen.organizaciones.find(
@@ -1504,6 +1569,8 @@ export const servidorMock = {
       expedienteId: null,
       documentos: entrada.documentos ?? [],
       huella: nuevaHuella(),
+      correoVerificado: false,
+      tokenVerificacion: nuevaHuella().slice(0, 32),
     };
     almacen.solicitudes.unshift(solicitud);
     registrarEvento({
@@ -1514,7 +1581,15 @@ export const servidorMock = {
       actor: entrada.representante,
       organizacionId: "ORG-0000",
     });
-    return demorar(solicitud);
+    return demorar({
+      id: solicitud.id,
+      estado: solicitud.estado,
+      radicada: solicitud.recibida,
+      mensaje:
+        "Su solicitud quedó radicada. Un analista de cumplimiento la revisará y le responderá al " +
+        "correo indicado; conserve el número de radicado.",
+      tokenVerificacion: solicitud.tokenVerificacion,
+    });
   },
 
   abrirExpediente: (entrada: { solicitudId: string; autor: Autor }) => {

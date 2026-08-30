@@ -1,7 +1,9 @@
 import { PERFILES_DEMO, perfilPorDefecto, sesionDesdePerfil } from "./perfiles";
-import type { ProveedorAutenticacion, Sesion } from "./tipos";
+import type { Credenciales, ProveedorAutenticacion, Sesion } from "./tipos";
 
 const CLAVE_PERFIL = "sicamed.perfil-demo";
+
+const TOKEN_DE_DESARROLLO = import.meta.env.VITE_TOKEN_DESARROLLO;
 
 let credencialEnMemoria: string | undefined;
 
@@ -20,8 +22,8 @@ export const proveedorMock: ProveedorAutenticacion = {
     return sesionDesdePerfil(perfil);
   },
 
-  iniciarSesion: async (perfilDemo?: string): Promise<Sesion> => {
-    const perfil = perfilPorClave(perfilDemo ?? null);
+  iniciarSesion: async (credenciales?: Credenciales): Promise<Sesion> => {
+    const perfil = perfilPorClave(credenciales?.perfilDemo ?? null);
     if (!perfil) throw new Error("Perfil de demostración no disponible");
     window.sessionStorage.setItem(CLAVE_PERFIL, perfil.clave);
     credencialEnMemoria = `demo.${perfil.clave}`;
@@ -33,5 +35,5 @@ export const proveedorMock: ProveedorAutenticacion = {
     credencialEnMemoria = undefined;
   },
 
-  credencial: () => credencialEnMemoria,
+  credencial: () => (credencialEnMemoria ? (TOKEN_DE_DESARROLLO ?? credencialEnMemoria) : undefined),
 };

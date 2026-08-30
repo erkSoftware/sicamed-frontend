@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { seccionPublica } from "../../publico/rutas";
 import { NoEncontrado } from "../../publico/paginas/NoEncontrado";
 import { Acceso } from "../paginas/Acceso";
+import { CambiarClave } from "../paginas/CambiarClave";
 import { SinPermiso } from "../paginas/SinPermiso";
 import { LayoutApp } from "../layouts/LayoutApp";
 import { GuardaDeRuta } from "../../shared/auth/GuardaDeRuta";
@@ -25,12 +26,14 @@ import { Cupos } from "../../features/cupos";
 import { Transformacion } from "../../features/transformacion";
 import { Destruccion } from "../../features/destruccion";
 import { Usuarios } from "../../features/usuarios";
+import { HojaAurora, LaboratorioAurora } from "../../features/aurora";
 
 export const Enrutador = () => (
   <Routes>
     {seccionPublica()}
 
     <Route path="acceso" element={<Acceso />} />
+    <Route path="acceso/clave" element={<CambiarClave />} />
 
     <Route
       path="app"
@@ -226,6 +229,8 @@ export const Enrutador = () => (
           </GuardaDeRuta>
         }
       />
+      <Route path="aurora" element={<LaboratorioAurora />} />
+      <Route path="aurora/hoja" element={<HojaAurora />} />
       <Route path="salud/*" element={<ZonaClinica />} />
       <Route path="sin-permiso" element={<SinPermiso />} />
       <Route path="*" element={<Navigate to="/app" replace />} />

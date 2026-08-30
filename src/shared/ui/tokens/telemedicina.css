@@ -1,0 +1,865 @@
+.telemed {
+  --telemed-fondo: #04150f;
+  --telemed-tinta: #e6f0e9;
+  --telemed-verde: #35b96a;
+  --telemed-brillo: #7ed957;
+  --telemed-curva: cubic-bezier(0.65, 0, 0.2, 1);
+
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  align-content: end;
+  min-height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  background: radial-gradient(
+    120% 82% at 32% 6%,
+    #0b3b29 0%,
+    #06231a 44%,
+    var(--telemed-fondo) 100%
+  );
+  color: var(--telemed-tinta);
+}
+
+.telemed__visor {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  container-type: size;
+  transition: opacity 700ms ease;
+}
+
+.telemed[data-fase="cultivo"] .telemed__visor,
+.telemed[data-fase="laboratorio"] .telemed__visor,
+.telemed[data-fase="ips"] .telemed__visor,
+.telemed[data-fase="paciente"] .telemed__visor {
+  opacity: 0.3;
+}
+
+.telemed__nodos {
+  transition: opacity 500ms ease;
+}
+
+.telemed[data-fase="cultivo"] .telemed__nodos,
+.telemed[data-fase="laboratorio"] .telemed__nodos,
+.telemed[data-fase="ips"] .telemed__nodos,
+.telemed[data-fase="paciente"] .telemed__nodos {
+  opacity: 0;
+}
+
+.telemed__camara {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(100cqw, calc(100cqh * var(--razon)));
+  height: min(100cqh, calc(100cqw / var(--razon)));
+  transform-origin: 50% 50%;
+  transform: translate(-50%, -50%) scale(var(--escala))
+    translate3d(calc(var(--fx) * -1), calc(var(--fy) * -1), 0);
+  transition: transform 1000ms var(--telemed-curva);
+  will-change: transform;
+}
+
+.telemed__mapa {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.telemed__depto {
+  fill: rgba(20, 115, 67, 0.17);
+  stroke: rgba(126, 217, 87, 0.24);
+  stroke-width: 1.1;
+  vector-effect: non-scaling-stroke;
+  transition:
+    fill 700ms ease,
+    stroke 700ms ease;
+}
+
+.telemed__depto[data-region="si"] {
+  fill: rgba(53, 185, 106, 0.34);
+  stroke: rgba(166, 232, 136, 0.72);
+}
+
+.telemed__region-forma {
+  fill: none;
+  stroke: var(--telemed-brillo);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+  animation: telemed-marcar 3.4s ease-in-out infinite;
+}
+
+.telemed__nodo {
+  fill: var(--telemed-verde);
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  opacity: 0.55;
+  animation: telemed-latido 5.4s ease-in-out infinite;
+}
+
+.telemed__nodo[data-papel="laboratorio"] {
+  fill: #a9e9c4;
+}
+
+.telemed__nodo[data-papel="ips"] {
+  fill: var(--telemed-brillo);
+}
+
+.telemed__nodo[data-papel="paciente"] {
+  fill: #d6f5e3;
+}
+
+.telemed__halo {
+  fill: var(--telemed-verde);
+  opacity: 0.14;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: telemed-halo 5.4s ease-in-out infinite;
+}
+
+.telemed__halo[data-papel="ips"] {
+  fill: var(--telemed-brillo);
+}
+
+.telemed__hito {
+  fill: none;
+  stroke: var(--telemed-brillo);
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  opacity: 0;
+}
+
+.telemed__hito[data-visible="si"] {
+  animation: telemed-hito 1.2s var(--telemed-curva) forwards;
+}
+
+.telemed__enlace {
+  fill: none;
+  stroke: var(--telemed-brillo);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0;
+  stroke-dasharray: 620;
+  stroke-dashoffset: 620;
+}
+
+.telemed__enlaces[data-visible="si"] .telemed__enlace {
+  animation: telemed-tender 1300ms var(--telemed-curva) forwards;
+}
+
+.telemed__ancla {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(var(--rx), var(--ry), 0);
+  z-index: 1;
+  transition: transform 1000ms var(--telemed-curva);
+  pointer-events: none;
+}
+
+.telemed__radar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 132%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) scale(calc(1 / var(--escala)));
+  transition:
+    opacity 500ms ease,
+    transform 1000ms var(--telemed-curva);
+  opacity: 0;
+}
+
+.telemed__radar[data-encendido="si"] {
+  opacity: 1;
+}
+
+.telemed__barrido {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(126, 217, 87, 0) 0deg,
+    rgba(126, 217, 87, 0) 232deg,
+    rgba(126, 217, 87, 0.05) 286deg,
+    rgba(126, 217, 87, 0.14) 334deg,
+    rgba(166, 232, 136, 0.4) 357deg,
+    rgba(126, 217, 87, 0) 360deg
+  );
+  mask-image: radial-gradient(circle at 50% 50%, #000 0 62%, transparent 100%);
+  animation: telemed-giro 5s linear infinite;
+  will-change: transform;
+}
+
+.telemed__alcance {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(126, 217, 87, 0.16);
+  transform-origin: 50% 50%;
+}
+
+.telemed__anillo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(126, 217, 87, 0.45);
+  transform: scale(0.08);
+  opacity: 0;
+  animation: telemed-eco 3.2s ease-out infinite;
+  will-change: transform, opacity;
+}
+
+.telemed__centro {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: var(--telemed-brillo);
+  animation: telemed-latido 3.2s ease-in-out infinite;
+}
+
+.telemed__vineta {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(88% 70% at 50% 34%, rgba(4, 21, 15, 0) 40%, rgba(4, 21, 15, 0.72) 100%),
+    linear-gradient(
+      to top,
+      var(--telemed-fondo) 4%,
+      rgba(4, 21, 15, 0.86) 26%,
+      rgba(4, 21, 15, 0.1) 62%
+    );
+}
+
+.telemed__laminas {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: clamp(var(--e5), 5vh, var(--e8)) clamp(var(--e4), 4vw, var(--e7)) 0;
+  pointer-events: none;
+}
+
+.telemed__escena {
+  grid-area: 1 / 1;
+  width: min(100%, 440px);
+  opacity: 0;
+  transform: translate3d(0, 22px, 0) scale(0.965);
+  transition:
+    opacity 520ms ease,
+    transform 720ms var(--telemed-curva);
+}
+
+.telemed__escena[data-activa="si"] {
+  opacity: 1;
+  transform: none;
+}
+
+.telemed__lamina {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.telemed__trazo,
+.telemed__cresta,
+.telemed__horizonte,
+.telemed__surco,
+.telemed__tallo,
+.telemed__traza,
+.telemed__enlace-escena,
+.telemed__ficha-linea,
+.telemed__ficha-marca,
+.telemed__ficha-caja,
+.telemed__vidrio {
+  fill: none;
+  stroke: rgba(214, 245, 227, 0.72);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.telemed__cresta,
+.telemed__horizonte,
+.telemed__surco {
+  stroke: rgba(126, 217, 87, 0.26);
+  stroke-width: 1.2;
+}
+
+.telemed__ficha-caja {
+  stroke: rgba(126, 217, 87, 0.4);
+  fill: rgba(4, 21, 15, 0.55);
+}
+
+.telemed__ficha-linea {
+  stroke: rgba(214, 245, 227, 0.34);
+  stroke-width: 2.4;
+}
+
+.telemed__ficha-marca,
+.telemed__traza {
+  stroke: var(--telemed-brillo);
+  stroke-width: 2;
+}
+
+.telemed__tallo {
+  stroke: rgba(166, 232, 136, 0.78);
+  stroke-width: 1.8;
+}
+
+.telemed__hoja {
+  fill: rgba(53, 185, 106, 0.24);
+  stroke: rgba(166, 232, 136, 0.72);
+  stroke-width: 1;
+}
+
+.telemed__liquido {
+  fill: rgba(53, 185, 106, 0.34);
+  stroke: none;
+}
+
+.telemed__nodo-molecula {
+  fill: var(--telemed-brillo);
+  stroke: none;
+}
+
+.telemed__testigo {
+  fill: var(--telemed-brillo);
+  stroke: none;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: telemed-latido 2.6s ease-in-out infinite;
+}
+
+.telemed__trazo--relleno {
+  fill: rgba(214, 245, 227, 0.1);
+}
+
+.telemed__pulso {
+  fill: none;
+  stroke: rgba(126, 217, 87, 0.4);
+  stroke-width: 1.4;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  opacity: 0;
+}
+
+.telemed__escena[data-activa="si"] .telemed__pulso {
+  animation: telemed-eco 4.2s ease-out infinite;
+  animation-delay: var(--demora, 0ms);
+}
+
+.telemed__escena[data-activa="si"] .telemed__planta {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: telemed-brote 760ms var(--telemed-curva) both;
+  animation-delay: var(--demora, 0ms);
+}
+
+.telemed__escena[data-activa="si"] .telemed__figura,
+.telemed__escena[data-activa="si"] .telemed__cesta {
+  animation: telemed-entrar 620ms var(--telemed-curva) both;
+  animation-delay: 180ms;
+}
+
+.telemed__escena[data-activa="si"] .telemed__ficha {
+  animation: telemed-entrar 600ms var(--telemed-curva) both;
+  animation-delay: var(--demora, 0ms);
+}
+
+.telemed__escena[data-activa="si"] .telemed__molecula {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: telemed-giro 26s linear infinite;
+}
+
+.telemed__escena[data-activa="si"] .telemed__traza {
+  stroke-dasharray: 420;
+  stroke-dashoffset: 420;
+  animation: telemed-tender 1200ms var(--telemed-curva) 200ms forwards;
+}
+
+.telemed__escena[data-activa="si"] .telemed__capa[data-capa="fondo"] {
+  animation: telemed-deriva-fondo 14s ease-in-out infinite alternate;
+}
+
+.telemed__escena[data-activa="si"] .telemed__capa[data-capa="medio"] {
+  animation: telemed-deriva-medio 11s ease-in-out infinite alternate;
+}
+
+.telemed__escena[data-activa="si"] .telemed__capa[data-capa="frente"] {
+  animation: telemed-deriva-frente 9s ease-in-out infinite alternate;
+}
+
+.telemed__relato {
+  position: relative;
+  z-index: 3;
+  padding: 0 clamp(var(--e5), 4vw, var(--e7));
+}
+
+.telemed__indicador {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  margin-bottom: var(--e3);
+  font-size: var(--texto-xs);
+  letter-spacing: var(--rastreo-etiqueta);
+  text-transform: uppercase;
+  color: var(--lima-300);
+}
+
+.telemed__punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--telemed-brillo);
+  animation: telemed-latido 2.4s ease-in-out infinite;
+}
+
+.telemed__titulo {
+  max-width: 24ch;
+  font-family: var(--fuente-display);
+  font-size: clamp(1.3rem, 0.85rem + 1.2vw, 1.8rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: #fff;
+  text-wrap: balance;
+}
+
+.telemed__subtitulo {
+  max-width: 44ch;
+  margin-top: var(--e3);
+  font-size: var(--texto-sm);
+  line-height: 1.55;
+  color: rgba(230, 240, 233, 0.74);
+}
+
+.telemed__ubicacion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e3);
+  margin-top: var(--e4);
+  padding: var(--e2) var(--e3);
+  border: 1px solid rgba(126, 217, 87, 0.28);
+  border-radius: var(--radio-lg);
+  background: rgba(4, 21, 15, 0.6);
+}
+
+.telemed__ubicacion svg {
+  flex: none;
+  color: var(--lima-300);
+}
+
+.telemed__ubicacion-rotulo {
+  display: block;
+  font-size: var(--texto-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(230, 240, 233, 0.62);
+}
+
+.telemed__ubicacion-region {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: #fff;
+}
+
+.telemed__mando {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e3) var(--e4);
+  margin-top: clamp(var(--e4), 3vh, var(--e6));
+  padding: 0 clamp(var(--e5), 4vw, var(--e7)) clamp(var(--e5), 4vh, var(--e7));
+}
+
+.telemed__llamada {
+  position: relative;
+  overflow: hidden;
+}
+
+.telemed:not([data-corriendo]) .telemed__llamada::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 34%,
+    rgba(255, 255, 255, 0.34) 50%,
+    rgba(255, 255, 255, 0) 66%
+  );
+  transform: translate3d(-120%, 0, 0);
+  animation: telemed-destello 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.telemed__eslabones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  list-style: none;
+}
+
+.telemed__eslabon {
+  padding: 5px 11px;
+  border: 1px solid rgba(126, 217, 87, 0.26);
+  border-radius: var(--radio-completo);
+  background: transparent;
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-xs);
+  letter-spacing: 0.06em;
+  color: rgba(230, 240, 233, 0.78);
+  cursor: pointer;
+  transition:
+    border-color var(--transicion),
+    color var(--transicion),
+    background var(--transicion);
+}
+
+.telemed__eslabon:hover {
+  border-color: rgba(126, 217, 87, 0.6);
+  color: #fff;
+}
+
+.telemed__eslabon[aria-pressed="true"] {
+  border-color: var(--telemed-brillo);
+  background: rgba(126, 217, 87, 0.16);
+  color: #fff;
+}
+
+.telemed__barra {
+  position: relative;
+  flex: 1 1 100%;
+  height: 2px;
+  border-radius: var(--radio-completo);
+  background: rgba(126, 217, 87, 0.16);
+  overflow: hidden;
+}
+
+.telemed__barra-avance {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--telemed-verde), var(--telemed-brillo));
+}
+
+@keyframes telemed-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes telemed-eco {
+  0% {
+    transform: scale(0.08);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes telemed-latido {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.28);
+    opacity: 1;
+  }
+}
+
+@keyframes telemed-halo {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.22;
+  }
+}
+
+@keyframes telemed-marcar {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes telemed-hito {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+}
+
+@keyframes telemed-tender {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 620;
+  }
+  14% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes telemed-brote {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes telemed-entrar {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes telemed-deriva-fondo {
+  to {
+    transform: translate3d(-10px, 3px, 0);
+  }
+}
+
+@keyframes telemed-deriva-medio {
+  to {
+    transform: translate3d(8px, -4px, 0);
+  }
+}
+
+@keyframes telemed-deriva-frente {
+  to {
+    transform: translate3d(14px, 0, 0);
+  }
+}
+
+@keyframes telemed-destello {
+  0%,
+  62% {
+    transform: translate3d(-120%, 0, 0);
+  }
+  100% {
+    transform: translate3d(120%, 0, 0);
+  }
+}
+
+@media (max-width: 1180px) {
+  .telemed__laminas {
+    padding-top: clamp(var(--e4), 4vh, var(--e6));
+  }
+
+  .telemed__escena {
+    width: min(100%, 360px);
+  }
+
+  .telemed__radar {
+    width: 118%;
+  }
+}
+
+@media (max-width: 980px) {
+  .telemed {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 68vh;
+    padding-top: 40vh;
+  }
+
+  .telemed__laminas {
+    display: none;
+  }
+
+  .telemed__mando {
+    margin-top: var(--e4);
+  }
+
+  .telemed__vineta {
+    background:
+      radial-gradient(96% 56% at 50% 26%, rgba(4, 21, 15, 0) 42%, rgba(4, 21, 15, 0.6) 100%),
+      linear-gradient(
+        to top,
+        var(--telemed-fondo) 10%,
+        rgba(4, 21, 15, 0.9) 40%,
+        rgba(4, 21, 15, 0.08) 74%
+      );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .telemed__camara,
+  .telemed__ancla,
+  .telemed__radar {
+    transition: none;
+  }
+
+  .telemed__barrido,
+  .telemed__anillo,
+  .telemed__halo,
+  .telemed__centro,
+  .telemed__punto,
+  .telemed__nodo,
+  .telemed__testigo,
+  .telemed__region-forma,
+  .telemed__llamada::after,
+  .telemed__escena[data-activa="si"] .telemed__planta,
+  .telemed__escena[data-activa="si"] .telemed__figura,
+  .telemed__escena[data-activa="si"] .telemed__cesta,
+  .telemed__escena[data-activa="si"] .telemed__ficha,
+  .telemed__escena[data-activa="si"] .telemed__molecula,
+  .telemed__escena[data-activa="si"] .telemed__pulso,
+  .telemed__escena[data-activa="si"] .telemed__capa {
+    animation: none;
+  }
+
+  .telemed__escena[data-activa="si"] .telemed__traza,
+  .telemed__enlaces[data-visible="si"] .telemed__enlace {
+    animation: none;
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+
+  .telemed__hito[data-visible="si"] {
+    animation: none;
+    opacity: 0.9;
+  }
+
+  .telemed__escena {
+    transition: opacity 200ms linear;
+    transform: none;
+  }
+}
+
+.acceso__escenario[data-modo="telemedicina"] {
+  display: block;
+  padding: 0;
+  gap: 0;
+  background: var(--telemed-fondo, #04150f);
+}
+
+.acceso__modos {
+  display: inline-flex;
+  gap: 2px;
+  margin-bottom: clamp(var(--e4), 3vh, var(--e5));
+  padding: 3px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-completo);
+  background: var(--superficie-alt);
+}
+
+.acceso__modo {
+  padding: 5px 13px;
+  border: 0;
+  border-radius: var(--radio-completo);
+  background: transparent;
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-xs);
+  letter-spacing: 0.05em;
+  color: var(--texto-tenue);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--transicion),
+    color var(--transicion);
+}
+
+.acceso__modo:hover {
+  color: var(--texto);
+}
+
+.acceso__modo[aria-pressed="true"] {
+  background: var(--superficie);
+  box-shadow: var(--sombra-sm);
+  color: var(--marca-fuerte);
+}
+
+.acceso[data-modo="telemedicina"] .acceso__panel {
+  background:
+    linear-gradient(to bottom, rgba(20, 115, 67, 0.06) 0%, rgba(20, 115, 67, 0) 340px), var(--fondo);
+}
+
+.acceso[data-modo="telemedicina"] .acceso__rotulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 11px;
+  border: 1px solid var(--acento-borde);
+  border-radius: var(--radio-completo);
+  background: var(--acento-fondo);
+  color: var(--acento-texto);
+}
+
+.acceso[data-modo="telemedicina"] .acceso__rotulo::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--marca-viva);
+}
+
+@media (max-width: 620px) {
+  .acceso__modos {
+    display: flex;
+    width: 100%;
+  }
+
+  .acceso__modo {
+    flex: 1 1 0;
+    padding-inline: 6px;
+    text-align: center;
+    white-space: normal;
+  }
+}

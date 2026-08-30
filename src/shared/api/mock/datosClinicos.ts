@@ -10,7 +10,7 @@ export type Paciente = {
   nombre: string;
   documento: string;
   edad: number;
-  sexo: "F" | "M";
+  sexo: "F" | "M" | "SIN_DATO";
   departamento: string;
   aseguradora: string;
   diagnostico: string;

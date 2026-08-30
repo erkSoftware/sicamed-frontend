@@ -1,322 +1,605 @@
-import { modoMock, solicitar } from "./transporte";
+import { modoMock, modoMockRegistro, solicitar } from "./transporte";
+import { CABECERA_CAPTCHA } from "../seguridad/turnstile";
+import type { Parametros } from "./transporte";
 import { servidorMock } from "./mock/servidorMock";
 import type { FiltroListado } from "./mock/servidorMock";
+import type {
+  ActaDestruccionApi,
+  AtestacionApi,
+  BeneficioApi,
+  CierreApi,
+  ConexionApi,
+  CuentaApi,
+  CultivoApi,
+  CupoApi,
+  DiscrepanciaApi,
+  EventoTrazabilidadApi,
+  ExpedienteApi,
+  IndicadoresNacionalesApi,
+  LoteApi,
+  ManifestacionApi,
+  OfertaApi,
+  OrganizacionApi,
+  PaginaApi,
+  PoliticaApi,
+  PreparacionSoporteApi,
+  RadicacionApi,
+  RequisitosActorApi,
+  RespuestaDirectorioApi,
+  ResumenReportesApi,
+  RuedaApi,
+  SolicitudApi,
+  SoporteApi,
+  VerificacionCorreoApi,
+  TransformacionApi,
+} from "./rest/contrato";
+import {
+  aActaDestruccion,
+  aAtestacion,
+  aBeneficio,
+  aCierre,
+  aConexion,
+  aCuenta,
+  aCultivo,
+  aCupo,
+  aDiscrepancia,
+  aEvento,
+  aExpediente,
+  aLote,
+  aManifestacion,
+  aMedico,
+  aOferta,
+  aDetallePlanta,
+  aDirectorio,
+  aOrganizacion,
+  aPlanta,
+  aPolitica,
+  aRueda,
+  aSolicitud,
+  aTransformacion,
+} from "./rest/mapeadores";
+import type { DetallePlanta, Politica, RespuestaDirectorio } from "./rest/mapeadores";
+import { aParametrosDeListado, mapearPagina } from "./rest/paginacion";
+import {
+  cuerpoActualizarOrganizacion,
+  cuerpoAvanzarBeneficio,
+  cuerpoCrearLote,
+  cuerpoDeclararMovimiento,
+  cuerpoDecidirDocumento,
+  cuerpoGuardarPolitica,
+  cuerpoInvitarCuenta,
+  cuerpoLevantarActa,
+  cuerpoModificarCuenta,
+  cuerpoMoverLote,
+  cuerpoRadicarSolicitud,
+  cuerpoRegistrarAtestacion,
+  cuerpoRegistrarBeneficio,
+  cuerpoRegistrarCultivo,
+  cuerpoRegistrarLabor,
+  cuerpoRegistrarPlanta,
+  cuerpoRegistrarTransformacion,
+  cuerpoResolverDiscrepancia,
+  cuerpoPublicarOferta,
+  cuerpoResolverPaso,
+  sinContrato,
+} from "./rest/peticiones";
+import type { ComprobantePublicacion } from "./rest/peticiones";
+import { claveDeIdempotencia, subirAlAlmacenamiento } from "./rest/actores";
+import type { ArchivoDeSoporte } from "./rest/actores";
+import type { PlantaApi } from "./rest/contrato";
 
-type Parametros = Record<string, string | number | undefined>;
+type Entrada<F> = F extends (entrada: infer E) => unknown ? E : never;
 
-type Metodo = "POST" | "PUT" | "PATCH";
+type Salida<F> = F extends (entrada: never) => Promise<infer S> ? S : never;
 
-const aParametros = (filtro: FiltroListado): Parametros => ({
-  busqueda: filtro.busqueda,
-  estado: filtro.estado,
-  departamento: filtro.departamento,
-  tipo: filtro.tipo,
-  pagina: filtro.pagina,
-  porPagina: filtro.porPagina,
-});
-
-const escribir = <F extends (entrada: never) => Promise<unknown>>(
-  operacion: F,
+const listar = <A, D>(
   ruta: string,
-  metodo: Metodo = "POST",
+  mapear: (elemento: A) => D,
+  filtro: FiltroListado,
+  extra: Parametros = {},
 ) =>
-  ((cuerpo: Parameters<F>[0]) =>
-    modoMock
-      ? operacion(cuerpo)
-      : solicitar<Awaited<ReturnType<F>>>("comercial", ruta, { metodo, cuerpo })) as (
-    cuerpo: Parameters<F>[0],
-  ) => Promise<Awaited<ReturnType<F>>>;
+  solicitar<PaginaApi<A>>("comercial", ruta, {
+    parametros: { ...aParametrosDeListado(filtro), ...extra },
+  }).then((sobre) => mapearPagina(sobre, mapear));
 
 export const apiComercial = {
   indicadoresNacionales: () =>
     modoMock
       ? servidorMock.indicadoresNacionales()
-      : solicitar<ReturnType<typeof servidorMock.indicadoresNacionales> extends Promise<infer T> ? T : never>(
-          "comercial",
-          "/indicadores/nacionales",
-        ),
+      : solicitar<IndicadoresNacionalesApi>("comercial", "/indicadores/nacionales"),
 
   organizacionActual: (id?: string) =>
     modoMock
       ? servidorMock.organizacionActual(id)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.organizacionActual>>>(
-          "comercial",
-          "/organizaciones/actual",
-        ),
+      : solicitar<OrganizacionApi>("comercial", "/organizaciones/actual").then(aOrganizacion),
 
   organizaciones: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.organizaciones(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.organizaciones>>>("comercial", "/organizaciones", {
-          parametros: aParametros(filtro),
-        }),
+      : listar<OrganizacionApi, ReturnType<typeof aOrganizacion>>(
+          "/organizaciones",
+          aOrganizacion,
+          filtro,
+        ),
 
   organizacion: (id: string) =>
     modoMock
       ? servidorMock.organizacion(id)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.organizacion>>>("comercial", `/organizaciones/${id}`),
+      : solicitar<OrganizacionApi>("comercial", `/organizaciones/${id}`).then(aOrganizacion),
 
   atestaciones: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.atestaciones(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.atestaciones>>>("comercial", "/atestaciones", {
-          parametros: aParametros(filtro),
-        }),
+      : listar<AtestacionApi, ReturnType<typeof aAtestacion>>(
+          "/atestaciones",
+          (atestacion) => aAtestacion(atestacion),
+          filtro,
+        ),
 
   cultivos: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.cultivos(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.cultivos>>>("comercial", "/cultivos", {
-          parametros: aParametros(filtro),
-        }),
+      : listar<CultivoApi, ReturnType<typeof aCultivo>>(
+          "/cultivos",
+          (cultivo) => aCultivo(cultivo),
+          filtro,
+        ),
 
   lotes: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.lotes(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.lotes>>>("comercial", "/lotes", {
-          parametros: aParametros(filtro),
-        }),
+      : listar<LoteApi, ReturnType<typeof aLote>>("/lotes", (lote) => aLote(lote), filtro),
 
   ofertas: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.ofertas(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.ofertas>>>("comercial", "/ofertas", {
-          parametros: aParametros(filtro),
-        }),
+      : listar<OfertaApi, ReturnType<typeof aOferta>>("/ofertas", aOferta, filtro),
 
   oferta: (id: string) =>
     modoMock
       ? servidorMock.oferta(id)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.oferta>>>("comercial", `/ofertas/${id}`),
+      : solicitar<OfertaApi>("comercial", `/ofertas/${id}`).then(aOferta),
 
-  publicarOferta: escribir(servidorMock.publicarOferta, "/ofertas"),
+  publicarOferta: (
+    borrador: Entrada<typeof servidorMock.publicarOferta>,
+  ): Promise<ComprobantePublicacion> =>
+    modoMock
+      ? servidorMock.publicarOferta(borrador)
+      : solicitar<OfertaApi>("comercial", "/ofertas", {
+          metodo: "POST",
+          cuerpo: cuerpoPublicarOferta(borrador),
+        }).then((oferta) => ({
+          id: oferta.id,
+          estado: oferta.estado,
+          atestacionId: oferta.atestacionHabilitanteId ?? "",
+        })),
 
-  actualizarOrganizacion: escribir(
-    servidorMock.actualizarOrganizacion,
-    "/organizaciones/actual",
-    "PATCH",
-  ),
+  actualizarOrganizacion: (entrada: Entrada<typeof servidorMock.actualizarOrganizacion>) =>
+    modoMock
+      ? servidorMock.actualizarOrganizacion(entrada)
+      : solicitar<OrganizacionApi>("comercial", "/organizaciones/actual", {
+          metodo: "PATCH",
+          cuerpo: cuerpoActualizarOrganizacion(entrada),
+        }).then(aOrganizacion),
 
-  registrarAtestacion: escribir(servidorMock.registrarAtestacion, "/atestaciones"),
+  registrarAtestacion: (entrada: Entrada<typeof servidorMock.registrarAtestacion>) =>
+    modoMock
+      ? servidorMock.registrarAtestacion(entrada)
+      : solicitar<AtestacionApi>("comercial", "/atestaciones", {
+          metodo: "POST",
+          cuerpo: cuerpoRegistrarAtestacion(entrada),
+        }).then((atestacion) => aAtestacion(atestacion)),
 
-  registrarCultivo: escribir(servidorMock.registrarCultivo, "/cultivos"),
+  registrarCultivo: (entrada: Entrada<typeof servidorMock.registrarCultivo>) =>
+    modoMock
+      ? servidorMock.registrarCultivo(entrada)
+      : solicitar<CultivoApi>("comercial", "/cultivos", {
+          metodo: "POST",
+          cuerpo: cuerpoRegistrarCultivo(entrada),
+        }).then((cultivo) => aCultivo(cultivo)),
 
-  cambiarEtapaCultivo: escribir(servidorMock.cambiarEtapaCultivo, "/cultivos/etapa", "PATCH"),
+  cambiarEtapaCultivo: (entrada: Entrada<typeof servidorMock.cambiarEtapaCultivo>) =>
+    modoMock
+      ? servidorMock.cambiarEtapaCultivo(entrada)
+      : sinContrato("cambiar la etapa del cultivo"),
 
-  registrarLote: escribir(servidorMock.registrarLote, "/lotes"),
+  registrarLote: (entrada: Entrada<typeof servidorMock.registrarLote>) =>
+    modoMock
+      ? servidorMock.registrarLote(entrada)
+      : solicitar<LoteApi>("comercial", "/lotes", {
+          metodo: "POST",
+          cuerpo: cuerpoCrearLote(entrada),
+        }).then((lote) => aLote(lote)),
 
-  moverLote: escribir(servidorMock.moverLote, "/lotes/movimiento", "PATCH"),
+  moverLote: (entrada: Entrada<typeof servidorMock.moverLote>) =>
+    modoMock
+      ? servidorMock.moverLote(entrada)
+      : solicitar<LoteApi>("comercial", `/lotes/${entrada.id}/movimientos`, {
+          metodo: "POST",
+          cuerpo: cuerpoMoverLote(entrada),
+        }).then((lote) => aLote(lote)),
 
-  registrarPlanta: escribir(servidorMock.registrarPlanta, "/produccion/plantas"),
+  registrarPlanta: (entrada: Entrada<typeof servidorMock.registrarPlanta>) =>
+    modoMock
+      ? servidorMock.registrarPlanta(entrada)
+      : solicitar<PlantaApi>("comercial", `/cultivos/${entrada.cultivoId}/plantas`, {
+          metodo: "POST",
+          cuerpo: cuerpoRegistrarPlanta(entrada),
+        }).then((planta) => aPlanta(planta)),
 
-  registrarLabor: escribir(servidorMock.registrarLabor, "/produccion/labores"),
+  registrarLabor: (entrada: Entrada<typeof servidorMock.registrarLabor>) =>
+    modoMock
+      ? servidorMock.registrarLabor(entrada)
+      : solicitar<Salida<typeof servidorMock.registrarLabor>>(
+          "comercial",
+          `/plantas/${entrada.plantaId}/labores`,
+          { metodo: "POST", cuerpo: cuerpoRegistrarLabor(entrada) },
+        ),
 
-  cosecharPlanta: escribir(servidorMock.cosecharPlanta, "/produccion/plantas/cosecha", "PATCH"),
+  cosecharPlanta: (entrada: Entrada<typeof servidorMock.cosecharPlanta>) =>
+    modoMock
+      ? servidorMock.cosecharPlanta(entrada)
+      : solicitar<PlantaApi>("comercial", `/plantas/${entrada.id}/cosecha`, {
+          metodo: "POST",
+        }).then((planta) => aPlanta(planta)),
 
-  registrarBeneficio: escribir(servidorMock.registrarBeneficio, "/produccion/beneficios"),
+  registrarBeneficio: (entrada: Entrada<typeof servidorMock.registrarBeneficio>) =>
+    modoMock
+      ? servidorMock.registrarBeneficio(entrada)
+      : solicitar<BeneficioApi>("comercial", "/beneficios", {
+          metodo: "POST",
+          cuerpo: cuerpoRegistrarBeneficio(entrada),
+        }).then((beneficio) => aBeneficio(beneficio)),
 
-  avanzarBeneficio: escribir(servidorMock.avanzarBeneficio, "/produccion/beneficios/avance", "PATCH"),
+  avanzarBeneficio: (entrada: Entrada<typeof servidorMock.avanzarBeneficio>) =>
+    modoMock
+      ? servidorMock.avanzarBeneficio(entrada)
+      : solicitar<BeneficioApi>("comercial", `/beneficios/${entrada.id}/avances`, {
+          metodo: "POST",
+          cuerpo: cuerpoAvanzarBeneficio(entrada),
+        }).then((beneficio) => aBeneficio(beneficio)),
 
-  transformaciones: (filtro: FiltroListado = {}) =>
+  transformaciones: (filtro: FiltroListado & { loteId?: string } = {}) =>
     modoMock
       ? servidorMock.transformaciones(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.transformaciones>>>(
-          "comercial",
-          "/produccion/transformaciones",
-          { parametros: aParametros(filtro) },
-        ),
+      : filtro.loteId
+        ? listar<TransformacionApi, ReturnType<typeof aTransformacion>>(
+            `/lotes/${filtro.loteId}/transformaciones`,
+            (transformacion) => aTransformacion(transformacion),
+            filtro,
+          )
+        : sinContrato("listar las transformaciones de la organización"),
 
-  registrarTransformacion: escribir(
-    servidorMock.registrarTransformacion,
-    "/produccion/transformaciones",
-  ),
+  registrarTransformacion: (entrada: Entrada<typeof servidorMock.registrarTransformacion>) =>
+    modoMock
+      ? servidorMock.registrarTransformacion(entrada)
+      : solicitar<TransformacionApi>("comercial", "/transformaciones", {
+          metodo: "POST",
+          cuerpo: cuerpoRegistrarTransformacion(entrada),
+        }).then((transformacion) => aTransformacion(transformacion)),
 
-  destrucciones: (filtro: FiltroListado = {}) =>
+  destrucciones: (filtro: FiltroListado & { entidad?: string; entidadId?: string } = {}) =>
     modoMock
       ? servidorMock.destrucciones(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.destrucciones>>>(
-          "comercial",
-          "/produccion/destrucciones",
-          { parametros: aParametros(filtro) },
-        ),
+      : filtro.entidad && filtro.entidadId
+        ? listar<ActaDestruccionApi, ReturnType<typeof aActaDestruccion>>(
+            "/actas-destruccion",
+            (acta) => aActaDestruccion(acta),
+            filtro,
+            { entidad: filtro.entidad, entidadId: filtro.entidadId },
+          )
+        : sinContrato("listar las actas de destrucción de la organización"),
 
-  registrarDestruccion: escribir(servidorMock.registrarDestruccion, "/produccion/destrucciones"),
+  registrarDestruccion: (entrada: Entrada<typeof servidorMock.registrarDestruccion>) =>
+    modoMock
+      ? servidorMock.registrarDestruccion(entrada)
+      : solicitar<ActaDestruccionApi>("comercial", "/actas-destruccion", {
+          metodo: "POST",
+          cuerpo: cuerpoLevantarActa(entrada),
+        }).then((acta) => aActaDestruccion(acta)),
 
-  decidirDocumento: escribir(
-    servidorMock.decidirDocumento,
-    "/cumplimiento/expedientes/documentos",
-    "PATCH",
-  ),
+  decidirDocumento: (entrada: Entrada<typeof servidorMock.decidirDocumento>) =>
+    modoMock
+      ? servidorMock.decidirDocumento(entrada)
+      : solicitar<ExpedienteApi>("comercial", "/cumplimiento/expedientes/documentos", {
+          metodo: "PATCH",
+          cuerpo: cuerpoDecidirDocumento(entrada),
+        }).then((expediente) => aExpediente(expediente)),
 
-  resolverPaso: escribir(servidorMock.resolverPaso, "/cumplimiento/expedientes/pasos", "PATCH"),
+  resolverPaso: (entrada: Entrada<typeof servidorMock.resolverPaso>) =>
+    modoMock
+      ? servidorMock.resolverPaso(entrada)
+      : solicitar<ExpedienteApi>("comercial", "/cumplimiento/expedientes/pasos", {
+          metodo: "PATCH",
+          cuerpo: cuerpoResolverPaso(entrada),
+        }).then((expediente) => aExpediente(expediente)),
 
-  guardarPolitica: escribir(
-    servidorMock.guardarPolitica,
-    "/cumplimiento/politica-verificacion",
-    "PUT",
-  ),
+  guardarPolitica: (entrada: Entrada<typeof servidorMock.guardarPolitica>): Promise<Politica> =>
+    modoMock
+      ? servidorMock.guardarPolitica(entrada)
+      : solicitar<PoliticaApi>("comercial", "/cumplimiento/politica-verificacion", {
+          metodo: "PUT",
+          cuerpo: cuerpoGuardarPolitica(entrada),
+        }).then(aPolitica),
 
   solicitudes: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.solicitudes(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.solicitudes>>>(
-          "comercial",
+      : listar<SolicitudApi, ReturnType<typeof aSolicitud>>(
           "/actores/solicitudes",
-          { parametros: aParametros(filtro) },
+          aSolicitud,
+          filtro,
         ),
 
-  radicarSolicitud: escribir(servidorMock.radicarSolicitud, "/actores/solicitudes"),
+  requisitosDeActor: (tipoActor: Entrada<typeof servidorMock.requisitosDeActor>) =>
+    modoMockRegistro
+      ? servidorMock.requisitosDeActor(tipoActor)
+      : solicitar<RequisitosActorApi>("comercial", `/actores/requisitos/${tipoActor}`),
 
-  abrirExpediente: escribir(servidorMock.abrirExpediente, "/cumplimiento/expedientes"),
+  prepararSoporte: ({
+    captcha,
+    ...entrada
+  }: Entrada<typeof servidorMock.prepararSoporte> & { captcha?: string }) =>
+    modoMockRegistro
+      ? servidorMock.prepararSoporte(entrada)
+      : solicitar<PreparacionSoporteApi>("comercial", "/actores/soportes:preparar", {
+          metodo: "POST",
+          cuerpo: entrada,
+          ...(captcha ? { cabeceras: { [CABECERA_CAPTCHA]: captcha } } : {}),
+        }),
+
+  subirSoporte: (preparacion: PreparacionSoporteApi, archivo: ArchivoDeSoporte): Promise<void> =>
+    modoMockRegistro ? Promise.resolve() : subirAlAlmacenamiento(preparacion.subida, archivo),
+
+  confirmarSoporte: ({ soporteId, captcha }: { soporteId: string; captcha?: string }) =>
+    modoMockRegistro
+      ? servidorMock.confirmarSoporte(soporteId)
+      : solicitar<SoporteApi>("comercial", `/actores/soportes/${soporteId}:confirmar`, {
+          metodo: "POST",
+          ...(captcha ? { cabeceras: { [CABECERA_CAPTCHA]: captcha } } : {}),
+        }),
+
+  radicarSolicitud: ({
+    captcha,
+    ...entrada
+  }: Entrada<typeof servidorMock.radicarSolicitud> & { captcha?: string }): Promise<RadicacionApi> =>
+    modoMockRegistro
+      ? servidorMock.radicarSolicitud(entrada)
+      : solicitar<RadicacionApi>("comercial", "/actores/solicitudes", {
+          metodo: "POST",
+          cuerpo: cuerpoRadicarSolicitud(entrada),
+          cabeceras: {
+            "Idempotency-Key": claveDeIdempotencia(),
+            ...(captcha ? { [CABECERA_CAPTCHA]: captcha } : {}),
+          },
+        }),
+
+  verificarCorreo: ({
+    solicitudId,
+    token,
+    captcha,
+  }: {
+    solicitudId: string;
+    token: string;
+    captcha?: string;
+  }): Promise<VerificacionCorreoApi> =>
+    modoMockRegistro
+      ? servidorMock.verificarCorreo({ solicitudId, token })
+      : solicitar<VerificacionCorreoApi>(
+          "comercial",
+          `/actores/solicitudes/${solicitudId}/verificacion`,
+          {
+            metodo: "POST",
+            cuerpo: { token },
+            ...(captcha ? { cabeceras: { [CABECERA_CAPTCHA]: captcha } } : {}),
+          },
+        ),
+
+  abrirExpediente: (entrada: Entrada<typeof servidorMock.abrirExpediente>) =>
+    modoMock
+      ? servidorMock.abrirExpediente(entrada)
+      : solicitar<ExpedienteApi>("comercial", "/cumplimiento/expedientes", {
+          metodo: "POST",
+          cuerpo: { solicitudId: entrada.solicitudId },
+        }).then((expediente) => aExpediente(expediente)),
 
   cuentas: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.cuentas(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.cuentas>>>("comercial", "/iam/cuentas", {
-          parametros: aParametros(filtro),
-        }),
+      : listar<CuentaApi, ReturnType<typeof aCuenta>>(
+          "/iam/cuentas",
+          (cuenta) => aCuenta(cuenta),
+          filtro,
+        ),
 
-  invitarCuenta: escribir(servidorMock.invitarCuenta, "/iam/cuentas"),
+  invitarCuenta: (entrada: Entrada<typeof servidorMock.invitarCuenta>) =>
+    modoMock
+      ? servidorMock.invitarCuenta(entrada)
+      : solicitar<CuentaApi>("comercial", "/iam/cuentas", {
+          metodo: "POST",
+          cuerpo: cuerpoInvitarCuenta(entrada),
+        }).then((cuenta) => aCuenta(cuenta)),
 
-  cambiarCuenta: escribir(servidorMock.cambiarCuenta, "/iam/cuentas", "PATCH"),
+  cambiarCuenta: (entrada: Entrada<typeof servidorMock.cambiarCuenta>) =>
+    modoMock
+      ? servidorMock.cambiarCuenta(entrada)
+      : solicitar<CuentaApi>("comercial", "/iam/cuentas", {
+          metodo: "PATCH",
+          cuerpo: cuerpoModificarCuenta(entrada),
+        }).then((cuenta) => aCuenta(cuenta)),
 
   cupos: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.cupos(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.cupos>>>("comercial", "/produccion/cupos", {
-          parametros: aParametros(filtro),
-        }),
+      : listar<CupoApi, ReturnType<typeof aCupo>>("/cupos", (cupo) => aCupo(cupo), filtro),
 
-  conciliarCupos: escribir(servidorMock.conciliarCupos, "/produccion/cupos/conciliacion"),
+  conciliarCupos: (entrada: Entrada<typeof servidorMock.conciliarCupos>) =>
+    modoMock ? servidorMock.conciliarCupos(entrada) : sinContrato("conciliar todos los cupos"),
 
-  declararMovimiento: escribir(servidorMock.declararMovimiento, "/vitrina/cierres", "PATCH"),
+  declararMovimiento: (entrada: Entrada<typeof servidorMock.declararMovimiento>) =>
+    modoMock
+      ? servidorMock.declararMovimiento(entrada)
+      : solicitar<CierreApi>("comercial", "/vitrina/cierres", {
+          metodo: "PATCH",
+          cuerpo: cuerpoDeclararMovimiento(entrada),
+        }).then((cierre) => aCierre(cierre)),
 
-  manifestarInteres: escribir(servidorMock.manifestarInteres, "/vitrina/manifestaciones"),
+  manifestarInteres: (entrada: Entrada<typeof servidorMock.manifestarInteres>) =>
+    modoMock
+      ? servidorMock.manifestarInteres(entrada)
+      : solicitar<ManifestacionApi>("comercial", "/vitrina/manifestaciones", {
+          metodo: "POST",
+          cuerpo: {
+            ofertaId: entrada.ofertaId,
+            solicitante: entrada.solicitante,
+            departamento: entrada.departamento,
+          },
+        }).then(aManifestacion),
 
-  habilitarContacto: escribir(
-    servidorMock.habilitarContacto,
-    "/vitrina/manifestaciones/habilitacion",
-    "PATCH",
-  ),
+  habilitarContacto: (entrada: Entrada<typeof servidorMock.habilitarContacto>) =>
+    modoMock
+      ? servidorMock.habilitarContacto(entrada)
+      : solicitar<ManifestacionApi>("comercial", "/vitrina/manifestaciones/habilitacion", {
+          metodo: "PATCH",
+          cuerpo: { id: entrada.id },
+        }).then(aManifestacion),
 
-  inscribirRueda: escribir(servidorMock.inscribirRueda, "/ruedas-negocio/inscripciones"),
+  inscribirRueda: (entrada: Entrada<typeof servidorMock.inscribirRueda>) =>
+    modoMock
+      ? servidorMock.inscribirRueda(entrada)
+      : solicitar<RuedaApi>("comercial", "/ruedas-negocio/inscripciones", {
+          metodo: "POST",
+          cuerpo: { id: entrada.id },
+        }).then(aRueda),
 
   discrepancias: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.discrepancias(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.discrepancias>>>(
-          "comercial",
-          "/interoperabilidad/discrepancias",
-          { parametros: aParametros(filtro) },
-        ),
+      : solicitar<readonly DiscrepanciaApi[]>("comercial", "/interoperabilidad/discrepancias", {
+          parametros: { entidad: filtro.tipo },
+        }).then((lista) => lista.map((discrepancia) => aDiscrepancia(discrepancia))),
 
-  resolverDiscrepancia: escribir(
-    servidorMock.resolverDiscrepancia,
-    "/interoperabilidad/discrepancias",
-    "PATCH",
-  ),
+  resolverDiscrepancia: (entrada: Entrada<typeof servidorMock.resolverDiscrepancia>) =>
+    modoMock
+      ? servidorMock.resolverDiscrepancia(entrada)
+      : solicitar<DiscrepanciaApi>("comercial", "/interoperabilidad/discrepancias", {
+          metodo: "PATCH",
+          cuerpo: cuerpoResolverDiscrepancia(entrada),
+        }).then((discrepancia) => aDiscrepancia(discrepancia)),
 
-  sincronizarConexion: escribir(
-    servidorMock.sincronizarConexion,
-    "/interoperabilidad/conexiones/sincronizacion",
-  ),
+  sincronizarConexion: (entrada: Entrada<typeof servidorMock.sincronizarConexion>) =>
+    modoMock
+      ? servidorMock.sincronizarConexion(entrada)
+      : solicitar<ConexionApi>("comercial", "/interoperabilidad/conexiones/sincronizacion", {
+          metodo: "POST",
+          cuerpo: { id: entrada.id },
+        }).then(aConexion),
 
   manifestaciones: () =>
     modoMock
       ? servidorMock.manifestaciones()
-      : solicitar<Awaited<ReturnType<typeof servidorMock.manifestaciones>>>("comercial", "/manifestaciones"),
+      : solicitar<readonly ManifestacionApi[]>("comercial", "/manifestaciones").then((lista) =>
+          lista.map(aManifestacion),
+        ),
 
   eventos: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.eventos(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.eventos>>>("comercial", "/trazabilidad/eventos", {
-          parametros: aParametros(filtro),
-        }),
+      : listar<EventoTrazabilidadApi, ReturnType<typeof aEvento>>(
+          "/trazabilidad/eventos",
+          aEvento,
+          filtro,
+        ),
 
   ruedas: () =>
     modoMock
       ? servidorMock.ruedas()
-      : solicitar<Awaited<ReturnType<typeof servidorMock.ruedas>>>("comercial", "/ruedas-negocio"),
+      : solicitar<readonly RuedaApi[]>("comercial", "/ruedas-negocio").then((lista) =>
+          lista.map(aRueda),
+        ),
 
   medicos: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.medicos(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.medicos>>>("comercial", "/directorio/medicos", {
-          parametros: aParametros(filtro),
-        }),
+      : solicitar<RespuestaDirectorioApi>("comercial", "/directorio", {
+          parametros: { busqueda: filtro.busqueda },
+        }).then((directorio) => directorio.medicos.map(aMedico)),
 
-  directorio: (busqueda = "") =>
+  directorio: (busqueda = ""): Promise<RespuestaDirectorio> =>
     modoMock
       ? servidorMock.directorio(busqueda)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.directorio>>>("comercial", "/directorio", {
+      : solicitar<RespuestaDirectorioApi>("comercial", "/directorio", {
           parametros: { busqueda },
-        }),
+        }).then(aDirectorio),
 
   variedades: () =>
-    modoMock
-      ? servidorMock.variedades()
-      : solicitar<Awaited<ReturnType<typeof servidorMock.variedades>>>("comercial", "/produccion/variedades"),
+    modoMock ? servidorMock.variedades() : sinContrato("consultar el catálogo de variedades"),
 
   agroinsumos: () =>
-    modoMock
-      ? servidorMock.agroinsumos()
-      : solicitar<Awaited<ReturnType<typeof servidorMock.agroinsumos>>>("comercial", "/produccion/agroinsumos"),
+    modoMock ? servidorMock.agroinsumos() : sinContrato("consultar el catálogo de agroinsumos"),
 
-  plantas: (filtro: FiltroListado = {}) =>
+  plantas: (filtro: FiltroListado & { cultivoId?: string } = {}) =>
     modoMock
       ? servidorMock.plantas(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.plantas>>>("comercial", "/produccion/plantas", {
-          parametros: aParametros(filtro),
-        }),
+      : filtro.cultivoId
+        ? listar<PlantaApi, ReturnType<typeof aPlanta>>(
+            `/cultivos/${filtro.cultivoId}/plantas`,
+            (planta) => aPlanta(planta),
+            filtro,
+          )
+        : sinContrato("listar las plantas de la organización"),
 
-  planta: (id: string) =>
+  planta: (id: string): Promise<DetallePlanta> =>
     modoMock
       ? servidorMock.planta(id)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.planta>>>("comercial", `/produccion/plantas/${id}`),
+      : solicitar<PlantaApi>("comercial", `/plantas/${id}`).then((planta) =>
+          aDetallePlanta(planta),
+        ),
 
-  beneficios: (filtro: FiltroListado = {}) =>
+  beneficios: (filtro: FiltroListado & { cultivoId?: string } = {}) =>
     modoMock
       ? servidorMock.beneficios(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.beneficios>>>("comercial", "/produccion/beneficios", {
-          parametros: aParametros(filtro),
-        }),
+      : filtro.cultivoId
+        ? listar<BeneficioApi, ReturnType<typeof aBeneficio>>(
+            `/cultivos/${filtro.cultivoId}/beneficios`,
+            (beneficio) => aBeneficio(beneficio),
+            filtro,
+          )
+        : sinContrato("listar los beneficios de la organización"),
 
   expedientes: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.expedientes(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.expedientes>>>("comercial", "/cumplimiento/expedientes", {
-          parametros: aParametros(filtro),
-        }),
+      : listar<ExpedienteApi, ReturnType<typeof aExpediente>>(
+          "/cumplimiento/expedientes",
+          (expediente) => aExpediente(expediente),
+          filtro,
+        ),
 
-  politicaVerificacion: () =>
+  politicaVerificacion: (): Promise<Politica> =>
     modoMock
       ? servidorMock.politicaVerificacion()
-      : solicitar<Awaited<ReturnType<typeof servidorMock.politicaVerificacion>>>(
-          "comercial",
-          "/cumplimiento/politica-verificacion",
-        ),
+      : solicitar<PoliticaApi>("comercial", "/cumplimiento/politica-verificacion").then(aPolitica),
 
   cierres: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMock.cierres(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.cierres>>>("comercial", "/vitrina/cierres", {
-          parametros: aParametros(filtro),
-        }),
+      : solicitar<readonly CierreApi[]>("comercial", "/vitrina/cierres").then((lista) =>
+          lista.map((cierre) => aCierre(cierre)),
+        ),
 
   conexiones: () =>
     modoMock
       ? servidorMock.conexiones()
-      : solicitar<Awaited<ReturnType<typeof servidorMock.conexiones>>>("comercial", "/interoperabilidad/conexiones"),
+      : solicitar<readonly ConexionApi[]>("comercial", "/interoperabilidad/conexiones").then(
+          (lista) => lista.map(aConexion),
+        ),
 
   ambiente: (filtro: FiltroListado = {}) =>
-    modoMock
-      ? servidorMock.ambiente(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMock.ambiente>>>("comercial", "/ambiente/lecturas", {
-          parametros: aParametros(filtro),
-        }),
+    modoMock ? servidorMock.ambiente(filtro) : sinContrato("consultar las lecturas de ambiente"),
 
   reportes: () =>
     modoMock
       ? servidorMock.reportes()
-      : solicitar<Awaited<ReturnType<typeof servidorMock.reportes>>>("comercial", "/reportes/resumen"),
+      : solicitar<ResumenReportesApi>("comercial", "/reportes/resumen"),
 };

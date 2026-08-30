@@ -10,6 +10,7 @@ import { Transparencia } from "./paginas/Transparencia";
 import { Accesibilidad } from "./paginas/Accesibilidad";
 import { Privacidad } from "./paginas/Privacidad";
 import { Registro } from "./paginas/Registro";
+import { VerificacionCorreo } from "./registro/VerificacionCorreo";
 
 export const RUTAS_PUBLICAS_ESTATICAS: readonly string[] = [
   "/",
@@ -42,5 +43,6 @@ export const seccionPublica = () => (
     <Route path="accesibilidad" element={<Accesibilidad />} />
     <Route path="privacidad" element={<Privacidad />} />
     <Route path="registro" element={<Registro />} />
+    <Route path="registro/verificacion" element={<VerificacionCorreo />} />
   </Route>
 );

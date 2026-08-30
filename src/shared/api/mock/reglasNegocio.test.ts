@@ -418,6 +418,7 @@ describe("registro publico de actores", () => {
         representante: "Persona Solicitante",
         correo: "otra@ejemplo.co",
         telefono: "+57 601 234 5678",
+        clave: "una-clave-de-al-menos-12",
       }),
     );
     expect(problema.status).toBe(409);
@@ -425,7 +426,7 @@ describe("registro publico de actores", () => {
 
   it("abrir el expediente crea la organizacion, su checklist y la invitacion", async () => {
     const solicitud = await servidorMock.radicarSolicitud({
-      nit: "901999888-1",
+      nit: "901999888-9",
       organizacion: "Cultivos de Prueba S.A.S.",
       tipoActor: "CULTIVADOR",
       departamento: "Tolima",
@@ -433,6 +434,7 @@ describe("registro publico de actores", () => {
       representante: "Persona Solicitante",
       correo: "nueva.prueba@ejemplo.co",
       telefono: "+57 608 234 5678",
+      clave: "una-clave-de-al-menos-12",
     });
     const expediente = await servidorMock.abrirExpediente({
       solicitudId: solicitud.id,
@@ -445,6 +447,54 @@ describe("registro publico de actores", () => {
     expect(
       almacen.cuentas.some((cuenta) => cuenta.correo === "nueva.prueba@ejemplo.co"),
     ).toBe(true);
-    expect(almacen.organizaciones.some((registro) => registro.nit === "901999888-1")).toBe(true);
+    expect(almacen.organizaciones.some((registro) => registro.nit === "901999888-9")).toBe(true);
+  });
+});
+
+describe("tramite de registro contra el simulador", () => {
+  it("recorre preparar, confirmar, radicar y verificar como manda el contrato", async () => {
+    const requisitos = await servidorMock.requisitosDeActor("CULTIVADOR");
+    const obligatorio = requisitos.documentos.find((documento) => documento.obligatorio);
+    expect(obligatorio?.tipo).toBe("LICENCIA_CULTIVO");
+
+    const preparacion = await servidorMock.prepararSoporte({
+      tipo: obligatorio?.tipo ?? "",
+      nombre: "licencia-ica-2026.pdf",
+      mime: "application/pdf",
+      bytes: 4111,
+    });
+    expect(preparacion.subida.metodo).toBe("POST");
+
+    const soporte = await servidorMock.confirmarSoporte(preparacion.soporteId);
+    expect(soporte.estado).toBe("DISPONIBLE");
+
+    const radicacion = await servidorMock.radicarSolicitud({
+      nit: "901777666-8",
+      organizacion: "Cultivos del Contrato S.A.S.",
+      tipoActor: "CULTIVADOR",
+      departamento: "19",
+      municipio: "19001",
+      representante: "Ana Ruiz",
+      correo: "ana@cultivos.co",
+      telefono: "+573001112233",
+      clave: "una-clave-de-al-menos-12",
+      documentos: [{ tipo: obligatorio?.tipo ?? "", soporteId: soporte.soporteId }],
+    });
+    expect(radicacion.estado).toBe("RECIBIDA");
+    expect(radicacion.mensaje.length).toBeGreaterThan(20);
+
+    const verificado = await servidorMock.verificarCorreo({
+      solicitudId: radicacion.id,
+      token: radicacion.tokenVerificacion ?? "",
+    });
+    expect(verificado.correoVerificado).toBe(true);
+  });
+
+  it("un token de verificacion que no cuadra no revela si la solicitud existe", async () => {
+    const problema = await problemaDe(
+      servidorMock.verificarCorreo({ solicitudId: "SOL-INEXISTENTE", token: "0".repeat(32) }),
+    );
+    expect(problema.status).toBe(400);
+    expect(problema.type).toContain("verificacion-de-correo-invalida");
   });
 });

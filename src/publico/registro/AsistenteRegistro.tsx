@@ -1,17 +1,28 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Boton } from "../../shared/ui/primitivos/Boton";
-import { CampoSelect, CampoTexto } from "../../shared/ui/primitivos/Campo";
+import { CampoClave, CampoSelect, CampoTexto } from "../../shared/ui/primitivos/Campo";
 import { CampoArchivo, formatearPeso } from "../../shared/ui/primitivos/CampoArchivo";
 import { Dialogo } from "../../shared/ui/primitivos/Dialogo";
 import { Icono } from "../../shared/ui/primitivos/Icono";
 import { ErrorNormativo } from "../../shared/ui/patrones/ErrorNormativo";
+import { ComprobacionSeguridad } from "../../shared/ui/patrones/ComprobacionSeguridad";
+import { useComprobante } from "../../shared/seguridad/useComprobante";
 import { apiComercial } from "../../shared/api/clienteComercial";
-import { aProblema } from "../../shared/api/problemDetails";
-import { DEPARTAMENTOS } from "../../shared/api/mock/catalogos";
-import type { TipoActor, TipoDocumento } from "../../shared/api/mock/tipos";
+import { aProblema, erroresPorCampo } from "../../shared/api/problemDetails";
+import {
+  CLAVE_MINIMA,
+  MIMES_ADMITIDOS,
+  aArchivoDeSoporte,
+  motivoDeRechazo,
+  rechazoDeLaPreparacion,
+} from "../../shared/api/rest/actores";
+import { DEPARTAMENTOS, esMunicipioDe, municipiosDe } from "../../shared/ubicacion/divipola";
+import { revisarNit } from "../../shared/identificacion/nit";
+import type { TipoActor } from "../../shared/api/mock/tipos";
 import { Lamina } from "./Laminas";
 import type { Motivo } from "./Laminas";
-import { requisitosDe, vigenciaLegible } from "./requisitos";
+import { seContrastaContraRues, useRequisitos } from "./requisitos";
+import type { Requisito } from "./requisitos";
 
 export type Formulario = {
   nit: string;
@@ -22,6 +33,8 @@ export type Formulario = {
   representante: string;
   correo: string;
   telefono: string;
+  clave: string;
+  claveRepetida: string;
 };
 
 const INICIAL: Formulario = {
@@ -33,6 +46,8 @@ const INICIAL: Formulario = {
   representante: "",
   correo: "",
   telefono: "",
+  clave: "",
+  claveRepetida: "",
 };
 
 export const TIPOS: readonly { valor: TipoActor; etiqueta: string; detalle: string }[] = [
@@ -62,66 +77,197 @@ export const TIPOS: readonly { valor: TipoActor; etiqueta: string; detalle: stri
 type Paso = { clave: string; titulo: string; rotulo: string; motivo: Motivo };
 
 const PASOS: readonly Paso[] = [
-  { clave: "identificacion", titulo: "Identifica la organización", rotulo: "Identificación", motivo: "semilla" },
+  {
+    clave: "identificacion",
+    titulo: "Identifica la organización",
+    rotulo: "Identificación",
+    motivo: "semilla",
+  },
   { clave: "actor", titulo: "¿Qué hace tu organización?", rotulo: "Tipo de actor", motivo: "brote" },
-  { clave: "contacto", titulo: "Dónde estás y quién responde", rotulo: "Ubicación", motivo: "arraigo" },
+  {
+    clave: "contacto",
+    titulo: "Dónde estás y quién responde",
+    rotulo: "Ubicación",
+    motivo: "arraigo",
+  },
+  { clave: "acceso", titulo: "Tu contraseña de acceso", rotulo: "Acceso", motivo: "sello" },
   { clave: "documentos", titulo: "Carga los soportes", rotulo: "Documentos", motivo: "pliego" },
   { clave: "revision", titulo: "Revisa antes de radicar", rotulo: "Revisión", motivo: "abanico" },
 ];
 
 type Errores = Partial<Record<keyof Formulario, string>>;
 
-const validarPaso = (indice: number, valores: Formulario): Errores => {
+const PASO_DEL_CAMPO: Partial<Record<keyof Formulario, number>> = {
+  nit: 0,
+  organizacion: 0,
+  tipoActor: 1,
+  departamento: 2,
+  municipio: 2,
+  representante: 2,
+  correo: 2,
+  telefono: 2,
+  clave: 3,
+};
+
+const esCampoDelFormulario = (campo: string): campo is keyof Formulario => campo in PASO_DEL_CAMPO;
+
+export const anclarEnCampos = (rechazo: unknown): { errores: Errores; paso: number | null } => {
+  const errores: Errores = {};
+  let paso: number | null = null;
+  for (const [campo, motivo] of Object.entries(erroresPorCampo(aProblema(rechazo)))) {
+    if (!esCampoDelFormulario(campo)) continue;
+    errores[campo] = motivo;
+    const propio = PASO_DEL_CAMPO[campo];
+    if (propio !== undefined && (paso === null || propio < paso)) paso = propio;
+  }
+  return { errores, paso };
+};
+
+export const validarPaso = (indice: number, valores: Formulario): Errores => {
   const errores: Errores = {};
   if (indice === 0) {
-    if (!/^\d{9,10}-\d$/.test(valores.nit.trim()))
-      errores.nit = "Formato esperado: 900123456-7 (NIT con dígito de verificación).";
+    const revision = revisarNit(valores.nit);
+    if (revision?.fallo === "forma")
+      errores.nit = "Formato esperado: 900123456-8 (NIT con dígito de verificación).";
+    else if (revision?.fallo === "digito")
+      errores.nit = `El dígito de verificación no corresponde: para ese NIT es ${revision.esperado}.`;
     if (valores.organizacion.trim().length < 6)
       errores.organizacion = "Indica la razón social completa.";
   }
   if (indice === 2) {
     if (!valores.departamento) errores.departamento = "Selecciona el departamento.";
-    if (valores.municipio.trim().length < 3) errores.municipio = "Indica el municipio.";
+    if (!valores.municipio) errores.municipio = "Selecciona el municipio.";
+    else if (!esMunicipioDe(valores.municipio, valores.departamento))
+      errores.municipio = "Ese municipio no pertenece al departamento elegido.";
     if (valores.representante.trim().length < 6)
       errores.representante = "Indica el nombre del representante legal.";
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(valores.correo))
       errores.correo = "Indica un correo de contacto válido.";
     if (valores.telefono.trim().length < 7) errores.telefono = "Indica un teléfono de contacto.";
   }
+  if (indice === 3) {
+    if (valores.clave.length < CLAVE_MINIMA)
+      errores.clave = `La contraseña debe tener al menos ${CLAVE_MINIMA} caracteres.`;
+    else if (valores.clave !== valores.claveRepetida)
+      errores.claveRepetida = "Las dos contraseñas no coinciden.";
+  }
   return errores;
+};
+
+type Adjunto = {
+  archivo: File | null;
+  fase: "subiendo" | "listo" | "fallido";
+  soporteId?: string;
+  motivo?: string;
 };
 
 type Props = {
   abierto: boolean;
   onCerrar: () => void;
-  onRadicada: (datos: { radicado: string; correo: string; faltantes: number }) => void;
+  onRadicada: (datos: {
+    radicado: string;
+    correo: string;
+    faltantes: number;
+    mensaje: string;
+  }) => void;
 };
 
 export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
   const [paso, setPaso] = useState(0);
   const [valores, setValores] = useState<Formulario>(INICIAL);
   const [errores, setErrores] = useState<Errores>({});
-  const [archivos, setArchivos] = useState<Partial<Record<TipoDocumento, File>>>({});
-  const [rechazos, setRechazos] = useState<Partial<Record<TipoDocumento, string>>>({});
+  const [adjuntos, setAdjuntos] = useState<Record<string, Adjunto>>({});
   const [faltan, setFaltan] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [rechazo, setRechazo] = useState<unknown>(null);
 
-  const requisitos = useMemo(() => requisitosDe(valores.tipoActor), [valores.tipoActor]);
+  const comprobante = useComprobante();
+  const consulta = useRequisitos(valores.tipoActor, abierto);
+  const requisitos: readonly Requisito[] = useMemo(
+    () => consulta.data?.documentos ?? [],
+    [consulta.data],
+  );
+
   const obligatorios = requisitos.filter((requisito) => requisito.obligatorio);
-  const pendientes = obligatorios.filter((requisito) => !archivos[requisito.documento]);
+  const pendientes = obligatorios.filter((requisito) => adjuntos[requisito.tipo]?.fase !== "listo");
+  const subiendo = Object.values(adjuntos).some((adjunto) => adjunto.fase === "subiendo");
+  const municipios = useMemo(() => municipiosDe(valores.departamento), [valores.departamento]);
   const actual = PASOS[paso];
 
+  useEffect(() => {
+    if (!abierto) return;
+    setAdjuntos({});
+    setFaltan(false);
+  }, [abierto, valores.tipoActor]);
+
   const actualizar = (campo: keyof Formulario) => (valor: string) => {
-    setValores((previos) => ({ ...previos, [campo]: valor }));
+    setValores((previos) =>
+      campo === "departamento"
+        ? { ...previos, departamento: valor, municipio: "" }
+        : { ...previos, [campo]: valor },
+    );
     setErrores((previos) => ({ ...previos, [campo]: undefined }));
   };
+
+  const cargar = async (requisito: Requisito, elegido: File) => {
+    const archivo = aArchivoDeSoporte(elegido);
+    const local = motivoDeRechazo(archivo);
+    if (local) {
+      setAdjuntos((previos) => ({
+        ...previos,
+        [requisito.tipo]: { archivo: elegido, fase: "fallido", motivo: local },
+      }));
+      return;
+    }
+
+    setAdjuntos((previos) => ({
+      ...previos,
+      [requisito.tipo]: { archivo: elegido, fase: "subiendo" },
+    }));
+
+    try {
+      const preparacion = await apiComercial.prepararSoporte({
+        tipo: requisito.tipo,
+        nombre: archivo.nombre,
+        mime: archivo.mime,
+        bytes: archivo.bytes,
+        captcha: await comprobante.consumir(),
+      });
+      const rechazado = rechazoDeLaPreparacion(preparacion, archivo);
+      if (rechazado) throw rechazado;
+      await apiComercial.subirSoporte(preparacion, archivo);
+      const soporte = await apiComercial.confirmarSoporte({
+        soporteId: preparacion.soporteId,
+        captcha: await comprobante.consumir(),
+      });
+      setAdjuntos((previos) => ({
+        ...previos,
+        [requisito.tipo]: { archivo: elegido, fase: "listo", soporteId: soporte.soporteId },
+      }));
+    } catch (error) {
+      setAdjuntos((previos) => ({
+        ...previos,
+        [requisito.tipo]: {
+          archivo: elegido,
+          fase: "fallido",
+          motivo: aProblema(error).detail,
+        },
+      }));
+    }
+  };
+
+  const quitar = (tipo: string) =>
+    setAdjuntos((previos) => {
+      const siguiente = { ...previos };
+      delete siguiente[tipo];
+      return siguiente;
+    });
 
   const avanzar = () => {
     const encontrados = validarPaso(paso, valores);
     setErrores(encontrados);
     if (Object.keys(encontrados).length > 0) return;
-    if (paso === 3 && pendientes.length > 0) {
+    if (paso === 4 && pendientes.length > 0) {
       setFaltan(true);
       return;
     }
@@ -138,27 +284,36 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
     setEnviando(true);
     setRechazo(null);
     try {
-      const solicitud = await apiComercial.radicarSolicitud({
-        ...valores,
+      const radicacion = await apiComercial.radicarSolicitud({
+        nit: valores.nit.trim(),
+        organizacion: valores.organizacion.trim(),
+        tipoActor: valores.tipoActor,
+        departamento: valores.departamento,
+        municipio: valores.municipio,
+        representante: valores.representante.trim(),
+        correo: valores.correo.trim(),
+        telefono: valores.telefono.trim(),
+        clave: valores.clave,
         documentos: requisitos
-          .filter((requisito) => archivos[requisito.documento])
-          .map((requisito) => {
-            const archivo = archivos[requisito.documento];
-            return {
-              tipo: requisito.documento,
-              nombre: archivo ? archivo.name : "",
-              peso: archivo ? archivo.size : 0,
-            };
-          }),
+          .filter((requisito) => adjuntos[requisito.tipo]?.soporteId)
+          .map((requisito) => ({
+            tipo: requisito.tipo,
+            soporteId: adjuntos[requisito.tipo]?.soporteId ?? "",
+          })),
+        captcha: await comprobante.consumir(),
       });
       onRadicada({
-        radicado: solicitud.id,
-        correo: valores.correo,
+        radicado: radicacion.id,
+        correo: valores.correo.trim(),
+        mensaje: radicacion.mensaje,
         faltantes: requisitos.filter(
-          (requisito) => !requisito.obligatorio && !archivos[requisito.documento],
+          (requisito) => !requisito.obligatorio && !adjuntos[requisito.tipo]?.soporteId,
         ).length,
       });
     } catch (error) {
+      const anclados = anclarEnCampos(error);
+      setErrores(anclados.errores);
+      if (anclados.paso !== null) setPaso(anclados.paso);
       setRechazo(error);
     } finally {
       setEnviando(false);
@@ -171,6 +326,8 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
   };
 
   if (!actual) return null;
+
+  const puedeRadicar = comprobante.listo && !subiendo && pendientes.length === 0;
 
   return (
     <Dialogo
@@ -194,9 +351,11 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
               </Boton>
             )}
             {paso < PASOS.length - 1 ? (
-              <Boton onClick={avanzar}>Continuar</Boton>
+              <Boton onClick={avanzar} disabled={paso === 4 && subiendo}>
+                Continuar
+              </Boton>
             ) : (
-              <Boton onClick={() => void radicar()} cargando={enviando}>
+              <Boton onClick={() => void radicar()} cargando={enviando} disabled={!puedeRadicar}>
                 Radicar solicitud
               </Boton>
             )}
@@ -240,7 +399,7 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
                 value={valores.nit}
                 error={errores.nit}
                 ayuda="Incluye el guion y el dígito de verificación."
-                placeholder="900123456-7"
+                placeholder="900123456-8"
                 onChange={(evento) => actualizar("nit")(evento.target.value)}
               />
               <CampoTexto
@@ -257,8 +416,8 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
           {paso === 1 ? (
             <div className="pila" style={{ gap: "var(--e4)" }}>
               <p className="asistente__intro">
-                El tipo de actor decide qué documentos te exige la norma. Puedes cambiarlo mientras
-                no hayas radicado.
+                El tipo de actor decide qué documentos te exige el sistema. Puedes cambiarlo mientras
+                no hayas radicado; al cambiarlo se pierden los archivos ya cargados.
               </p>
               <div className="asistente__opciones" role="radiogroup" aria-label="Tipo de actor">
                 {TIPOS.map((tipo) => (
@@ -288,17 +447,28 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
                   value={valores.departamento}
                   error={errores.departamento}
                   vacio="Selecciona un departamento"
-                  opciones={DEPARTAMENTOS.map((departamento) => ({
-                    valor: departamento.nombre,
-                    etiqueta: departamento.nombre,
+                  opciones={DEPARTAMENTOS.map((entrada) => ({
+                    valor: entrada.codigo,
+                    etiqueta: entrada.nombre,
                   }))}
                   onChange={(evento) => actualizar("departamento")(evento.target.value)}
                 />
-                <CampoTexto
+                <CampoSelect
                   etiqueta="Municipio"
                   requerido
                   value={valores.municipio}
                   error={errores.municipio}
+                  disabled={!valores.departamento}
+                  vacio={
+                    valores.departamento
+                      ? "Selecciona un municipio"
+                      : "Elige primero el departamento"
+                  }
+                  ayuda="Se envía el código DIVIPOLA de cinco dígitos."
+                  opciones={municipios.map((entrada) => ({
+                    valor: entrada.codigo,
+                    etiqueta: entrada.nombre,
+                  }))}
                   onChange={(evento) => actualizar("municipio")(evento.target.value)}
                 />
               </div>
@@ -307,7 +477,7 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
                 requerido
                 value={valores.representante}
                 error={errores.representante}
-                ayuda="Recibirá la invitación para administrar la cuenta de la organización."
+                ayuda="Es la persona a cuyo nombre queda la cuenta de la organización."
                 onChange={(evento) => actualizar("representante")(evento.target.value)}
               />
               <div className="rejilla rejilla--2">
@@ -315,8 +485,10 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
                   etiqueta="Correo de contacto"
                   requerido
                   type="email"
+                  autoComplete="email"
                   value={valores.correo}
                   error={errores.correo}
+                  ayuda="Aquí llegan el radicado y el enlace para verificar el correo."
                   onChange={(evento) => actualizar("correo")(evento.target.value)}
                 />
                 <CampoTexto
@@ -333,10 +505,54 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
           {paso === 3 ? (
             <div className="pila" style={{ gap: "var(--e4)" }}>
               <p className="asistente__intro">
-                Estos son los soportes que la norma exige a un{" "}
-                <strong>{TIPOS.find((tipo) => tipo.valor === valores.tipoActor)?.etiqueta}</strong>.
-                Los marcados con asterisco bloquean la radicación hasta que los cargues.
+                Esta es la contraseña con la que vas a entrar el día que aprueben tu registro. No
+                hay correo de invitación ni de «establece tu clave»: la que escribas aquí es la que
+                va a funcionar, con el correo <strong>{valores.correo || "de contacto"}</strong>.
               </p>
+              <CampoClave
+                etiqueta="Contraseña"
+                requerido
+                autoComplete="new-password"
+                value={valores.clave}
+                error={errores.clave}
+                ayuda={`Mínimo ${CLAVE_MINIMA} caracteres.`}
+                onChange={(evento) => actualizar("clave")(evento.target.value)}
+              />
+              <CampoClave
+                etiqueta="Repite la contraseña"
+                requerido
+                autoComplete="new-password"
+                value={valores.claveRepetida}
+                error={errores.claveRepetida}
+                onChange={(evento) => actualizar("claveRepetida")(evento.target.value)}
+              />
+              <p className="asistente__intro">
+                La contraseña no se guarda en el expediente: viaja al servicio de identidad y la
+                credencial queda pendiente hasta que un administrador institucional apruebe el
+                trámite.
+              </p>
+            </div>
+          ) : null}
+
+          {paso === 4 ? (
+            <div className="pila" style={{ gap: "var(--e4)" }}>
+              {consulta.isPending ? (
+                <p className="asistente__intro">Consultando los soportes que exige el sistema…</p>
+              ) : null}
+              {consulta.isError ? (
+                <ErrorNormativo
+                  problema={aProblema(consulta.error)}
+                  onReintentar={() => void consulta.refetch()}
+                />
+              ) : null}
+              {consulta.isSuccess ? (
+                <p className="asistente__intro">
+                  Estos son los soportes que el sistema exige a un{" "}
+                  <strong>{TIPOS.find((tipo) => tipo.valor === valores.tipoActor)?.etiqueta}</strong>
+                  . Los marcados con asterisco bloquean la radicación. Cada archivo se sube al
+                  guardarlo: PDF, JPG, PNG o WEBP, hasta 10 MB.
+                </p>
+              ) : null}
               {faltan && pendientes.length > 0 ? (
                 <p className="asistente__aviso" role="alert">
                   Falta cargar {pendientes.length}{" "}
@@ -344,52 +560,63 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
                 </p>
               ) : null}
               <div className="pila" style={{ gap: "var(--e5)" }}>
-                {requisitos.map((requisito) => (
-                  <div key={requisito.documento} className="asistente__requisito">
-                    <CampoArchivo
-                      etiqueta={requisito.nombre}
-                      requerido={requisito.obligatorio}
-                      archivo={archivos[requisito.documento] ?? null}
-                      error={rechazos[requisito.documento]}
-                      ayuda={
-                        requisito.automatico
-                          ? `${requisito.norma} · el sistema además lo contrasta contra el RUES`
-                          : requisito.norma
-                      }
-                      onArchivo={(archivo) => {
-                        setArchivos((previos) => {
-                          const siguiente = { ...previos };
-                          if (archivo) siguiente[requisito.documento] = archivo;
-                          else delete siguiente[requisito.documento];
-                          return siguiente;
-                        });
-                        setRechazos((previos) => ({ ...previos, [requisito.documento]: undefined }));
-                      }}
-                      onRechazo={(motivo) =>
-                        setRechazos((previos) => ({ ...previos, [requisito.documento]: motivo }))
-                      }
-                    />
-                    <div className="asistente__sellos">
-                      {vigenciaLegible(requisito.vigenciaMeses) ? (
-                        <span className="asistente__sello">
-                          {vigenciaLegible(requisito.vigenciaMeses)}
-                        </span>
-                      ) : null}
-                      {requisito.obligatorio ? null : (
-                        <span className="asistente__sello asistente__sello--suave">Opcional</span>
-                      )}
+                {requisitos.map((requisito) => {
+                  const adjunto = adjuntos[requisito.tipo];
+                  return (
+                    <div key={requisito.tipo} className="asistente__requisito">
+                      <CampoArchivo
+                        etiqueta={requisito.etiqueta}
+                        requerido={requisito.obligatorio}
+                        acepta={MIMES_ADMITIDOS.join(",")}
+                        archivo={adjunto?.archivo ?? null}
+                        error={adjunto?.fase === "fallido" ? adjunto.motivo : undefined}
+                        ayuda={
+                          seContrastaContraRues(requisito.tipo)
+                            ? "El sistema además lo contrasta contra el RUES"
+                            : undefined
+                        }
+                        onArchivo={(elegido) => {
+                          if (elegido) void cargar(requisito, elegido);
+                          else quitar(requisito.tipo);
+                        }}
+                        onRechazo={(motivo) =>
+                          setAdjuntos((previos) => ({
+                            ...previos,
+                            [requisito.tipo]: { archivo: null, fase: "fallido", motivo },
+                          }))
+                        }
+                      />
+                      <div className="asistente__sellos">
+                        {adjunto?.fase === "subiendo" ? (
+                          <span className="asistente__sello">Subiendo…</span>
+                        ) : null}
+                        {adjunto?.fase === "listo" ? (
+                          <span className="asistente__sello">Soporte disponible</span>
+                        ) : null}
+                        {requisito.obligatorio ? null : (
+                          <span className="asistente__sello asistente__sello--suave">Opcional</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+              {comprobante.exige ? (
+                <ComprobacionSeguridad
+                  key={comprobante.ronda}
+                  accion="soporte-de-registro"
+                  onToken={comprobante.recibir}
+                />
+              ) : null}
             </div>
           ) : null}
 
-          {paso === 4 ? (
+          {paso === 5 ? (
             <div className="pila" style={{ gap: "var(--e4)" }}>
               <p className="asistente__intro">
-                Al radicar, tu solicitud queda en validación. <strong>No podrás ingresar al
-                sistema</strong> hasta que un administrador institucional valide los soportes.
+                Al radicar, tu solicitud queda en validación.{" "}
+                <strong>No podrás ingresar al sistema</strong> hasta que un administrador
+                institucional valide los soportes.
               </p>
               <dl className="asistente__resumen">
                 <div>
@@ -407,7 +634,11 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
                 <div>
                   <dt>Ubicación</dt>
                   <dd>
-                    {valores.municipio}, {valores.departamento}
+                    {municipios.find((entrada) => entrada.codigo === valores.municipio)?.nombre}
+                    {", "}
+                    {DEPARTAMENTOS.find((entrada) => entrada.codigo === valores.departamento)
+                      ?.nombre}{" "}
+                    <span className="mono">{valores.municipio}</span>
                   </dd>
                 </div>
                 <div>
@@ -423,20 +654,31 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
               </dl>
               <ul className="asistente__adjuntos">
                 {requisitos.map((requisito) => {
-                  const archivo = archivos[requisito.documento];
+                  const adjunto = adjuntos[requisito.tipo];
+                  const listo = adjunto?.fase === "listo";
                   return (
-                    <li key={requisito.documento} data-cargado={archivo ? "si" : "no"}>
+                    <li key={requisito.tipo} data-cargado={listo ? "si" : "no"}>
                       <span className="asistente__adjunto-marca" aria-hidden="true">
-                        <Icono nombre={archivo ? "check" : "documento"} tamano={14} />
+                        <Icono nombre={listo ? "check" : "documento"} tamano={14} />
                       </span>
-                      <span className="asistente__adjunto-nombre">{requisito.nombre}</span>
+                      <span className="asistente__adjunto-nombre">{requisito.etiqueta}</span>
                       <span className="asistente__adjunto-dato mono">
-                        {archivo ? formatearPeso(archivo.size) : "sin cargar"}
+                        {listo && adjunto?.archivo
+                          ? formatearPeso(adjunto.archivo.size)
+                          : "sin cargar"}
                       </span>
                     </li>
                   );
                 })}
               </ul>
+              {comprobante.exige ? (
+                <ComprobacionSeguridad
+                  key={comprobante.ronda}
+                  accion="radicar-solicitud"
+                  onToken={comprobante.recibir}
+                  nota="Esta comprobación distingue a una persona de un guion automatizado. Es obligatoria para radicar."
+                />
+              ) : null}
             </div>
           ) : null}
         </div>

@@ -1,40 +1,58 @@
 import { modoMock, solicitar } from "./transporte";
 import { servidorMockClinico } from "./mock/servidorMock";
 import type { FiltroListado } from "./mock/servidorMock";
+import type { CitaApi, PacienteApi, PacienteEnListaApi, PaginaApi } from "./rest/contrato";
+import { aCita, aPaciente, aPacienteDeLista } from "./rest/mapeadoresClinicos";
+import { aParametrosDeListado, mapearPagina } from "./rest/paginacion";
+import { sinContrato } from "./rest/peticiones";
+import type { Cita, Paciente, Prescripcion, NotaClinica } from "./mock/datosClinicos";
+
+export type DetallePaciente = {
+  paciente: Paciente;
+  citas: readonly Cita[];
+  prescripciones: readonly Prescripcion[];
+  notas: readonly NotaClinica[];
+};
+
+const FINALIDAD_DE_LECTURA = "ATENCION_ASISTENCIAL";
 
 export const apiClinica = {
   indicadores: () =>
-    modoMock
-      ? servidorMockClinico.indicadores()
-      : solicitar<Awaited<ReturnType<typeof servidorMockClinico.indicadores>>>("clinico", "/indicadores"),
+    modoMock ? servidorMockClinico.indicadores() : sinContrato("los indicadores clínicos"),
 
   pacientes: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMockClinico.pacientes(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMockClinico.pacientes>>>("clinico", "/pacientes", {
-          parametros: {
-            busqueda: filtro.busqueda,
-            estado: filtro.estado,
-            departamento: filtro.departamento,
-            pagina: filtro.pagina,
-            porPagina: filtro.porPagina,
-          },
-        }),
+      : solicitar<PaginaApi<PacienteEnListaApi>>("clinico", "/pacientes", {
+          parametros: aParametrosDeListado({ ...filtro, tipo: undefined }),
+        }).then((sobre) => mapearPagina(sobre, aPacienteDeLista)),
 
-  paciente: (id: string) =>
+  paciente: (id: string): Promise<DetallePaciente> =>
     modoMock
       ? servidorMockClinico.paciente(id)
-      : solicitar<Awaited<ReturnType<typeof servidorMockClinico.paciente>>>("clinico", `/pacientes/${id}`),
+      : Promise.all([
+          solicitar<PacienteApi>("clinico", `/pacientes/${id}`, {
+            parametros: { finalidad: FINALIDAD_DE_LECTURA },
+          }),
+          solicitar<readonly CitaApi[]>("clinico", "/agenda", { parametros: { pacienteId: id } }),
+        ]).then(([paciente, citas]) => ({
+          paciente: aPaciente(paciente),
+          citas: citas.map((cita) => aCita(cita, paciente.nombre)),
+          prescripciones: [],
+          notas: [],
+        })),
 
   agenda: (filtro: FiltroListado = {}) =>
     modoMock
       ? servidorMockClinico.agenda(filtro)
-      : solicitar<Awaited<ReturnType<typeof servidorMockClinico.agenda>>>("clinico", "/agenda", {
-          parametros: { busqueda: filtro.busqueda, estado: filtro.estado, tipo: filtro.tipo },
-        }),
+      : solicitar<readonly CitaApi[]>("clinico", "/agenda", {
+          parametros: { estado: filtro.estado, tipo: filtro.tipo },
+        }).then((citas) => citas.map((cita) => aCita(cita))),
 
   teleconsultas: () =>
     modoMock
       ? servidorMockClinico.teleconsultas()
-      : solicitar<Awaited<ReturnType<typeof servidorMockClinico.teleconsultas>>>("clinico", "/teleconsultas"),
+      : solicitar<readonly CitaApi[]>("clinico", "/teleconsultas").then((citas) =>
+          citas.map((cita) => aCita(cita)),
+        ),
 };

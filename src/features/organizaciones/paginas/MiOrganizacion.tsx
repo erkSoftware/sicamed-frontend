@@ -7,6 +7,7 @@ import { CampoTexto } from "../../../shared/ui/primitivos/Campo";
 import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
 import { useAutor } from "../../../shared/auth/useAutor";
 import { EstadoConsulta } from "../../../shared/ui/patrones/EstadoConsulta";
+import { aProblema, esCuentaSinOrganizacion } from "../../../shared/api/problemDetails";
 import { EstadoVacio } from "../../../shared/ui/patrones/EstadoVacio";
 import { Kpi } from "../../../shared/ui/patrones/Kpi";
 import { Tarjeta } from "../../../shared/ui/primitivos/Tarjeta";
@@ -78,6 +79,24 @@ export const MiOrganizacion = () => {
     if (Object.keys(encontrados).length > 0) return;
     actualizar.mutate({ id: organizacion.id, ...ficha, autor }, { onSuccess: cerrarEdicion });
   };
+
+  const sinOrganizacion = consulta.error !== null && esCuentaSinOrganizacion(aProblema(consulta.error));
+
+  if (sinOrganizacion)
+    return (
+      <div className="pagina">
+        <EstadoVacio
+          icono="organizacion"
+          titulo="Tu cuenta todavía no está asociada a una organización"
+          texto={aProblema(consulta.error).detail}
+          accion={
+            <Link to="/app" className="boton boton--primario boton--sm">
+              Volver al tablero
+            </Link>
+          }
+        />
+      </div>
+    );
 
   return (
     <div className="pagina">

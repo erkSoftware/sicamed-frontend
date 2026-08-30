@@ -54,11 +54,14 @@ import type {
   ReglaVerificacion,
   RuedaNegocio,
   SolicitudRegistro,
+  SoporteSimulado,
   Transformacion,
   Variedad,
 } from "./tipos";
 
 const CLAVE_ALMACEN = "sicamed.almacen-simulado";
+
+const CLAVE_PROPIO = "sicamed.almacen-propio";
 
 const semilla = {
   organizaciones: [...ORGANIZACIONES] as Organizacion[],
@@ -85,41 +88,82 @@ const semilla = {
   transformaciones: [...TRANSFORMACIONES] as Transformacion[],
   destrucciones: [...DESTRUCCIONES] as ActaDestruccion[],
   solicitudes: [...SOLICITUDES] as SolicitudRegistro[],
+  soportes: [] as SoporteSimulado[],
   discrepancias: [...discrepanciasSemilla(CONEXIONES)] as Discrepancia[],
   politicaVersion: "POL-2026.1",
 };
 
 type Almacen = typeof semilla;
 
+const vacia = (): Almacen => {
+  const partida = structuredClone(semilla);
+  for (const clave of Object.keys(partida) as (keyof Almacen)[]) {
+    const valor = partida[clave];
+    if (Array.isArray(valor)) (partida[clave] as unknown[]).length = 0;
+  }
+  return partida;
+};
+
 const persistible = (): boolean =>
   modoMock && typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
 
-const restaurar = (): Almacen => {
-  if (!persistible()) return semilla;
+const restaurar = (clave: string, base: Almacen): Almacen => {
+  if (!persistible()) return base;
   try {
-    const guardado = window.sessionStorage.getItem(CLAVE_ALMACEN);
-    if (!guardado) return semilla;
-    const recuperado = JSON.parse(guardado) as Partial<Almacen>;
-    return { ...semilla, ...recuperado };
+    const guardado = window.sessionStorage.getItem(clave);
+    if (!guardado) return base;
+    return { ...base, ...(JSON.parse(guardado) as Partial<Almacen>) };
   } catch {
-    return semilla;
+    return base;
   }
 };
 
-export const almacen: Almacen = restaurar();
+const demostracion = restaurar(CLAVE_ALMACEN, semilla);
+const propio = restaurar(CLAVE_PROPIO, vacia());
+
+let sinSemilla = false;
+
+export const fijarAlmacenPropio = (valor: boolean): void => {
+  sinSemilla = valor;
+};
+
+export const usaAlmacenPropio = (): boolean => sinSemilla;
+
+const activo = (): Almacen => (sinSemilla ? propio : demostracion);
+
+export const almacen: Almacen = new Proxy(demostracion, {
+  get: (_destino, clave) => activo()[clave as keyof Almacen],
+  set: (_destino, clave, valor) => {
+    activo()[clave as keyof Almacen] = valor as never;
+    return true;
+  },
+  ownKeys: () => Reflect.ownKeys(activo()),
+  getOwnPropertyDescriptor: (_destino, clave) =>
+    Object.getOwnPropertyDescriptor(activo(), clave) ?? {
+      configurable: true,
+      enumerable: true,
+      value: undefined,
+    },
+});
 
 export const guardarAlmacen = (): void => {
   if (!persistible()) return;
   try {
-    window.sessionStorage.setItem(CLAVE_ALMACEN, JSON.stringify(almacen));
+    window.sessionStorage.setItem(
+      sinSemilla ? CLAVE_PROPIO : CLAVE_ALMACEN,
+      JSON.stringify(activo()),
+    );
   } catch {
     return;
   }
 };
 
 export const reiniciarAlmacen = (): void => {
-  Object.assign(almacen, structuredClone(semilla));
-  if (persistible()) window.sessionStorage.removeItem(CLAVE_ALMACEN);
+  Object.assign(demostracion, structuredClone(semilla));
+  Object.assign(propio, vacia());
+  if (!persistible()) return;
+  window.sessionStorage.removeItem(CLAVE_ALMACEN);
+  window.sessionStorage.removeItem(CLAVE_PROPIO);
 };
 
 const contadores: Record<string, number> = {};

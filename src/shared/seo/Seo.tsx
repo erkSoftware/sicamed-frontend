@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 export const SITIO = {
   nombre: "SICAMED",
   nombreLargo: "SICAMED — Sistema de Información del Cannabis Medicinal",
-  url: import.meta.env.VITE_URL_PUBLICA ?? "https://sicamed.co",
+  url: import.meta.env.VITE_URL_PUBLICA ?? "https://sicamed.com.co",
   descripcion:
     "Plataforma nacional de trazabilidad, cumplimiento normativo y vitrina pública del cannabis " +
     "medicinal en Colombia.",
