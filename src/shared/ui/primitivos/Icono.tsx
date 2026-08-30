@@ -44,7 +44,10 @@ export type NombreIcono =
   | "comando"
   | "capas"
   | "sonido"
-  | "silencio";
+  | "silencio"
+  | "microfono"
+  | "ojo"
+  | "ojo-cerrado";
 
 const TRAZOS: Record<NombreIcono, string> = {
   tablero: "M3 3h7v8H3zM14 3h7v5h-7zM14 11h7v10h-7zM3 14h7v7H3z",
@@ -93,6 +96,9 @@ const TRAZOS: Record<NombreIcono, string> = {
   capas: "M12 3l9 5-9 5-9-5zM3 13l9 5 9-5M3 17l9 5 9-5",
   sonido: "M4 9h4l5-4v14l-5-4H4zM16.5 9.5a3.5 3.5 0 0 1 0 5M19 7a7 7 0 0 1 0 10",
   silencio: "M4 9h4l5-4v14l-5-4H4zM17 10l4 4M21 10l-4 4",
+  microfono: "M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zM5 11a7 7 0 0 0 14 0M12 18v3M8 21h8",
+  ojo: "M2 12s3.6-6.8 10-6.8S22 12 22 12s-3.6 6.8-10 6.8S2 12 2 12zM12 14.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2z",
+  "ojo-cerrado": "M3 3l18 18M10.1 10.1a2.6 2.6 0 0 0 3.8 3.8M9.6 5.4A9.9 9.9 0 0 1 12 5.2c6.4 0 10 6.8 10 6.8a17.6 17.6 0 0 1-3.4 4.3M6.1 6.6A17.4 17.4 0 0 0 2 12s3.6 6.8 10 6.8c1.4 0 2.7-.3 3.8-.8",
 };
 
 type Props = {

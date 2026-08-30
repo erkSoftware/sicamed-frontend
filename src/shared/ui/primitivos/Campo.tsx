@@ -1,5 +1,6 @@
 import clsx from "clsx";
-import { useId } from "react";
+import { useId, useState } from "react";
+import { Icono } from "./Icono";
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
 type Comunes = {
@@ -70,6 +71,50 @@ export const CampoTexto = ({ etiqueta, ayuda, error, requerido, className, ...re
         aria-describedby={clsx(ayuda && idAyuda, error && idError) || undefined}
         {...resto}
       />
+    </Envoltura>
+  );
+};
+
+type PropsClave = Comunes & Omit<InputHTMLAttributes<HTMLInputElement>, "className" | "type">;
+
+export const CampoClave = ({ etiqueta, ayuda, error, requerido, className, ...resto }: PropsClave) => {
+  const base = useId();
+  const idControl = `${base}-control`;
+  const idAyuda = `${base}-ayuda`;
+  const idError = `${base}-error`;
+  const [visible, setVisible] = useState(false);
+  return (
+    <Envoltura
+      etiqueta={etiqueta}
+      ayuda={ayuda}
+      error={error}
+      requerido={requerido}
+      className={className}
+      idControl={idControl}
+      idAyuda={idAyuda}
+      idError={idError}
+    >
+      <div className="campo__clave">
+        <input
+          id={idControl}
+          className="campo__control"
+          type={visible ? "text" : "password"}
+          required={requerido}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={clsx(ayuda && idAyuda, error && idError) || undefined}
+          {...resto}
+        />
+        <button
+          type="button"
+          className="campo__ojo"
+          aria-pressed={visible}
+          aria-controls={idControl}
+          aria-label={visible ? "Ocultar la contraseña" : "Mostrar la contraseña"}
+          onClick={() => setVisible((valor) => !valor)}
+        >
+          <Icono nombre={visible ? "ojo-cerrado" : "ojo"} tamano={18} />
+        </button>
+      </div>
     </Envoltura>
   );
 };

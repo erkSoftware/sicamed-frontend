@@ -350,10 +350,9 @@ export const SOLICITUDES: readonly SolicitudRegistro[] = Array.from({ length: 9 
         regla.tipoActor ===
           ((["CULTIVADOR", "TRANSFORMADOR", "DISPENSADOR", "LABORATORIO", "IPS"] as const)[i % 5] ??
             "CULTIVADOR") && regla.obligatorio,
-    ).map((regla) => ({
+    ).map((regla, n) => ({
       tipo: regla.documento,
-      nombre: `${regla.documento.toLowerCase()}-${identificador("SOL", i)}.pdf`,
-      peso: enteroEntre(azar, 180_000, 4_200_000),
+      soporteId: identificador("SOP", i * 10 + n),
     })),
     huella: huella(),
   };

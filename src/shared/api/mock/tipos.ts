@@ -404,9 +404,8 @@ export type CuentaUsuario = {
 export type EstadoSolicitud = "RECIBIDA" | "EXPEDIENTE_ABIERTO" | "DESCARTADA";
 
 export type DocumentoAdjunto = {
-  tipo: TipoDocumento;
-  nombre: string;
-  peso: number;
+  tipo: string;
+  soporteId: string;
 };
 
 export type SolicitudRegistro = {
@@ -424,6 +423,17 @@ export type SolicitudRegistro = {
   expedienteId: string | null;
   documentos: readonly DocumentoAdjunto[];
   huella: string;
+  correoVerificado?: boolean;
+  tokenVerificacion?: string;
+};
+
+export type SoporteSimulado = {
+  soporteId: string;
+  tipo: string;
+  nombre: string;
+  mime: string;
+  bytes: number;
+  estado: "PENDIENTE" | "DISPONIBLE";
 };
 
 export type VeredictoPaso = "PENDIENTE" | "VERIFICADO" | "DEVUELTO";

@@ -16,5 +16,11 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}", "tests/a11y/**/*.test.{ts,tsx}"],
     css: false,
     restoreMocks: true,
+    env: {
+      VITE_MODO_API: "mock",
+      VITE_MODO_AUTH: "mock",
+      VITE_TOKEN_DESARROLLO: "",
+      VITE_TURNSTILE_CLAVE_SITIO: "",
+    },
   },
 });

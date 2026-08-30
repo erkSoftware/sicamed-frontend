@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import { Helmet } from "react-helmet-async";
 import { useAuth } from "../../shared/auth/useAuth";
 import { SelectorPerfil } from "../../shared/auth/SelectorPerfil";
+import { esModoDemostracion } from "../../shared/auth/proveedor";
 import {
   itemDeRuta,
   useModuloActivo,
@@ -14,12 +15,13 @@ import { Icono } from "../../shared/ui/primitivos/Icono";
 import { IsotipoMono } from "../../shared/ui/primitivos/IsotipoMono";
 import type { NombreIcono } from "../../shared/ui/primitivos/Icono";
 import { PaletaComandos } from "../../shared/ui/comandos/PaletaComandos";
+import { AsistenteAurora } from "../../shared/ui/aurora/AsistenteAurora";
 import { SelectorTema } from "../../shared/tema/SelectorTema";
 import { useTema } from "../../shared/tema/almacen";
 import { iniciales } from "../../shared/i18n/formato";
 
 export const LayoutApp = () => {
-  const { sesion, cerrarSesion } = useAuth();
+  const { sesion, cerrarSesion, perfilAdoptado, adoptarPerfil } = useAuth();
   const modulos = useModulosDisponibles();
   const ubicacion = useLocation();
   const navegar = useNavigate();
@@ -204,7 +206,7 @@ export const LayoutApp = () => {
             </button>
             <span className="selector-contexto">
               <span className="selector-contexto__etiqueta">Organización</span>
-              <strong>{sesion?.usuario.organizacion}</strong>
+              <strong>{sesion?.usuario.organizacion || "Sin organización asociada"}</strong>
             </span>
             <SelectorTema />
             <SelectorPerfil />
@@ -213,6 +215,18 @@ export const LayoutApp = () => {
         </header>
 
         <main id="contenido-principal" tabIndex={-1}>
+          {perfilAdoptado && !esModoDemostracion ? (
+            <p className="aviso aviso--alerta aviso--suplantacion" role="status">
+              <Icono nombre="escudo" tamano={16} />
+              <span>
+                Estás viendo la plataforma como <strong>{sesion?.usuario.rol}</strong> sobre datos de
+                demostración. Tu sesión y tus permisos reales no cambiaron.
+              </span>
+              <Boton variante="secundario" tamano="sm" onClick={() => adoptarPerfil(null)}>
+                Volver a mi cuenta
+              </Boton>
+            </p>
+          ) : null}
           <Outlet />
         </main>
       </div>
@@ -222,6 +236,8 @@ export const LayoutApp = () => {
         onCerrar={() => setComandos(false)}
         onIrAModulo={irAModulo}
       />
+
+      <AsistenteAurora />
     </div>
   );
 };

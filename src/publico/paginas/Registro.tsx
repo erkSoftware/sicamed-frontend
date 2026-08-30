@@ -5,10 +5,11 @@ import { Tarjeta } from "../../shared/ui/primitivos/Tarjeta";
 import { Boton } from "../../shared/ui/primitivos/Boton";
 import { Icono } from "../../shared/ui/primitivos/Icono";
 import { AsistenteRegistro, TIPOS } from "../registro/AsistenteRegistro";
+import type { TipoActor } from "../../shared/api/mock/tipos";
 import { Lamina } from "../registro/Laminas";
-import { porAportar } from "../registro/requisitos";
+import { seContrastaContraRues, useRequisitos } from "../registro/requisitos";
 
-type Radicada = { radicado: string; correo: string; faltantes: number };
+type Radicada = { radicado: string; correo: string; faltantes: number; mensaje: string };
 
 const PASOS_TRAMITE = [
   "Radicas la solicitud con todos los soportes que exige tu tipo de actor.",
@@ -28,6 +29,8 @@ const LIMITES = [
 export const Registro = () => {
   const [abierto, setAbierto] = useState(false);
   const [radicada, setRadicada] = useState<Radicada | null>(null);
+  const [vistaPrevia, setVistaPrevia] = useState<TipoActor>("CULTIVADOR");
+  const requisitos = useRequisitos(vistaPrevia);
 
   if (radicada) {
     return (
@@ -42,10 +45,7 @@ export const Registro = () => {
           <p className="seccion__etiqueta">Solicitud radicada</p>
           <h1>Ahora queda en validación</h1>
           <p className="registro-espera__radicado mono">{radicada.radicado}</p>
-          <p className="registro-espera__texto">
-            Recibimos tu solicitud y sus soportes. Un analista documental los revisa y un
-            administrador institucional resuelve el trámite.
-          </p>
+          <p className="registro-espera__texto">{radicada.mensaje}</p>
           <p className="registro-espera__aviso">
             <span className="registro-espera__candado" aria-hidden="true">
               <Icono nombre="candado" tamano={16} />
@@ -101,7 +101,7 @@ export const Registro = () => {
             <Boton tamano="lg" icono="hoja" onClick={() => setAbierto(true)}>
               Iniciar registro
             </Boton>
-            <span className="registro-portada__duracion mono">5 pasos · unos 10 minutos</span>
+            <span className="registro-portada__duracion mono">6 pasos · unos 10 minutos</span>
           </div>
         </div>
         <div className="registro-portada__lamina" aria-hidden="true">
@@ -113,33 +113,53 @@ export const Registro = () => {
         titulo="Qué soportes te va a pedir"
         descripcion="Depende del tipo de actor. Ten los archivos a mano antes de empezar."
       >
-        <div className="registro-requisitos">
-          {TIPOS.map((tipo) => {
-            const aportar = porAportar(tipo.valor);
-            return (
-              <article key={tipo.valor} className="registro-requisitos__actor">
-                <h3 className="registro-requisitos__nombre">{tipo.etiqueta}</h3>
-                <p className="registro-requisitos__detalle">{tipo.detalle}</p>
-                <ul className="registro-requisitos__lista">
-                  {aportar.map((requisito) => (
-                    <li key={requisito.documento} data-obligatorio={requisito.obligatorio ? "si" : "no"}>
-                      <span className="registro-requisitos__marca" aria-hidden="true">
-                        <Icono nombre="documento" tamano={13} />
-                      </span>
-                      {requisito.nombre}
-                      {requisito.obligatorio ? null : (
-                        <span className="registro-requisitos__opcional">opcional</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            );
-          })}
+        <div className="registro-requisitos__selector" role="tablist" aria-label="Tipo de actor">
+          {TIPOS.map((tipo) => (
+            <button
+              key={tipo.valor}
+              type="button"
+              role="tab"
+              aria-selected={vistaPrevia === tipo.valor}
+              className="registro-requisitos__pestana"
+              onClick={() => setVistaPrevia(tipo.valor)}
+            >
+              {tipo.etiqueta}
+            </button>
+          ))}
         </div>
+        <article className="registro-requisitos__actor">
+          <p className="registro-requisitos__detalle">
+            {TIPOS.find((tipo) => tipo.valor === vistaPrevia)?.detalle}
+          </p>
+          {requisitos.isPending ? (
+            <p className="registro-requisitos__estado">Consultando los soportes exigidos…</p>
+          ) : null}
+          {requisitos.isError ? (
+            <p className="registro-requisitos__estado" role="alert">
+              No fue posible consultar los soportes exigidos. La lista definitiva te la pide el
+              asistente al iniciar el registro.
+            </p>
+          ) : null}
+          <ul className="registro-requisitos__lista">
+            {(requisitos.data?.documentos ?? []).map((requisito) => (
+              <li key={requisito.tipo} data-obligatorio={requisito.obligatorio ? "si" : "no"}>
+                <span className="registro-requisitos__marca" aria-hidden="true">
+                  <Icono nombre="documento" tamano={13} />
+                </span>
+                {requisito.etiqueta}
+                {requisito.obligatorio ? null : (
+                  <span className="registro-requisitos__opcional">opcional</span>
+                )}
+                {seContrastaContraRues(requisito.tipo) ? (
+                  <span className="registro-requisitos__opcional">contrastado con el RUES</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </article>
         <p className="registro-requisitos__nota">
-          El certificado de existencia y representación legal y el RUT los contrasta el sistema
-          contra el RUES, además de la copia que adjuntes.
+          Esta lista la publica el propio sistema, no la escribe la pantalla: si cambia el
+          requisito, cambia aquí sin desplegar el portal.
         </p>
       </Tarjeta>
 

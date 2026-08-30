@@ -35,9 +35,11 @@ export const RazonesVitrina = ({ actualizacion }: Props) => {
           ))}
         </ul>
         <div className="razones__pie">
-          <p className="mercado__actualizacion mono">
-            {t("vitrina.hero.actualizacion")} · {fecha(actualizacion, locale)}
-          </p>
+          {fecha(actualizacion, locale) ? (
+            <p className="mercado__actualizacion mono">
+              {t("vitrina.hero.actualizacion")} · {fecha(actualizacion, locale)}
+            </p>
+          ) : null}
           <AvisoClasificacion />
           <SelectorIdioma />
         </div>

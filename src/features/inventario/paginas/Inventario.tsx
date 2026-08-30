@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { EncabezadoPagina } from "../../../shared/ui/patrones/EncabezadoPagina";
 import { TablaConFiltros } from "../../../shared/ui/patrones/TablaConFiltros";
 import { EstadoVacio } from "../../../shared/ui/patrones/EstadoVacio";
@@ -80,12 +81,22 @@ export const Inventario = () => {
     Partial<Record<keyof FormMovimiento, string>>
   >({});
 
+  const [parametros, fijarParametros] = useSearchParams();
+
   const consulta = useLotes({ busqueda, estado, tipo, departamento, pagina, porPagina: 10 });
   const cultivos = useCultivosDelActor();
   const registrar = useRegistrarLote();
   const mover = useMoverLote();
   const autor = useAutor();
   const puedeEscribir = usePermiso("inventario:lote:escribir");
+
+  useEffect(() => {
+    if (parametros.get("crear") !== "lote" || !puedeEscribir) return;
+    setCreando(true);
+    const siguientes = new URLSearchParams(parametros);
+    siguientes.delete("crear");
+    fijarParametros(siguientes, { replace: true });
+  }, [parametros, puedeEscribir, fijarParametros]);
 
   const visibles = consulta.data?.datos ?? [];
   const enBodega = visibles.filter((lote) => lote.estado === "EN_BODEGA").length;

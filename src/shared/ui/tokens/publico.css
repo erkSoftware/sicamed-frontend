@@ -3831,13 +3831,15 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
 
 .acceso__caja {
   width: 100%;
-  max-width: 428px;
+  max-width: 420px;
   margin-inline: auto;
+  text-align: center;
 }
 
 .acceso__marca {
   display: inline-flex;
-  margin-bottom: clamp(var(--e6), 6vh, var(--e8));
+  margin-bottom: clamp(var(--e4), 3vh, var(--e5));
+  text-align: left;
 }
 
 .acceso__rotulo {
@@ -3851,16 +3853,19 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
 .acceso__titulo {
   margin-top: var(--e3);
   font-family: var(--fuente-display);
-  font-size: clamp(1.9rem, 1.3rem + 1.5vw, 2.5rem);
+  font-size: clamp(1.5rem, 1.1rem + 1.1vw, 1.95rem);
   font-weight: 600;
-  line-height: 1.04;
+  line-height: 1.1;
   letter-spacing: var(--rastreo-titular);
+  white-space: nowrap;
 }
 
 .acceso__entrada {
   margin-top: var(--e3);
-  max-width: 40ch;
+  max-width: 38ch;
+  margin-inline: auto;
   color: var(--texto-suave);
+  text-wrap: balance;
 }
 
 .acceso__aviso {
@@ -3874,6 +3879,7 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
   background: var(--peligro-fondo);
   color: var(--peligro-texto);
   font-size: var(--texto-sm);
+  text-align: left;
 }
 
 .acceso__aviso svg {
@@ -3883,55 +3889,20 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
 
 .acceso__formulario {
   display: grid;
-  gap: var(--e4);
-  margin-top: var(--e6);
-}
-
-.acceso__campo-cabecera {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
   gap: var(--e3);
+  margin-top: var(--e5);
+  text-align: left;
 }
 
-.acceso__ver {
-  padding: 0;
-  border: 0;
-  background: none;
-  font-family: var(--fuente-mono);
-  font-size: var(--texto-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--marca);
-  cursor: pointer;
+.acceso__formulario .campo__control {
+  height: 46px;
+  border-radius: var(--radio-md);
 }
 
-.acceso__ver:hover {
-  text-decoration: underline;
+.acceso__formulario .boton {
+  margin-top: var(--e2);
 }
 
-.acceso__opciones {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--e3);
-  flex-wrap: wrap;
-  font-size: var(--texto-sm);
-}
-
-.acceso__recordar {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e2);
-  color: var(--texto-suave);
-  cursor: pointer;
-}
-
-.acceso__recordar input {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--verde-700);
-}
 
 .acceso__separador {
   display: grid;
@@ -3957,6 +3928,7 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
   margin-top: var(--e6);
   padding-top: var(--e5);
   border-top: 1px solid var(--borde-suave);
+  text-align: left;
 }
 
 .acceso__demo-titulo {
@@ -4053,13 +4025,41 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
 .acceso__pie {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--e3);
+  justify-content: center;
+  gap: var(--e2) var(--e5);
   flex-wrap: wrap;
-  margin-top: var(--e6);
+  margin-top: var(--e5);
   padding-top: var(--e4);
   border-top: 1px solid var(--borde-suave);
   font-size: var(--texto-sm);
+}
+
+.acceso__pie--tenue {
+  margin-top: var(--e2);
+  padding-top: 0;
+  border-top: 0;
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-xs);
+  letter-spacing: 0.04em;
+}
+
+.acceso__pie--tenue a {
+  color: var(--texto-tenue);
+}
+
+.acceso__formulario .comprobacion {
+  align-items: center;
+  gap: var(--e2);
+  margin-top: 2px;
+}
+
+.acceso__formulario .comprobacion__widget {
+  min-height: 0;
+}
+
+.acceso__formulario .comprobacion__nota,
+.acceso__formulario .comprobacion__fallo {
+  line-height: 1.5;
 }
 
 .acceso__escenario {
@@ -4099,19 +4099,6 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
   color: rgba(230, 240, 233, 0.68);
 }
 
-.acceso__opciones span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--texto-xs);
-  letter-spacing: 0.06em;
-  color: var(--texto-tenue);
-}
-
-.acceso__opciones svg {
-  flex: none;
-  color: var(--texto-tenue);
-}
 
 .escena {
   display: flex;
@@ -4862,6 +4849,11 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
 }
 
 @media (max-width: 620px) {
+  .acceso__titulo {
+    white-space: normal;
+    text-wrap: balance;
+  }
+
   .perfiles-demo {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -5363,6 +5355,43 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
   color: var(--texto-suave);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.registro-requisitos__selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  margin-bottom: var(--e4);
+}
+
+.registro-requisitos__pestana {
+  padding: var(--e2) var(--e4);
+  border: 1px solid var(--borde-suave);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: var(--texto-sm);
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+
+.registro-requisitos__pestana:hover {
+  border-color: var(--verde-600);
+  color: var(--texto);
+}
+
+.registro-requisitos__pestana[aria-selected="true"] {
+  border-color: var(--verde-600);
+  background: var(--verde-50);
+  color: var(--verde-700);
+  font-weight: 600;
+}
+
+.registro-requisitos__estado {
+  margin: 0 0 var(--e3);
+  font-size: var(--texto-sm);
+  color: var(--texto-suave);
 }
 
 .registro-requisitos__nota {

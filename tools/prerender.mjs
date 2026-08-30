@@ -1,11 +1,14 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { loadEnv } from "vite";
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(raiz, "dist");
 const distServidor = join(raiz, "dist-servidor");
-const urlPublica = process.env.VITE_URL_PUBLICA ?? "https://sicamed.co";
+const entorno = loadEnv(process.env.NODE_ENV ?? "production", raiz, "VITE_");
+const urlPublica =
+  process.env.VITE_URL_PUBLICA ?? entorno.VITE_URL_PUBLICA ?? "https://sicamed.com.co";
 
 const cargar = (archivo) => import(pathToFileURL(join(distServidor, archivo)).href);
 

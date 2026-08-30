@@ -1,9 +1,22 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
 
-export default defineConfig(({ isSsrBuild }) => ({
+const reenvio = (destino: string) => ({
+  target: destino,
+  changeOrigin: true,
+  secure: true,
+  cookieDomainRewrite: "",
+});
+
+export default defineConfig(({ isSsrBuild, mode }) => ({
   plugins: [react()],
+  server: {
+    proxy: (() => {
+      const destino = loadEnv(mode, process.cwd(), "VITE_").VITE_URL_API_ORIGEN;
+      return destino ? { "/auth": reenvio(destino), "/api": reenvio(destino) } : undefined;
+    })(),
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

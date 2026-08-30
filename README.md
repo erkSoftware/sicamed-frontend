@@ -1,195 +1,127 @@
 # SICAMED · Frontend
 
-**Sistema de Información del Cannabis Medicinal — aplicación web**
+Aplicación web del Sistema de Información del Cannabis Medicinal.
 
-React 18 · TypeScript 5 · Vite · TanStack Query · Zustand · Playwright · WCAG 2.1 AA
+React 18, TypeScript 5, Vite, TanStack Query, Zustand, Playwright.
 
-> **Regla de oro:** el frontend oculta, el backend prohíbe. Nunca al revés.
+## Requisitos
 
----
+| | Versión |
+|---|---|
+| Node | 20.19 o superior |
+| npm | 9 o superior |
 
-## Puesta en marcha
-
-Requiere **Node 20.19 o superior** (Playwright no arranca por debajo de esa versión).
+Por debajo de Node 20.19 el proyecto compila, pero Playwright no arranca y `npm run test:e2e` falla. Con nvm:
 
 ```bash
+nvm install 20.19
+nvm use 20.19
+```
+
+## Instalación
+
+```bash
+git clone https://github.com/erkSoftware/sicamed-frontend.git
+cd sicamed-frontend
 npm install
 cp .env.example .env
 npm run dev
 ```
 
-La aplicación queda en `http://localhost:5173` con datos de demostración.
+La aplicación queda en `http://localhost:5173`.
 
-### Perfiles de demostración
+No hace falta backend. Con la configuración de `.env.example` la aplicación arranca en modo de demostración, con datos locales que reproducen las mismas respuestas y los mismos rechazos que dará el servicio real.
 
-En `/acceso` se elige el perfil con el que se entra:
+## Cómo entrar
 
-| Perfil | Para qué sirve |
+En `/acceso` se elige el perfil con el que se abre la sesión.
+
+| Perfil | Qué permite ver |
 |---|---|
-| **Marcela Ospina** — productor habilitado | Recorrido completo comercial. Puede publicar en la vitrina |
-| **Hernán Cifuentes** — productor sin atestación | **La demo:** al publicar, el sistema rechaza y cita `Res. 1241/2026 Art. 13b` |
-| **Dra. Alejandra Ríos** — equipo clínico | Zona clínica: pacientes, agenda y teleconsulta |
-| **Andrés Beltrán** — analista institucional | Panel de solo lectura sobre todo el ecosistema |
-| **Lida Almeciga** — analista documental | Verifica expedientes de registro: aprueba o devuelve cada documento |
-| **Diego Fernando Marín** — super administrador | Ve todo y define la política de verificación documental |
+| Marcela Ospina | Productor habilitado. Recorrido comercial completo, puede publicar en la vitrina |
+| Hernán Cifuentes | Productor sin atestación. Al publicar, el sistema rechaza y cita la norma |
+| Dra. Alejandra Ríos | Equipo clínico. Pacientes, agenda y teleconsulta |
+| Andrés Beltrán | Analista institucional. Solo lectura sobre todo el ecosistema |
+| Lida Almeciga | Analista documental. Verifica expedientes de registro |
+| Diego Fernando Marín | Super administrador. Ve todo y define la política de verificación |
 
-`VITE_PERFIL_DEMO` fija el perfil que se precarga en `/acceso` y con el que se restaura la sesión. En `.env.example` viene como `SUPER_ADMIN`.
+`VITE_PERFIL_DEMO` fija el perfil que viene precargado. La barra superior de `/app` incluye un conmutador que cambia de perfil sin volver a `/acceso`: con `VITE_MODO_AUTH=mock` lo ve cualquiera, y con identidad real solo quien tenga rol `SUPER_ADMIN` o `ADMIN_INSTITUCIONAL`. Adoptar un perfil no toca la sesión —el token y los permisos reales siguen siendo los tuyos—; cambia el rol con el que se pinta el panel y enciende los datos de demostración, con una cinta que lo recuerda mientras dure.
 
-Con `VITE_MODO_AUTH=mock`, la barra superior de `/app` incluye un **conmutador de perfil**: cambiar de perfil recalcula los permisos y la navegación lateral en caliente, sin volver a `/acceso`.
+Con identidad real y sin perfil adoptado, el panel arranca **vacío**: la cuenta que acaba de entrar no es dueña de ninguna de las organizaciones sembradas, y enseñárselas sería mentirle. Lo que esa cuenta cree se queda en su propio almacén y no se mezcla con la demostración.
 
----
+## Variables de entorno
+
+Ninguna es obligatoria para trabajar en local: todas tienen valor por defecto.
+
+| Variable | Para qué sirve | En local |
+|---|---|---|
+| `VITE_MODO_API` | `mock` usa datos locales, `http` llama al backend. No cubre el registro de actor, que sigue a `VITE_MODO_AUTH` | `mock` |
+| `VITE_URL_API` | Borde del backend. Las tres zonas cuelgan de él (`/api/v1/publico`, `/api/v1/comercial`, `/api/v1/clinica`) | `http://localhost:8080` |
+| `VITE_URL_API_ORIGEN` | Solo en desarrollo: a dónde reenvía el proxy de Vite `/auth` y `/api`. Con ella puesta y `VITE_URL_API` vacía, el navegador ve la API en su propio origen y la cookie de refresco sobrevive a una recarga | Vacía, sin proxy |
+| `VITE_URL_API_COMERCIAL` | Sobreescribe la base de la zona comercial | No hace falta |
+| `VITE_URL_API_CLINICA` | Sobreescribe la base de la zona clínica | No hace falta |
+| `VITE_URL_API_PUBLICA` | Sobreescribe la base de la zona pública | No hace falta |
+| `VITE_MODO_AUTH` | `servidor`, `mock`, `contrasena`, `cloudflare` u `oidc`. Con `servidor` el acceso ocurre en la pantalla del portal contra `/auth` del backend; con `contrasena`, contra Keycloak por concesión directa; con `oidc` el navegador se va a la pantalla de Keycloak | `servidor` |
+| `VITE_URL_API_IDENTIDAD` | Sobreescribe la base de `/auth`, por si la identidad vive en otro borde | No hace falta |
+| `VITE_TOKEN_DESARROLLO` | Token que el modo demo manda al backend. Es el que emite `make token` del backend. Sin él, la zona autenticada responde `401` | Vacío |
+| `VITE_PERFIL_DEMO` | Perfil precargado en `/acceso` | `SUPER_ADMIN` |
+| `VITE_OIDC_AUTORIDAD` | Realm de Keycloak. En producción, `https://auth.sicamed.com.co/realms/sicamed` | Con `oidc` y con `contrasena` |
+| `VITE_OIDC_CLIENTE` | Identificador del cliente OIDC. Es público: no lleva secreto | Con `oidc` y con `contrasena` |
+| `VITE_OIDC_REDIRECCION` | Ruta de retorno del código de autorización. Tiene que estar registrada en Keycloak | Solo con `oidc` |
+| `VITE_TURNSTILE_CLAVE_SITIO` | Clave de sitio de Cloudflare Turnstile. Es pública; el secreto vive en el backend. Vacía, la radicación no exige comprobación y el trámite se puede ejercer sin red. La clave solo funciona en los dominios registrados en el panel de Cloudflare: en `localhost` el widget responde `110200` y no se dibuja | Vacía |
+| `VITE_CLOUDFLARE_ACCESS_EQUIPO` | Equipo de Zero Trust | Solo con `cloudflare` |
+| `VITE_URL_UBICACION_IP` | Servicio que devuelve la ubicación aproximada por IP para la vista de telemedicina de `/acceso`. Solo se consulta en esa vista y nunca pide permisos de geolocalización al navegador | `https://ipwho.is/` |
+| `VITE_URL_PUBLICA` | Dominio usado en canónicas y sitemap. Lo leen la aplicación y el prerenderizado | `https://sicamed.com.co` |
 
 ## Scripts
 
 | Comando | Qué hace |
 |---|---|
 | `npm run dev` | Servidor de desarrollo |
-| `npm run build` | Compila, genera el bundle y **prerenderiza** las rutas públicas + `sitemap.xml` |
+| `npm run build` | Compila, genera el bundle, prerenderiza las rutas públicas y el `sitemap.xml` |
 | `npm run preview` | Sirve `dist/` como lo hará producción |
 | `npm run typecheck` | TypeScript en modo estricto |
-| `npm run lint` | ESLint, incluidas las **reglas de frontera entre zonas** |
-| `npm run test` | Vitest: unitarias, de componente y de accesibilidad con `axe-core` |
+| `npm run lint` | ESLint, incluidas las reglas de frontera entre zonas |
+| `npm run test` | Vitest: unitarias, de componente y de accesibilidad |
 | `npm run test:e2e` | Playwright: flujos críticos y accesibilidad en navegador |
-| `npm run check` | Todo lo anterior. Es lo que debe pasar antes de un PR |
+| `npm run format` | Prettier sobre todo el repositorio |
+| `npm run check` | Tipos, lint y pruebas. Es lo que debe pasar antes de abrir un PR |
 
----
+## Compilar y desplegar
 
-## Despliegue en Vercel
+```bash
+npm run build
+npm run preview
+```
 
-El repositorio está listo para desplegar sin configuración adicional.
+El resultado queda en `dist/`. El despliegue está configurado en `vercel.json`, sin pasos adicionales:
 
 ```bash
 npx vercel --prod
 ```
 
-O conectando el repositorio en el panel de Vercel. `vercel.json` ya define:
-
-- `buildCommand: npm run build` — incluye el prerender de las rutas públicas.
-- Reescritura SPA para las rutas autenticadas, sin tocar los archivos estáticos ya prerenderizados.
-- Cabeceras de seguridad: `HSTS`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`.
-- `Cache-Control: no-store` y `X-Robots-Tag: noindex` para todo `/app/salud/*`.
-- Caché inmutable de un año para `/assets/*`.
-
-**Variables de entorno en Vercel** (ninguna es obligatoria para la demo):
-
-| Variable | Valor en demo | Valor en producción |
-|---|---|---|
-| `VITE_MODO_API` | `mock` | `http` |
-| `VITE_URL_API_COMERCIAL` | — | URL del servicio comercial |
-| `VITE_URL_API_CLINICA` | — | URL del servicio clínico |
-| `VITE_MODO_AUTH` | `mock` | `cloudflare` u `oidc` |
-| `VITE_PERFIL_DEMO` | `SUPER_ADMIN` | — (se ignora fuera de `mock`) |
-| `VITE_URL_PUBLICA` | `https://sicamed.co` | dominio real, usado en canónicas y sitemap |
-
----
-
-## La frontera clínico / comercial
-
-El backend separa las zonas con tres muros: bases de datos, redes y contratos de `import-linter`. **El frontend no tiene ninguno de los tres**: un navegador, un bundle, un espacio de memoria. La separación se construye aquí de forma explícita, con seis controles.
-
-| # | Control | Dónde vive |
-|---|---|---|
-| 1 | Dos `QueryClient` independientes; el clínico con `gcTime: 0` y `staleTime: 0` | `src/app/providers/clientesConsulta.ts` |
-| 2 | Prohibición de persistencia clínica, verificada por ESLint y por prueba E2E | `eslint.config.js`, `tests/e2e/zonas.spec.ts` |
-| 3 | Árbol de rutas clínico aparte, con carga diferida en su propio chunk | `src/app/rutas/rutasClinicas.tsx` |
-| 4 | Verificación automática de fronteras, bloqueante en CI | `eslint.config.js` |
-| 5 | Observabilidad ciega: `noindex`, `no-store` y sin grabación en `/app/salud/*` | `vercel.json`, `rutasClinicas.tsx` |
-| 6 | El cierre de sesión limpia **las dos** zonas | `src/app/providers/AuthProvider.tsx` |
-
-Las tres reglas de frontera fueron **probadas en rojo** antes de darse por buenas: un import prohibido rompe el lint.
-
-```
-src/features/        →  zona comercial     (no puede importar de features-salud)
-src/features-salud/  →  zona clínica       (no puede importar de features)
-src/publico/         →  vitrina pública    (no puede importar de ninguna, ni de shared/auth)
-```
-
----
+Las variables de entorno de producción se cargan desde el panel de Vercel.
 
 ## Estructura
 
 ```
 src/
-├── app/                  composición: rutas, layouts, providers, acceso
-├── shared/               transversal, sin lógica de negocio
-│   ├── api/              clientes por zona, Problem Details, datos mock
-│   ├── auth/             proveedores mock / Cloudflare Access / OIDC PKCE
-│   ├── rbac/             permisos y navegación derivada
-│   ├── seo/              metadatos y datos estructurados
-│   └── ui/               design system: tokens, primitivos, patrones, gráficos
-├── features/             ZONA COMERCIAL
-├── features-salud/       ZONA CLÍNICA
-└── publico/              VITRINA PÚBLICA, sin autenticación
+├── app/              rutas, layouts, providers y acceso
+├── shared/           api, auth, rbac, i18n, seo y design system
+├── features/         zona comercial
+├── features-salud/   zona clínica
+└── publico/          vitrina pública, sin autenticación
 ```
 
-Cada feature tiene la misma forma: `index.ts` como única superficie pública, `paginas/`, `componentes/`, `hooks/` y `modelo/mapeo.ts`. Una feature nunca importa de otra: lo común sube a `shared/`.
+Las tres zonas no pueden importarse entre sí. La regla está en `eslint.config.js` y `npm run lint` la hace cumplir.
 
----
+## Documentación
 
-## Autenticación
-
-El proveedor se elige con `VITE_MODO_AUTH` y los tres implementan la misma interfaz:
-
-| Modo | Implementación | Estado |
-|---|---|---|
-| `mock` | Perfiles de demostración | Activo |
-| `cloudflare` | Cloudflare Access: identidad desde `/cdn-cgi/access/get-identity`, permisos derivados de los grupos, salida por `/cdn-cgi/access/logout` | Listo para conectar |
-| `oidc` | Authorization Code + PKCE, sin secreto de cliente, token solo en memoria | Listo para conectar |
-
-**El token nunca se guarda en el almacenamiento del navegador.** Vive en memoria y se registra en el transporte HTTP mediante `registrarCredencial`.
-
-Para conectar Cloudflare Access hay que crear la aplicación en Zero Trust apuntando a `/app/*` y `/acceso`, dejando públicas las rutas de la vitrina, y nombrar los grupos `sicamed-productores`, `sicamed-clinico` y `sicamed-institucional`.
-
----
-
-## SEO
-
-La vitrina pública **no es una SPA vacía**: `npm run build` prerenderiza cada ruta pública a HTML completo.
-
-- Títulos y descripciones únicos por página, con canónica absoluta.
-- Open Graph y Twitter Card con imagen propia.
-- Datos estructurados JSON-LD: `GovernmentOrganization`, `WebSite` con `SearchAction`, `BreadcrumbList`, `ItemList`, `Product` y `FAQPage`.
-- `sitemap.xml` generado en cada build con las 28 rutas públicas.
-- `robots.txt` que bloquea `/app/` y `/acceso`.
-- `<html lang="es-CO">` y contenido íntegramente en español.
-
-Verificable tras el build: `dist/vitrina/index.html` pesa unos 25 kB de HTML real, no un `<div>` vacío.
-
----
-
-## Conexión con el backend
-
-Hoy la aplicación corre con `VITE_MODO_API=mock`. El intercambio ocurre en un solo punto:
-
-```
-src/shared/api/transporte.ts     modoMock ? datos locales : fetch al servicio
-src/shared/api/clienteComercial.ts
-src/shared/api/clienteClinico.ts
-```
-
-Los hooks de cada feature envuelven estos clientes y no cambian. La forma de error ya es la definitiva: RFC 9457 Problem Details con la extensión `norma`, que `ErrorNormativo` muestra al usuario con su cita.
-
-Cuando lleguen los OpenAPI, se colocan en `contracts/`, se fija su versión en `versiones.json` y el cliente se **genera**; nunca se escribe a mano.
-
----
-
-## Accesibilidad
-
-WCAG 2.1 AA como gate bloqueante, no como recomendación.
-
-- Cero violaciones críticas o serias de `axe-core`, verificado en pruebas de componente y en navegador.
-- Recorrido completo por teclado con foco visible.
-- Todo gráfico tiene alternativa textual: el mapa y las series exponen su tabla equivalente.
-- `prefers-reduced-motion` respetado; diseño adaptable hasta 320 px.
-
-El gate ya detectó y bloqueó un defecto real durante esta implementación: controles interactivos anidados dentro del mapa.
-
----
-
-## Documentación relacionada
-
-- `PROCESO-REAL-SICAMED.md` — el proceso real tramo por tramo, dónde termina la operación y qué brechas cubre cada módulo
-- `GUIA-TECNICA-FRONTEND.md` — la guía que define esta arquitectura
-- `CONTRIBUTING.md` — reglas R1–R4 y definición de terminado
-- `contracts/README.md` — versionado de contratos
-- `decisiones/README.md` — ADR (carpeta ignorada por git, sincronizada a documentación)
+| Archivo | Qué contiene |
+|---|---|
+| [README-BACKEND.md](README-BACKEND.md) | Contrato de datos: qué envía el backend, qué envía el frontend, carga de imágenes y seguridad de cada proceso |
+| [GUIA-TECNICA-FRONTEND.md](GUIA-TECNICA-FRONTEND.md) | Arquitectura, frontera clínico/comercial, autenticación, errores, accesibilidad y pruebas |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Reglas R1 a R4 y definición de terminado |
+| [contracts/README.md](contracts/README.md) | Versionado de los contratos OpenAPI |
+| [integracion-con-backend/PENDIENTES-BACKEND.md](integracion-con-backend/PENDIENTES-BACKEND.md) | Qué falta del lado del servidor para cerrar la integración |
+| [integracion-con-backend/ESTADO-DE-LA-INTEGRACION.md](integracion-con-backend/ESTADO-DE-LA-INTEGRACION.md) | Qué quedó conectado, dónde vive cada pieza y cómo se enciende |

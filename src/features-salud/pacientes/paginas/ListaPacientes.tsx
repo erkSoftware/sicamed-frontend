@@ -35,7 +35,10 @@ const COLUMNAS: readonly Columna<Paciente>[] = [
   {
     clave: "edad",
     encabezado: "Edad / Sexo",
-    render: (paciente) => `${paciente.edad} años · ${paciente.sexo}`,
+    render: (paciente) =>
+      paciente.sexo === "SIN_DATO"
+        ? `${paciente.edad} años`
+        : `${paciente.edad} años · ${paciente.sexo}`,
   },
   {
     clave: "diagnostico",

@@ -1,30 +1,13 @@
 import type { ProveedorAutenticacion, Sesion } from "./tipos";
-import { DURACION_SESION_MS } from "./perfiles";
+import { AUTORIDAD, CLIENTE, aSesion, pedirToken } from "./keycloak";
 
-type RespuestaToken = {
-  access_token: string;
-  expires_in: number;
-  id_token?: string;
-};
-
-type Reclamaciones = {
-  sub?: string;
-  name?: string;
-  email?: string;
-  rol?: string;
-  rol_plataforma?: string;
-  organizacion?: string;
-  organizacion_id?: string;
-  tenant_id?: string;
-  permisos?: readonly string[];
-};
-
-const AUTORIDAD = import.meta.env.VITE_OIDC_AUTORIDAD ?? "";
-const CLIENTE = import.meta.env.VITE_OIDC_CLIENTE ?? "sicamed-web";
+const RUTA_RETORNO = import.meta.env.VITE_OIDC_REDIRECCION ?? "/acceso";
 const CLAVE_VERIFICADOR = "sicamed.pkce";
 
 let credencialEnMemoria: string | undefined;
-let vencimiento = 0;
+let renovacionEnMemoria: string | undefined;
+
+const urlDeRetorno = (): string => new URL(RUTA_RETORNO, window.location.origin).toString();
 
 const aBase64Url = (datos: ArrayBuffer): string =>
   btoa(String.fromCharCode(...new Uint8Array(datos)))
@@ -41,42 +24,11 @@ const generarVerificador = (): string => {
 const generarDesafio = async (verificador: string): Promise<string> =>
   aBase64Url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verificador)));
 
-const decodificar = (token: string): Reclamaciones => {
-  const carga = token.split(".")[1];
-  if (!carga) return {};
-  const normalizado = carga.replace(/-/g, "+").replace(/_/g, "/");
-  return JSON.parse(atob(normalizado)) as Reclamaciones;
-};
-
-const aSesion = (token: RespuestaToken): Sesion => {
-  const reclamaciones = decodificar(token.id_token ?? token.access_token);
-  credencialEnMemoria = token.access_token;
-  vencimiento = Date.now() + token.expires_in * 1000;
-  return {
-    usuario: {
-      id: reclamaciones.sub ?? "",
-      nombre: reclamaciones.name ?? reclamaciones.email ?? "Usuario SICAMED",
-      correo: reclamaciones.email ?? "",
-      rol: reclamaciones.rol ?? "Usuario autenticado",
-      rolPlataforma: (reclamaciones.rol_plataforma ?? "OBSERVADOR_INSTITUCIONAL") as Sesion["usuario"]["rolPlataforma"],
-      organizacionId: reclamaciones.organizacion_id ?? "",
-      organizacion: reclamaciones.organizacion ?? "Organización sin asignar",
-      tenantId: reclamaciones.tenant_id ?? "sicamed-co",
-    },
-    permisos: (reclamaciones.permisos ?? []) as Sesion["permisos"],
-    expiracion: vencimiento || Date.now() + DURACION_SESION_MS,
-  };
-};
-
 const canjear = async (cuerpo: URLSearchParams): Promise<Sesion> => {
-  const respuesta = await fetch(`${AUTORIDAD}/protocol/openid-connect/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    credentials: "include",
-    body: cuerpo,
-  });
-  if (!respuesta.ok) throw new Error("No fue posible canjear el código de autorización");
-  return aSesion((await respuesta.json()) as RespuestaToken);
+  const token = await pedirToken(cuerpo);
+  credencialEnMemoria = token.access_token;
+  renovacionEnMemoria = token.refresh_token;
+  return aSesion(token);
 };
 
 export const proveedorOidc: ProveedorAutenticacion = {
@@ -94,15 +46,23 @@ export const proveedorOidc: ProveedorAutenticacion = {
           client_id: CLIENTE,
           code: codigo,
           code_verifier: verificador,
-          redirect_uri: `${window.location.origin}/acceso`,
+          redirect_uri: urlDeRetorno(),
         }),
       );
       window.history.replaceState({}, "", "/app");
       return sesion;
     }
+    if (!renovacionEnMemoria) return null;
     try {
-      return await canjear(new URLSearchParams({ grant_type: "refresh_token", client_id: CLIENTE }));
+      return await canjear(
+        new URLSearchParams({
+          grant_type: "refresh_token",
+          client_id: CLIENTE,
+          refresh_token: renovacionEnMemoria,
+        }),
+      );
     } catch {
+      renovacionEnMemoria = undefined;
       return null;
     }
   },
@@ -113,7 +73,7 @@ export const proveedorOidc: ProveedorAutenticacion = {
     window.sessionStorage.setItem(CLAVE_VERIFICADOR, verificador);
     const url = new URL(`${AUTORIDAD}/protocol/openid-connect/auth`);
     url.searchParams.set("client_id", CLIENTE);
-    url.searchParams.set("redirect_uri", `${window.location.origin}/acceso`);
+    url.searchParams.set("redirect_uri", urlDeRetorno());
     url.searchParams.set("response_type", "code");
     url.searchParams.set("scope", "openid profile email");
     url.searchParams.set("code_challenge", desafio);
@@ -124,7 +84,7 @@ export const proveedorOidc: ProveedorAutenticacion = {
 
   cerrarSesion: async () => {
     credencialEnMemoria = undefined;
-    vencimiento = 0;
+    renovacionEnMemoria = undefined;
     window.location.assign(
       `${AUTORIDAD}/protocol/openid-connect/logout?client_id=${CLIENTE}` +
         `&post_logout_redirect_uri=${encodeURIComponent(window.location.origin)}`,
