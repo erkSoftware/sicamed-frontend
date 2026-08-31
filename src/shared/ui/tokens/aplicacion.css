@@ -279,6 +279,13 @@
   display: flex;
   gap: var(--e3);
   flex-wrap: wrap;
+  min-width: 0;
+}
+
+.pagina__acciones .fila {
+  flex-wrap: wrap;
+  gap: var(--e3);
+  min-width: 0;
 }
 
 .heroe-panel {
@@ -1439,7 +1446,8 @@
 }
 
 @media (max-width: 560px) {
-  .pagina__acciones {
+  .pagina__acciones,
+  .pagina__acciones > * {
     width: 100%;
   }
 
