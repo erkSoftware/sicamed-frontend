@@ -411,12 +411,25 @@ describe("solicitud de registro", () => {
   };
 
   it("una solicitud en tramite ya tiene expediente abierto", () => {
-    expect(aSolicitud(solicitud).estado).toBe("EXPEDIENTE_ABIERTO");
+    expect(aSolicitud(solicitud).estado).toBe("EN_TRAMITE");
     expect(aSolicitud(solicitud).expedienteId).toBe("EXP-1");
   });
 
-  it("una solicitud rechazada se descarta", () => {
-    expect(aSolicitud({ ...solicitud, estado: "RECHAZADA" }).estado).toBe("DESCARTADA");
+  it("una solicitud aprobada y una rechazada no se confunden en un mismo estado", () => {
+    expect(aSolicitud({ ...solicitud, estado: "APROBADA" }).estado).toBe("APROBADA");
+    expect(aSolicitud({ ...solicitud, estado: "RECHAZADA" }).estado).toBe("RECHAZADA");
+  });
+
+  it("el motivo del rechazo llega a la bandeja para que lo lea quien radico", () => {
+    const rechazada = aSolicitud({
+      ...solicitud,
+      estado: "RECHAZADA",
+      motivoRechazo: "La licencia adjunta no corresponde a la modalidad declarada.",
+    });
+    expect(rechazada.motivoRechazo).toBe(
+      "La licencia adjunta no corresponde a la modalidad declarada.",
+    );
+    expect(aSolicitud(solicitud).motivoRechazo).toBeNull();
   });
 
   it("una solicitud recien recibida no tiene expediente", () => {

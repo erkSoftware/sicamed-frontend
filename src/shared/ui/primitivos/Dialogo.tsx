@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { useEffect, useId, useRef } from "react";
 import type { ReactNode } from "react";
 import { Boton } from "./Boton";
@@ -9,9 +10,10 @@ type Props = {
   children: ReactNode;
   pie?: ReactNode;
   ancho?: boolean;
+  clase?: string;
 };
 
-export const Dialogo = ({ abierto, titulo, onCerrar, children, pie, ancho }: Props) => {
+export const Dialogo = ({ abierto, titulo, onCerrar, children, pie, ancho, clase }: Props) => {
   const referencia = useRef<HTMLDialogElement>(null);
   const encabezado = useRef<HTMLHeadingElement>(null);
   const rotulo = useId();
@@ -38,7 +40,11 @@ export const Dialogo = ({ abierto, titulo, onCerrar, children, pie, ancho }: Pro
   }, [onCerrar]);
 
   return (
-    <dialog ref={referencia} className={ancho ? "dialogo dialogo--ancho" : "dialogo"} aria-labelledby={rotulo}>
+    <dialog
+      ref={referencia}
+      className={clsx("dialogo", ancho && "dialogo--ancho", clase)}
+      aria-labelledby={rotulo}
+    >
       <div className="dialogo__encabezado">
         <h2 className="tarjeta__titulo dialogo__rotulo" id={rotulo} ref={encabezado} tabIndex={-1}>
           {titulo}

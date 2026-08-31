@@ -1,6 +1,7 @@
 import { crearAzar, enteroEntre, fechaRelativa, identificador } from "./aleatorio";
 import { NOMBRES, VARIEDADES } from "./catalogos";
 import { CULTIVOS, MANIFESTACIONES, OFERTAS_PUBLICAS, ORGANIZACIONES } from "./datos";
+import { PASOS_DE_LA_POLITICA } from "./pasosDeVerificacion";
 import type {
   Agroinsumo,
   Beneficio,
@@ -19,6 +20,7 @@ import type {
   TipoCannabis,
   TipoDocumento,
   Variedad,
+  VeredictoPaso,
   ViaCierre,
 } from "./tipos";
 
@@ -254,30 +256,30 @@ export const EXPEDIENTES: readonly Expediente[] = Array.from({ length: 28 }, (_,
   const estado = devuelto ? "DEVUELTO" : enCurso ? "EN_VERIFICACION" : faltan ? "RADICADO" : "APROBADO";
   const radicacion = -(10 + i * 4);
 
-  const pasos: readonly PasoVerificacion[] = [
-    {
-      id: `${identificador("EXP", i)}-P1`,
-      orden: 1,
-      rol: "ANALISTA_DOCUMENTAL",
-      veredicto: estado === "APROBADO" ? "VERIFICADO" : devuelto ? "DEVUELTO" : "PENDIENTE",
-      revisor: estado === "APROBADO" || devuelto ? (ANALISTAS[i % ANALISTAS.length] ?? null) : null,
-      resuelto: estado === "APROBADO" || devuelto ? fechaRelativa(radicacion + 3) : null,
-      observacion: devuelto ? "Documentación incompleta frente al checklist vigente." : null,
-      slaHoras: 72,
-      huella: estado === "APROBADO" || devuelto ? huella() : null,
-    },
-    {
-      id: `${identificador("EXP", i)}-P2`,
-      orden: 2,
-      rol: "ADMIN_INSTITUCIONAL",
-      veredicto: estado === "APROBADO" ? "VERIFICADO" : "PENDIENTE",
-      revisor: estado === "APROBADO" ? "Andrés Beltrán" : null,
-      resuelto: estado === "APROBADO" ? fechaRelativa(radicacion + 6) : null,
-      observacion: null,
-      slaHoras: 48,
-      huella: estado === "APROBADO" ? huella() : null,
-    },
-  ];
+  const revisorPrincipal = ANALISTAS[i % ANALISTAS.length] ?? "Lida Almeciga";
+  const segundoRevisor = ANALISTAS[(i + 1) % ANALISTAS.length] ?? "Néstor Iván Quintero";
+
+  const pasos: readonly PasoVerificacion[] = PASOS_DE_LA_POLITICA.map((regla) => {
+    const cierra = regla.exigeDobleControl;
+    const veredicto: VeredictoPaso =
+      estado === "APROBADO" ? "VERIFICADO" : devuelto && regla.orden === 1 ? "DEVUELTO" : "PENDIENTE";
+    const resuelto = veredicto !== "PENDIENTE";
+    return {
+      id: `${identificador("EXP", i)}-P${regla.orden}`,
+      reglaId: regla.reglaId,
+      etiqueta: regla.etiqueta,
+      orden: regla.orden,
+      rol: regla.rol,
+      exigeDobleControl: regla.exigeDobleControl,
+      veredicto,
+      revisor: resuelto ? (cierra ? segundoRevisor : revisorPrincipal) : null,
+      resuelto: resuelto ? fechaRelativa(radicacion + 2 + regla.orden) : null,
+      observacion:
+        veredicto === "DEVUELTO" ? "Documentación incompleta frente al checklist vigente." : null,
+      slaHoras: regla.slaHoras,
+      huella: resuelto ? huella() : null,
+    };
+  });
 
   return {
     id: identificador("EXP", i),

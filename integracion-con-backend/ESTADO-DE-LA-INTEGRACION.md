@@ -23,7 +23,7 @@ quién autentica:
 | `VITE_MODO_API` | `VITE_MODO_AUTH` | Qué se obtiene |
 |---|---|---|
 | `mock` | `mock` | Todo simulado. No hace falta backend. Es `.env.local-mock` |
-| `mock` | `servidor` | **Se entra de verdad y los datos de dentro son simulados.** Es lo que corre hoy en desarrollo |
+| `mock` | `servidor` | **Se entra de verdad, y el registro de actores es de verdad; el resto de los datos son simulados.** Es lo que corre hoy en desarrollo |
 | `http` | `servidor` | La aplicación completa contra el backend |
 
 La combinación del medio es la que sostiene el trabajo de interfaz: el acceso, los
@@ -37,8 +37,18 @@ acceso es real deja una cuenta que el backend no conoce, y el correo de
 verificación no llega nunca. Por eso las seis llamadas del asistente público
 —`requisitosDeActor`, `prepararSoporte`, `subirSoporte`, `confirmarSoporte`,
 `radicarSolicitud` y `verificarCorreo`— miran `modoMockRegistro`, que solo es
-cierto cuando *ambos* interruptores están en simulación. Los listados del panel
-siguen mirando `modoMock` y no se enteran.
+cierto cuando *ambos* interruptores están en simulación.
+
+**Y con ellas todo el trámite que las contesta.** Una radicación que sale a la
+red y una bandeja que lee del simulador es la avería que se ve desde fuera como
+«registro un actor y no aparece en ninguna parte»: la solicitud existe, pero en
+el otro lado del interruptor. Por eso `solicitudes`, `expedientes`,
+`abrirExpediente`, `decidirDocumento`, `resolverPaso`, `politicaVerificacion` y
+`guardarPolitica` miran ese mismo `modoMockRegistro`. Son las dos mitades de un
+solo trámite y no pueden vivir en modos distintos: un `expedienteId` del
+simulador no existe en el servidor que guardó la solicitud. Los listados que el
+registro no produce —cultivos, lotes, ofertas, cupos— siguen mirando `modoMock`,
+que es lo que sostiene el panel de demostración.
 
 ## Dónde vive cada cosa
 
@@ -65,6 +75,8 @@ siguen mirando `modoMock` y no se enteran.
 | `src/shared/auth/proveedorContrasena.ts` | Acceso desde la pantalla del portal, por concesión directa |
 | `src/shared/seguridad/turnstile.ts` | Carga de Cloudflare Turnstile y la cabecera del comprobante |
 | `src/shared/ui/patrones/ComprobacionSeguridad.tsx` | El widget del captcha en el asistente de registro |
+| `src/features/aurora/paginas/ConfiguracionAurora.tsx` | Lo que AURORA dice al abrir sesión, con qué voz, con qué credencial y bajo qué límites |
+| `src/features/aurora/paginas/LlamadasAurora.tsx` | Quién tiene la voz bloqueada, por qué y hasta cuándo |
 
 ## Lo que el documento advertía y quedó cubierto
 
@@ -163,13 +175,87 @@ Lo que sí manda el contrato —y la interfaz aún no muestra— son las
 autorizaciones vigentes por finalidad, que es el control que exige el habeas
 data. Rehacer esas pantallas contra el contrato es trabajo aparte.
 
-**El asistente de voz no está construido.** El §3 del documento nuevo describe
-una sesión efímera contra `POST /asistente/sesiones` y una conexión WebRTC
-directa del navegador a OpenAI. Aurora, hoy, es una guía en 3D sin voz y sin
-backend: no hay micrófono que conectar. Lo único que se adelantó es el permiso
-`asistente:sesion:abrir` en la tabla de cargos —con los siete roles que el
-documento nombra, ni uno más— para que el día que exista el botón, la puerta ya
-esté puesta.
+**El asistente de voz ya está construido.** `POST /asistente/sesiones`, la
+conexión WebRTC directa del navegador al proveedor y las llamadas de función por
+el canal de datos viven en `shared/ui/aurora/voz/`. El permiso
+`asistente:sesion:abrir` sigue listando los siete roles que el documento nombra,
+ni uno más.
+
+**`navigate_to` la resuelve la pantalla, no el backend.** Llega como herramienta
+de clase `ui` con un solo argumento, `destino`, que trae lo que la persona dijo
+sin traducir —«cumplimiento», «el cultivo», «llévame a la vitrina»—. Quien lo
+convierte en ruta es `shared/ui/aurora/destinos.ts`, contra el menú real
+(`NAVEGACION`) recortado por los permisos de quien habla; el backend no tiene el
+menú y no puede tenerlo sin copiarlo. La herramienta **devuelve resultado
+siempre**, también cuando no navega, y distingue las dos negativas que no son la
+misma: «esa pantalla no existe» —con la lista de las que sí alcanza— y «existe
+pero tu rol no entra ahí». Si no contestara, la conversación se quedaría colgada
+en esa llamada. El motor sigue leyendo `clase` en vez de tener la lista escrita,
+así que cuando aparezcan herramientas de `consulta` o `negocio` el contrato no
+cambia. `/app/aurora` trae un banco de pruebas que ejecuta ese mismo resolutor
+con tus permisos y enseña el JSON que recibiría el modelo.
+
+**La llamada tiene tope, aviso y cierre.** La respuesta de la sesión trae
+`llamadaId`, `duracionMaximaSegundos`, `avisoEnSegundos`, `mensajeAviso` y
+`restanteDiarioSegundos`, y el motor los usa tal como vienen: pinta el contador
+—cortesía, no mecanismo: el tope lo sostiene la credencial—, programa el aviso
+hablado mandando por el canal de datos la frase que fijó el servidor, y cierra el
+registro con `POST /asistente/llamadas/{id}/cierre` declarando el motivo que le
+toca declarar al cliente (`user_ended`, `completed`, `connection_error`,
+`system_error`; los que dicen que se aplicó un tope los pone el servidor). Al
+cerrar la pestaña el cierre sale por `navigator.sendBeacon`: una llamada que
+nadie cierra se le cobra al usuario hasta su vencimiento. `planDeLlamada` es una
+función pura y por eso se prueba sin levantar WebRTC. Y los dos rechazos nuevos
+dejaron de leerse como el rol sin permiso: `asistente-usuario-bloqueado` enseña
+el motivo y no ofrece reintentar, y `asistente-limite-diario` dice que el cupo se
+cuenta por día. `GET /asistente/llamadas/estado` está en el cliente comercial sin
+pantalla que lo consuma: el cupo que se enseña hoy es el que ya viene con la
+sesión, y pedirlo otra vez en el panel montado en todas las páginas costaría una
+petición por apertura sin decir nada nuevo.
+
+**Quién no puede hablar es otra pantalla, con otro permiso.** `/app/aurora/llamadas`
+lista, crea y levanta bloqueos contra `GET|POST /asistente/bloqueos` y
+`POST /asistente/bloqueos/{id}/desbloqueo`, bajo `asistente:llamadas:gestionar`
+—`SUPER_ADMIN` y `ADMIN_INSTITUCIONAL`, nunca `AUDITOR`, cuya cuenta es de
+lectura—. Son dos permisos a propósito: quien redacta el prompt de la entidad no
+tiene por qué poder prohibirle hablar a una persona. La tabla separa las tres
+cosas que se confunden: el bloqueo automático del sistema del que puso alguien,
+vencido de levantado —un temporal deja de aplicar solo; un desbloqueo es un acto,
+y trae quién y cuándo—, y el permanente, que se pinta con «—» y no con una fecha
+lejana. Un bloqueo levantado no se borra: sigue siendo la respuesta a por qué esa
+persona no pudo llamar el mes pasado, y por eso el filtro por defecto son los
+vigentes y el de todos existe para explicar.
+
+**Lo que sí quedó conectado del asistente es su configuración.** `/app/aurora/configuracion`
+lee y escribe `GET|PUT /asistente/configuracion` con el permiso
+`asistente:configuracion:gestionar`, que hoy solo lista `SUPER_ADMIN`. La pantalla
+manda siempre el formulario entero —es `PUT`, no `PATCH`: omitir
+`instruccionesExtra` no significa «déjalo como estaba», significa borrarlo— y se repinta con la
+respuesta, porque el servidor sanea el texto y lo que devuelve puede no ser byte
+a byte lo que se envió. El `GET` nunca da 404: una entidad que jamás guardó nada
+recibe la de fábrica con `deFabrica: true`, así que el botón de restaurar solo
+aparece cuando alguien la tocó. El `503` —asistente apagado en el despliegue— no
+se puede consultar por adelantado y se pinta como estado de la pantalla, no como
+error de red. Las tres reglas que el prompt arma siempre —alcance temático,
+límites y confirmación hablada antes de escribir— se muestran en solo lectura:
+editarlas sería cambiar la política del sistema por API.
+
+A esa pantalla se le sumaron las tres secciones que faltaban del contrato. **La
+API Key no vuelve nunca**: el campo nace vacío, el enmascarado es texto de ayuda
+y no valor, guardar sin escribir nada conserva la que había, y quitarla es un
+`borrarApiKey: true` con confirmación aparte —no un campo que se vacía—. «Probar
+conexión» prueba la credencial **guardada** y lo dice cuando hay una escrita sin
+guardar, y separa «la clave no es válida» (502) de «no se pudo contactar al
+proveedor» (503). El selector de modelo se llena con `modelosDisponibles` de la
+misma respuesta, `modelo: ""` se presenta como «Predeterminado (…)» y no como un
+hueco, y `habilitado: false` apaga la voz de la entidad sin poder encender lo que
+el despliegue tenga apagado. Los límites se editan en minutos y viajan en
+segundos; los dos ceros con significado —cupo diario e intentos máximos— son
+interruptores «sin límite» y no campos en blanco, y un aviso que no cabe dentro
+de la llamada se detiene en el formulario en vez de gastar un 422. Junto a los
+intentos queda escrito que **se cuentan todos**, también los que abrieron
+llamada: quien lo lea como «diez fallos» pondrá un número mucho más bajo del que
+quiere.
 
 **El cliente no está generado.** El §4 de `CONTRIBUTING.md` pide un cliente
 generado desde `contratos/`, y `contracts/` sólo tiene el `versiones.json` con
@@ -184,7 +270,7 @@ siguen valiendo tal cual.
 npm run test
 ```
 
-314 pruebas en verde. Las que cubren este trabajo:
+488 pruebas en verde. Las que cubren este trabajo:
 
 | Archivo | Qué cubre |
 |---|---|
@@ -213,6 +299,97 @@ npm run test
 | `mock/almacen.test.ts` | Que la cuenta propia arranque vacía, no reviente y no se mezcle con la demostración |
 | `paginas/Acceso.test.tsx` | La contraseña de tránsito que lleva a cambiarla y el registro en revisión que no |
 | `providers/AuthProvider.test.tsx` | Que solo un administrador adopte un perfil, y que soltarlo devuelva la cuenta real |
+| `mock/expedienteDeRegistro.test.ts` | El ciclo entero: admitir, decidir soportes, resolver los cuatro pasos, el doble control y la cascada de aprobación |
+| `expedientes/tramite.test.ts` | El paso en turno, la observación obligatoria y que los ocho rechazos tengan salida propia |
+| `mock/reglasNegocio.test.ts` | Los cuatro controles de la verificación, uno por uno |
+| `expedientes/soportes.test.ts` | Qué se puede dibujar y qué solo se descarga, por mime y por nombre |
+| `expedientes/FichaSolicitud.test.tsx` | La ficha: DIVIPOLA en nombres, el rótulo del catálogo, la descarga y el visor |
+| `mock/archivosDeMuestra.test.ts` | Que el PDF del simulador tenga la tabla de referencias donde dice |
+
+El recorrido de navegador vive en `tests/e2e/registro-de-actores.spec.ts` y
+`tests/e2e/aurora.spec.ts`: admitir a trámite, resolver los tres primeros pasos,
+chocar contra el doble control, entrar como la segunda analista y cerrar el
+registro; y del lado de AURORA, resolver un destino hablado y guardar la
+configuración. `npm run test:e2e` ya no depende del `.env` de quien lo corre: la
+build de pruebas usa `--mode e2e` contra `.env.e2e`, que fija el simulador y la
+identidad simulada. Necesita Node ≥ 20.19, que es lo que declara `engines`.
+
+## La bandeja de solicitudes, rehecha contra el expediente
+
+Aprobar a un actor no era cambiarle un campo a la solicitud: era cerrarle un
+expediente, que es otro agregado y tiene cuatro controles encima. Lo que había
+mandaba `PATCH /actores/solicitudes/{id}` con `"APROBADA"`, y eso nunca iba a
+funcionar: el esquema declara `estado: Literal["EN_TRAMITE"]`. Ese `PATCH` ya no
+existe en el árbol, y tampoco el `POST /iam/cuentas` al aprobar: la cuenta del
+representante legal la abre un consumidor de eventos.
+
+| Momento | Llamada | Dónde |
+|---|---|---|
+| Admitir a trámite | `POST /cumplimiento/expedientes` | `Solicitudes.tsx`, con `cumplimiento:solicitud:tramitar` |
+| Decidir un soporte | `PATCH /cumplimiento/expedientes/documentos` | `Expedientes.tsx`, con `cumplimiento:expediente:verificar` |
+| Resolver un paso | `PATCH /cumplimiento/expedientes/pasos` | Idem |
+
+**No hay llamada final de «aprobar».** El expediente se cierra solo cuando el
+último paso queda resuelto, y lo que viene después —solicitud `APROBADA`,
+organización habilitada, cuenta del representante creada— es **asíncrono, por
+bus**. La pantalla no lo da por hecho: lo dice en un aviso y ofrece releer la
+bandeja. El simulador reproduce esa cascada para que se pueda recorrer entero sin
+backend.
+
+Cuatro cosas que la pantalla tiene que respetar, y ahora respeta:
+
+- **Los pasos se pintan por `orden` y solo el primero sin resolver admite
+  decisión.** Los demás dicen a qué paso están esperando en vez de ofrecer un
+  botón que devolvería `409`.
+- **Tres veredictos, no dos.** `RECHAZADO` existe y no es `DEVUELTO`: devolver
+  deja el trámite abierto para subsanar, rechazar lo cierra. La observación del
+  paso que rechaza es el `motivoRechazo` que acaba leyendo quien radicó, y la
+  bandeja lo muestra en su fila.
+- **La observación es obligatoria salvo al aceptar**, y el botón está
+  deshabilitado mientras esté vacía, en vez de dejar que lo diga un `422`.
+- **El rol responsable y el doble control se ven.** Cada paso rotula de quién es;
+  el que exige doble control lo dice, y a quien ya resolvió otro paso del mismo
+  expediente se le explica por qué no lo cierra él, antes de intentarlo.
+
+Los ocho `type` del contrato tienen salida propia en `shared/api/salidas.ts`, que
+`ErrorNormativo` pinta bajo el `detail` del servidor: ninguno se muestra como «no
+se pudo». Y como el doble control necesita dos personas, los perfiles de
+demostración incluyen **dos analistas de cumplimiento**: con uno solo el último
+paso no se puede cerrar, que es exactamente lo que pasa en producción.
+
+> La trampa del entorno sigue en pie: en `local`, `pruebas` y `desarrollo` el
+> backend apaga estos controles y un super admin resuelve los cuatro pasos él
+> solo. Probar así no prueba el camino real. El simulador los exige siempre, a
+> propósito.
+
+### La ficha, y los archivos que quien radicó adjuntó
+
+Desde la bandeja, el nombre de la organización y el botón «Ver ficha» abren
+`GET /actores/solicitudes/{id}`: los datos completos de la radicación y sus
+soportes, uno a uno. Tres cosas que la pantalla hace y conviene que sigan así:
+
+- **Los códigos DIVIPOLA se pintan como nombres.** La fila de la tabla enseña
+  `76001`; la ficha enseña «Cali, Valle del Cauca». El código es del contrato, no
+  del lector.
+- **El rótulo de cada soporte sale del catálogo del servidor**, no de una tabla
+  escrita aquí. `GET /actores/requisitos/{tipoActor}` ya trae la `etiqueta` de
+  cada tipo, y es la misma lista que vio quien adjuntó el archivo. Un tipo que el
+  catálogo no tenga se humaniza —`PLAN_MANEJO_AMBIENTAL` → «Plan manejo
+  ambiental»— en vez de rotularse con el nombre de otro documento, que es lo que
+  pasaba al forzarlo contra el enum de ocho valores del expediente.
+- **El visor no finge.** Las imágenes se abren a pantalla completa, con ampliar y
+  ajustar; los PDF se dibujan dentro del diálogo; y lo que el navegador no dibuja
+  —`.docx`, hojas de cálculo, comprimidos— no sale como un visor en blanco: sale
+  como una tarjeta que dice qué es y ofrece la descarga. La descarga está siempre,
+  también en lo que sí se ve, y el nombre del archivo viaja en el `download`.
+
+Lo que falta para que esto funcione contra el servidor real está en
+[PENDIENTES-BACKEND.md](PENDIENTES-BACKEND.md) §2.1: **el contrato no publica
+ninguna ruta que convierta un `soporteId` de radicación en el archivo**. El
+portal lo intenta contra `GET /medios/{id}`, que es lo único documentado, y
+cuando no vuelve una URL lo dice con el identificador a la vista en lugar de
+dejar el visor colgado. El simulador sí sirve los tres casos —PDF, imagen y un
+`.docx`— para poder revisar la pantalla entera sin backend.
 
 ## El registro de actores, contra el contrato publicado
 

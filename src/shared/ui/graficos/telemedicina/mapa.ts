@@ -5,10 +5,20 @@ export type Papel = "cultivo" | "laboratorio" | "ips" | "paciente";
 
 export type NodoRed = {
   codigo: string;
+  ciudad: string;
   papel: Papel;
+  lado: "izquierda" | "derecha";
   x: number;
   y: number;
   demora: number;
+};
+
+type Plaza = {
+  codigo: string;
+  ciudad: string;
+  lon: number;
+  lat: number;
+  lado: "izquierda" | "derecha";
 };
 
 export type FormaDepartamento = {
@@ -19,11 +29,27 @@ export type FormaDepartamento = {
   y: number;
 };
 
-const PAPELES: Record<Papel, readonly string[]> = {
-  cultivo: ["19", "73", "15", "05", "52", "17"],
-  laboratorio: ["25", "05", "76"],
-  ips: ["11", "08", "68", "76", "13"],
-  paciente: ["50", "66", "20", "23"],
+const PLAZAS: Record<Papel, readonly Plaza[]> = {
+  cultivo: [
+    { codigo: "52", ciudad: "Pasto", lon: -77.281, lat: 1.214, lado: "izquierda" },
+    { codigo: "73", ciudad: "Ibagué", lon: -75.232, lat: 4.439, lado: "izquierda" },
+    { codigo: "66", ciudad: "Pereira", lon: -75.691, lat: 4.813, lado: "derecha" },
+    { codigo: "50", ciudad: "Villavicencio", lon: -73.635, lat: 4.142, lado: "derecha" },
+  ],
+  laboratorio: [
+    { codigo: "05", ciudad: "Medellín", lon: -75.563, lat: 6.251, lado: "derecha" },
+    { codigo: "76", ciudad: "Cali", lon: -76.522, lat: 3.452, lado: "derecha" },
+    { codigo: "11", ciudad: "Bogotá", lon: -74.072, lat: 4.711, lado: "derecha" },
+  ],
+  ips: [
+    { codigo: "08", ciudad: "Barranquilla", lon: -74.796, lat: 10.964, lado: "izquierda" },
+    { codigo: "13", ciudad: "Cartagena", lon: -75.514, lat: 10.391, lado: "izquierda" },
+    { codigo: "68", ciudad: "Bucaramanga", lon: -73.126, lat: 7.119, lado: "derecha" },
+  ],
+  paciente: [
+    { codigo: "47", ciudad: "Santa Marta", lon: -74.199, lat: 11.241, lado: "derecha" },
+    { codigo: "54", ciudad: "Cúcuta", lon: -72.505, lat: 7.894, lado: "derecha" },
+  ],
 };
 
 export const ENCUADRE = encuadrarMercator(
@@ -50,20 +76,19 @@ export const formaDe = (codigo: string | null | undefined): FormaDepartamento | 
   codigo ? (POR_CODIGO.get(codigo) ?? null) : null;
 
 export const NODOS: readonly NodoRed[] = (
-  Object.entries(PAPELES) as readonly (readonly [Papel, readonly string[]])[]
-).flatMap(([papel, codigos]) =>
-  codigos.flatMap((codigo, indice) => {
-    const forma = POR_CODIGO.get(codigo);
-    if (!forma) return [];
-    return [
-      {
-        codigo,
-        papel,
-        x: forma.x,
-        y: forma.y,
-        demora: indice * 260 + Object.keys(PAPELES).indexOf(papel) * 110,
-      },
-    ];
+  Object.entries(PLAZAS) as readonly (readonly [Papel, readonly Plaza[]])[]
+).flatMap(([papel, plazas]) =>
+  plazas.map((plaza, indice) => {
+    const [x, y] = proyectarMercator(plaza.lon, plaza.lat, ENCUADRE);
+    return {
+      codigo: plaza.codigo,
+      ciudad: plaza.ciudad,
+      papel,
+      lado: plaza.lado,
+      x,
+      y,
+      demora: indice * 260 + Object.keys(PLAZAS).indexOf(papel) * 110,
+    };
   }),
 );
 

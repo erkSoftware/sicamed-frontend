@@ -1,13 +1,23 @@
 import { ErrorApi } from "../problemDetails";
 import type {
+  CrearBloqueoAsistenteApi,
   EntidadMedio,
+  GuardarConfiguracionAsistenteApi,
   RadicarSolicitudApi,
   RolApi,
   TipoActorApi,
   UnidadApi,
 } from "./contrato";
 import { soloFecha } from "./conversiones";
-import type { EstadoCuenta, RolPlataforma, TipoAtestacion, TipoLote } from "../mock/tipos";
+import { sanearTextoDeAsistente } from "../mock/configuracionAsistente";
+import type { BorradorConfiguracionAsistente } from "../mock/configuracionAsistente";
+import type {
+  EstadoCuenta,
+  RolPlataforma,
+  TipoAtestacion,
+  TipoBloqueoAsistente,
+  TipoLote,
+} from "../mock/tipos";
 
 export const hoy = (): string => soloFecha(new Date().toISOString());
 
@@ -268,7 +278,7 @@ export const cuerpoLevantarActa = (entrada: {
   fecha: soloFecha(entrada.fecha ?? hoy()),
 });
 
-const DECISIONES = { APROBADO: "ACEPTADO", DEVUELTO: "DEVUELTO" } as const;
+const DECISIONES = { APROBADO: "ACEPTADO", DEVUELTO: "DEVUELTO", RECHAZADO: "RECHAZADO" } as const;
 
 export const cuerpoDecidirDocumento = (entrada: {
   expedienteId: string;
@@ -282,7 +292,7 @@ export const cuerpoDecidirDocumento = (entrada: {
   observacion: entrada.observacion,
 });
 
-const VEREDICTOS = { VERIFICADO: "APROBADO", DEVUELTO: "DEVUELTO" } as const;
+const VEREDICTOS = { VERIFICADO: "APROBADO", DEVUELTO: "DEVUELTO", RECHAZADO: "RECHAZADO" } as const;
 
 export const cuerpoResolverPaso = (entrada: {
   expedienteId: string;
@@ -427,3 +437,36 @@ export type ComprobantePublicacion = {
   estado: string;
   atestacionId: string;
 };
+
+export const cuerpoGuardarConfiguracionAsistente = (entrada: {
+  borrador: BorradorConfiguracionAsistente;
+}): GuardarConfiguracionAsistenteApi => {
+  const clave = entrada.borrador.apiKey.trim();
+  return {
+    nombre: sanearTextoDeAsistente(entrada.borrador.nombre),
+    saludo: sanearTextoDeAsistente(entrada.borrador.saludo),
+    fraseFueraDeAlcance: sanearTextoDeAsistente(entrada.borrador.fraseFueraDeAlcance),
+    instruccionesExtra: sanearTextoDeAsistente(entrada.borrador.instruccionesExtra),
+    promptSistema: sanearTextoDeAsistente(entrada.borrador.promptSistema),
+    mensajeAviso: sanearTextoDeAsistente(entrada.borrador.mensajeAviso),
+    habilitado: entrada.borrador.habilitado,
+    proveedor: sanearTextoDeAsistente(entrada.borrador.proveedor),
+    modelo: sanearTextoDeAsistente(entrada.borrador.modelo),
+    voz: sanearTextoDeAsistente(entrada.borrador.voz),
+    borrarApiKey: entrada.borrador.borrarApiKey,
+    limites: { ...entrada.borrador.limites },
+    ...(clave === "" ? {} : { apiKey: clave }),
+  };
+};
+
+export const cuerpoBloquearAsistente = (entrada: {
+  usuario: string;
+  motivo: string;
+  tipo: TipoBloqueoAsistente;
+  dias: number;
+}): CrearBloqueoAsistenteApi => ({
+  usuario: entrada.usuario.trim(),
+  motivo: sanearTextoDeAsistente(entrada.motivo),
+  tipo: entrada.tipo,
+  ...(entrada.tipo === "temporary" ? { dias: entrada.dias } : {}),
+});

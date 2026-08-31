@@ -39,6 +39,16 @@ if (!window.IntersectionObserver) {
   } as unknown as typeof IntersectionObserver;
 }
 
+if (!HTMLDialogElement.prototype.showModal) {
+  HTMLDialogElement.prototype.showModal = function abrirModal(this: HTMLDialogElement) {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close = function cerrarModal(this: HTMLDialogElement) {
+    this.open = false;
+    this.dispatchEvent(new Event("close"));
+  };
+}
+
 afterEach(() => {
   cleanup();
 });

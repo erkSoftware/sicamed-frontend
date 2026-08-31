@@ -5342,9 +5342,25 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
 
 .registro-requisitos__lista li {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--e2);
+  gap: var(--e1) var(--e2);
   line-height: 1.45;
+}
+
+.registro-requisitos__etiqueta {
+  flex: 1 1 12rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.registro-requisitos__sellos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--e1) var(--e2);
+  margin-left: auto;
+  padding-left: var(--e5);
 }
 
 .registro-requisitos__marca {
@@ -5354,8 +5370,8 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
 }
 
 .registro-requisitos__opcional {
-  margin-left: var(--e2);
   font-size: var(--texto-xs);
+  white-space: nowrap;
   color: var(--texto-suave);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -5621,6 +5637,10 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
   margin: 0;
 }
 
+.asistente__resumen > div {
+  min-width: 0;
+}
+
 .asistente__resumen dt {
   font-size: var(--texto-xs);
   text-transform: uppercase;
@@ -5633,6 +5653,11 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
   margin: 0;
   color: var(--texto);
   line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .asistente__adjuntos {
@@ -5650,6 +5675,7 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
   align-items: center;
   gap: var(--e3);
   font-size: var(--texto-sm);
+  min-width: 0;
 }
 
 .asistente__adjunto-marca {
@@ -5665,6 +5691,9 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
 .asistente__adjunto-nombre {
   flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .asistente__adjunto-dato {
@@ -5688,6 +5717,7 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
 }
 
 .campo-archivo__zona {
+  position: relative;
   border: 1px dashed var(--borde);
   border-radius: var(--radio-sm);
   background: var(--fondo);
@@ -8303,12 +8333,6 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
 
 .pista-deslizar svg {
   animation: pista-bajar 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-.pista-deslizar[data-saliendo="si"] {
-  opacity: 0;
-  transform: translateX(-50%) translateY(10px);
-  pointer-events: none;
 }
 
 @keyframes pista-bajar {

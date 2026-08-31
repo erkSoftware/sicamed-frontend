@@ -1,5 +1,8 @@
 import type {
   ActaDestruccionApi,
+  BloqueoAsistenteApi,
+  ConfiguracionAsistenteApi,
+  EstadoLlamadasAsistenteApi,
   AtestacionApi,
   BeneficioApi,
   CierreApi,
@@ -24,15 +27,27 @@ import type {
   RespuestaDirectorioApi,
   ReglaApi,
   RuedaApi,
+  MedioApi,
   SolicitudApi,
+  SolicitudDetalleApi,
   TransformacionApi,
 } from "./contrato";
 import { aNumero, aNulo, aTexto, soloFecha } from "./conversiones";
 import { CATALOGO_VACIO, cultivoDe, nombreDe, variedadDe } from "./catalogo";
+import {
+  LIMITES_DE_FABRICA,
+  MODELOS_DEL_DESPLIEGUE,
+  MODELO_DEL_DESPLIEGUE,
+  VOZ_DEL_DESPLIEGUE,
+} from "../mock/configuracionAsistente";
 import type { Catalogo } from "./catalogo";
 import type {
   ActaDestruccion,
   Atestacion,
+  BloqueoAsistente,
+  ConfiguracionAsistente,
+  EstadoLlamadasAsistente,
+  TipoBloqueoAsistente,
   Beneficio,
   CausalDestruccion,
   CierreExterno,
@@ -63,6 +78,8 @@ import type {
   ReglaVerificacion,
   RolPlataforma,
   RuedaNegocio,
+  ArchivoPublicado,
+  SolicitudDetallada,
   SolicitudRegistro,
   TipoDocumento,
   TipoLote,
@@ -531,9 +548,9 @@ export const aCuenta = (api: CuentaApi, catalogo: Catalogo = CATALOGO_VACIO): Cu
 
 const ESTADO_SOLICITUD: Record<SolicitudApi["estado"], EstadoSolicitud> = {
   RECIBIDA: "RECIBIDA",
-  EN_TRAMITE: "EXPEDIENTE_ABIERTO",
-  APROBADA: "EXPEDIENTE_ABIERTO",
-  RECHAZADA: "DESCARTADA",
+  EN_TRAMITE: "EN_TRAMITE",
+  APROBADA: "APROBADA",
+  RECHAZADA: "RECHAZADA",
 };
 
 const DOCUMENTOS_CONOCIDOS: readonly TipoDocumento[] = [
@@ -565,14 +582,55 @@ export const aSolicitud = (api: SolicitudApi): SolicitudRegistro => ({
   estado: ESTADO_SOLICITUD[api.estado],
   recibida: api.radicada,
   expedienteId: aNulo(api.expedienteId),
+  motivoRechazo: api.motivoRechazo === "" ? null : (api.motivoRechazo ?? null),
   documentos: [],
   huella: "",
 });
 
+export const aSolicitudDetallada = (api: SolicitudDetalleApi): SolicitudDetallada => ({
+  ...aSolicitud(api),
+  organizacionId: aNulo(api.organizacionId),
+  declarados: (api.documentosDeclarados ?? []).map((documento) => ({
+    tipo: documento.tipo,
+    nombre: documento.nombre,
+    soporteId: documento.soporteId ?? "",
+  })),
+});
+
+const MIMES_POR_FORMATO: Readonly<Record<string, string>> = {
+  pdf: "application/pdf",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  avif: "image/avif",
+  svg: "image/svg+xml",
+};
+
+export const aMimeDeFormato = (formato: string): string => {
+  const limpio = formato.trim().toLowerCase();
+  if (limpio === "") return "";
+  return limpio.includes("/") ? limpio : (MIMES_POR_FORMATO[limpio] ?? "");
+};
+
+export const aArchivoPublicado = (api: MedioApi): ArchivoPublicado => {
+  const variantes = api.variantes ?? [];
+  const original =
+    variantes.find((variante) => variante.etiqueta === "original") ??
+    [...variantes].sort((una, otra) => (otra.bytes ?? 0) - (una.bytes ?? 0))[0];
+
+  return {
+    url: original?.url ?? "",
+    mime: aMimeDeFormato(original?.formato ?? ""),
+    bytes: original?.bytes ?? 0,
+  };
+};
+
 const ESTADO_DOCUMENTO = {
   ACEPTADO: "APROBADO",
   DEVUELTO: "DEVUELTO",
-  RECHAZADO: "DEVUELTO",
+  RECHAZADO: "RECHAZADO",
 } as const;
 
 export const aDocumentoExpediente = (api: DocumentoApi): DocumentoExpediente => ({
@@ -590,12 +648,15 @@ export const aDocumentoExpediente = (api: DocumentoApi): DocumentoExpediente => 
 const VEREDICTOS = {
   APROBADO: "VERIFICADO",
   DEVUELTO: "DEVUELTO",
-  RECHAZADO: "DEVUELTO",
+  RECHAZADO: "RECHAZADO",
 } as const;
 
 export const aPaso = (api: PasoApi): PasoVerificacion => ({
   id: api.id,
+  reglaId: api.reglaId,
+  etiqueta: api.etiqueta,
   orden: api.orden,
+  exigeDobleControl: api.exigeDobleControl,
   rol: api.rolResponsable === "ADMIN_INSTITUCIONAL" ? "ADMIN_INSTITUCIONAL" : "ANALISTA_DOCUMENTAL",
   veredicto: (api.veredicto ? VEREDICTOS[api.veredicto] : "PENDIENTE") as VeredictoPaso,
   revisor: api.resueltoPor === "" ? null : (api.resueltoPor ?? null),
@@ -610,7 +671,7 @@ const ESTADO_EXPEDIENTE = {
   EN_VERIFICACION: "EN_VERIFICACION",
   DEVUELTO: "DEVUELTO",
   APROBADO: "APROBADO",
-  RECHAZADO: "DEVUELTO",
+  RECHAZADO: "RECHAZADO",
 } as const;
 
 export const aExpediente = (
@@ -727,4 +788,91 @@ export const aDirectorio = (api: RespuestaDirectorioApi): RespuestaDirectorio =>
     medicos: api.totales.medicos,
     pacientes: api.totales.pacientes,
   },
+});
+
+export const aConfiguracionAsistente = (
+  api: ConfiguracionAsistenteApi,
+): ConfiguracionAsistente => {
+  const modelo = aTexto(api.modelo);
+  const catalogo =
+    api.modelosDisponibles && api.modelosDisponibles.length > 0
+      ? [...api.modelosDisponibles]
+      : [...MODELOS_DEL_DESPLIEGUE];
+  return {
+    nombre: aTexto(api.nombre),
+    saludo: aTexto(api.saludo),
+    fraseFueraDeAlcance: aTexto(api.fraseFueraDeAlcance),
+    instruccionesExtra: aTexto(api.instruccionesExtra),
+    promptSistema: aTexto(api.promptSistema),
+    mensajeAviso: aTexto(api.mensajeAviso),
+    habilitado: api.habilitado ?? true,
+    proveedor: aTexto(api.proveedor, "openai"),
+    modelo,
+    modeloEfectivo: aTexto(api.modeloEfectivo) || modelo || MODELO_DEL_DESPLIEGUE,
+    modelosDisponibles: catalogo,
+    voz: aTexto(api.voz),
+    vozEfectiva: aTexto(api.vozEfectiva) || VOZ_DEL_DESPLIEGUE,
+    apiKey: {
+      configurada: api.apiKey?.configurada ?? false,
+      enmascarada: aTexto(api.apiKey?.enmascarada),
+    },
+    limites: {
+      duracionMaximaSegundos: aNumero(
+        api.limites?.duracionMaximaSegundos,
+        LIMITES_DE_FABRICA.duracionMaximaSegundos,
+      ),
+      avisoPrevioSegundos: aNumero(
+        api.limites?.avisoPrevioSegundos,
+        LIMITES_DE_FABRICA.avisoPrevioSegundos,
+      ),
+      limiteDiarioSegundos: aNumero(
+        api.limites?.limiteDiarioSegundos,
+        LIMITES_DE_FABRICA.limiteDiarioSegundos,
+      ),
+      intentosMaximos: aNumero(api.limites?.intentosMaximos, LIMITES_DE_FABRICA.intentosMaximos),
+      ventanaIntentosHoras: aNumero(
+        api.limites?.ventanaIntentosHoras,
+        LIMITES_DE_FABRICA.ventanaIntentosHoras,
+      ),
+      bloqueoAutomaticoDias: aNumero(
+        api.limites?.bloqueoAutomaticoDias,
+        LIMITES_DE_FABRICA.bloqueoAutomaticoDias,
+      ),
+    },
+    deFabrica: api.deFabrica,
+    actualizadoEn: aNulo(api.actualizadoEn),
+    actualizadoPor: aTexto(api.actualizadoPor),
+  };
+};
+
+const aTipoBloqueo = (tipo: string): TipoBloqueoAsistente =>
+  tipo.toLowerCase() === "permanent" ? "permanent" : "temporary";
+
+export const aBloqueoAsistente = (api: BloqueoAsistenteApi): BloqueoAsistente => ({
+  id: aTexto(api.id),
+  usuario: aTexto(api.usuario),
+  motivo: aTexto(api.motivo),
+  tipo: aTipoBloqueo(aTexto(api.tipo, "temporary")),
+  iniciaEn: aTexto(api.iniciaEn),
+  expiraEn: aNulo(api.expiraEn),
+  activo: api.activo,
+  creadoPor: aTexto(api.creadoPor),
+  creadoEn: aTexto(api.creadoEn),
+  desbloqueadoEn: aNulo(api.desbloqueadoEn),
+  desbloqueadoPor: aTexto(api.desbloqueadoPor),
+});
+
+export const aEstadoLlamadasAsistente = (
+  api: EstadoLlamadasAsistenteApi,
+): EstadoLlamadasAsistente => ({
+  puedeLlamar: api.puedeLlamar,
+  consumidoSegundos: aNumero(api.consumidoSegundos),
+  llamadasHoy: aNumero(api.llamadasHoy),
+  limiteDiarioSegundos: aNumero(api.limiteDiarioSegundos),
+  restanteDiarioSegundos: aNumero(api.restanteDiarioSegundos),
+  duracionMaximaSegundos: aNumero(
+    api.duracionMaximaSegundos,
+    LIMITES_DE_FABRICA.duracionMaximaSegundos,
+  ),
+  bloqueo: api.bloqueo ? aBloqueoAsistente(api.bloqueo) : null,
 });

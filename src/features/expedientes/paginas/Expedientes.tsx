@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { EncabezadoPagina } from "../../../shared/ui/patrones/EncabezadoPagina";
 import { TablaConFiltros } from "../../../shared/ui/patrones/TablaConFiltros";
 import { EstadoVacio } from "../../../shared/ui/patrones/EstadoVacio";
@@ -18,66 +19,52 @@ import { NOMBRE_DOCUMENTO } from "../../../shared/api/mock/datosProceso";
 import { ETIQUETA_ROL } from "../../../shared/api/mock/datosGobierno";
 import { DEPARTAMENTOS } from "../../../shared/api/mock/catalogos";
 import { fechaCorta, numero } from "../../../shared/i18n/formato";
-import type { EstadoDocumento, Expediente } from "../../../shared/api/mock/tipos";
+import type { Expediente, PasoVerificacion } from "../../../shared/api/mock/tipos";
 import type { Columna } from "../../../shared/ui/primitivos/Tabla";
 import { useDecidirDocumento, useExpedientes, useResolverPaso } from "../hooks/useExpedientes";
-
-const TONO_EXPEDIENTE = {
-  BORRADOR: "neutro",
-  RADICADO: "info",
-  EN_VERIFICACION: "acento",
-  APROBADO: "exito",
-  DEVUELTO: "peligro",
-} as const;
-
-const ETIQUETA_EXPEDIENTE = {
-  BORRADOR: "Borrador",
-  RADICADO: "Radicado",
-  EN_VERIFICACION: "En verificación",
-  APROBADO: "Aprobado",
-  DEVUELTO: "Devuelto",
-} as const;
-
-const TONO_DOCUMENTO = {
-  PENDIENTE: "neutro",
-  EN_VERIFICACION: "info",
-  APROBADO: "exito",
-  DEVUELTO: "peligro",
-  VENCIDO: "alerta",
-} as const;
-
-const ETIQUETA_DOCUMENTO = {
-  PENDIENTE: "Sin cargar",
-  EN_VERIFICACION: "En verificación",
-  APROBADO: "Aprobado",
-  DEVUELTO: "Devuelto",
-  VENCIDO: "Vencido",
-} as const;
-
-const ETIQUETA_ACTOR = {
-  CULTIVADOR: "Cultivador",
-  TRANSFORMADOR: "Transformador",
-  DISPENSADOR: "Dispensador",
-  IPS: "IPS",
-  LABORATORIO: "Laboratorio",
-} as const;
-
-const TONO_PASO = {
-  PENDIENTE: "neutro",
-  VERIFICADO: "exito",
-  DEVUELTO: "peligro",
-} as const;
+import {
+  ETIQUETA_ACTOR,
+  ETIQUETA_DOCUMENTO,
+  ETIQUETA_EXPEDIENTE,
+  ETIQUETA_PASO,
+  TONO_DOCUMENTO,
+  TONO_EXPEDIENTE,
+  TONO_PASO,
+  exigeObservacion,
+  pasoEnTurno,
+  porOrden,
+  resueltosPor,
+  tramiteCerrado,
+} from "../tramite";
+import type { DecisionDocumento, VeredictoResoluble } from "../tramite";
 
 type Decision =
-  | { clase: "documento"; documentoId: string; valor: Extract<EstadoDocumento, "APROBADO" | "DEVUELTO"> }
-  | { clase: "paso"; pasoId: string; orden: number; valor: "VERIFICADO" | "DEVUELTO" };
+  | { clase: "documento"; documentoId: string; nombre: string; valor: DecisionDocumento }
+  | { clase: "paso"; pasoId: string; orden: number; etiqueta: string; valor: VeredictoResoluble };
+
+const TITULO_DECISION: Record<DecisionDocumento | VeredictoResoluble, string> = {
+  APROBADO: "Aceptar el soporte",
+  VERIFICADO: "Aprobar el paso",
+  DEVUELTO: "Devolver para subsanar",
+  RECHAZADO: "Rechazar",
+};
+
+const AYUDA_DECISION: Record<DecisionDocumento | VeredictoResoluble, string> = {
+  APROBADO: "Opcional. Útil para dejar constancia de lo que se comprobó.",
+  VERIFICADO: "Opcional. Útil para dejar constancia de lo que se comprobó.",
+  DEVUELTO:
+    "Obligatoria. Indica con precisión qué falta o qué no corresponde: el actor la lee para subsanar.",
+  RECHAZADO:
+    "Obligatoria. Es el motivo del rechazo que va a leer quien radicó la solicitud: escríbelo para esa persona.",
+};
 
 export const Expedientes = () => {
-  const [busqueda, setBusqueda] = useState("");
+  const [parametros, fijarParametros] = useSearchParams();
+  const [busqueda, setBusqueda] = useState(parametros.get("buscar") ?? "");
   const [estado, setEstado] = useState("");
   const [departamento, setDepartamento] = useState("");
   const [pagina, setPagina] = useState(1);
-  const [abierto, setAbierto] = useState<string | null>(null);
+  const [abierto, setAbierto] = useState<string | null>(parametros.get("expediente"));
   const [decision, setDecision] = useState<Decision | null>(null);
   const [observacion, setObservacion] = useState("");
 
@@ -92,6 +79,17 @@ export const Expedientes = () => {
   const aprobados = visibles.filter((expediente) => expediente.estado === "APROBADO").length;
   const enCola = visibles.filter((expediente) => expediente.estado === "EN_VERIFICACION").length;
   const devueltos = visibles.filter((expediente) => expediente.estado === "DEVUELTO").length;
+
+  const enTurno = seleccionado ? pasoEnTurno(seleccionado.pasos) : null;
+  const mios = seleccionado ? resueltosPor(seleccionado.pasos, autor.nombre) : [];
+
+  const seleccionar = (id: string | null) => {
+    setAbierto(id);
+    const siguientes = new URLSearchParams(parametros);
+    if (id) siguientes.set("expediente", id);
+    else siguientes.delete("expediente");
+    fijarParametros(siguientes, { replace: true });
+  };
 
   const cerrarDecision = () => {
     setDecision(null);
@@ -129,7 +127,16 @@ export const Expedientes = () => {
 
   const enCurso = decidirDocumento.isPending || resolverPaso.isPending;
   const errorDecision = decidirDocumento.error ?? resolverPaso.error;
-  const devolviendo = decision?.valor === "DEVUELTO";
+  const faltaObservacion =
+    decision !== null && exigeObservacion(decision.valor) && observacion.trim() === "";
+
+  const impedimentoDelPaso = (paso: PasoVerificacion): string | null => {
+    if (paso.rol !== autor.rol)
+      return `Este paso lo resuelve ${ETIQUETA_ROL[paso.rol]}, no tu rol.`;
+    if (paso.exigeDobleControl && mios.length > 0)
+      return `Exige doble control y tú ya resolviste ${mios.length === 1 ? "otro paso" : `${mios.length} pasos`} de este expediente: lo cierra un segundo analista.`;
+    return null;
+  };
 
   const columnas: readonly Columna<Expediente>[] = [
     {
@@ -158,7 +165,7 @@ export const Expedientes = () => {
     },
     {
       clave: "documentos",
-      encabezado: "Documentos",
+      encabezado: "Soportes",
       render: (expediente) => {
         const listos = expediente.documentos.filter(
           (documento) => documento.estado === "APROBADO",
@@ -174,12 +181,16 @@ export const Expedientes = () => {
       clave: "pasos",
       encabezado: "Trámite",
       render: (expediente) => {
-        const resueltos = expediente.pasos.filter(
-          (paso) => paso.veredicto === "VERIFICADO",
-        ).length;
+        const turno = pasoEnTurno(expediente.pasos);
         return (
-          <span className="mono">
-            paso {Math.min(resueltos + 1, expediente.pasos.length)} de {expediente.pasos.length}
+          <span>
+            <span className="mono">
+              paso {turno?.orden ?? expediente.pasos.length} de {expediente.pasos.length}
+            </span>
+            <br />
+            <span className="enlace-fila__meta">
+              {turno ? turno.etiqueta : "Sin pasos pendientes"}
+            </span>
           </span>
         );
       },
@@ -201,7 +212,7 @@ export const Expedientes = () => {
           variante="secundario"
           tamano="sm"
           icono="documento"
-          onClick={() => setAbierto(expediente.id === abierto ? null : expediente.id)}
+          onClick={() => seleccionar(expediente.id === abierto ? null : expediente.id)}
         >
           {expediente.id === abierto ? "Cerrar" : "Revisar"}
         </Boton>
@@ -213,7 +224,7 @@ export const Expedientes = () => {
     <div className="pagina">
       <EncabezadoPagina
         titulo="Expedientes de registro"
-        subtitulo="La puerta de entrada al sistema: una organización carga sus documentos, un analista los verifica uno por uno y la política define cuáles son obligatorios según el tipo de actor."
+        subtitulo="La puerta de entrada al sistema: se decide soporte por soporte y se resuelve paso por paso. No hay un botón final de aprobar: el expediente se cierra solo cuando el último paso queda resuelto."
       />
 
       <div className="rejilla-kpi">
@@ -226,9 +237,10 @@ export const Expedientes = () => {
       <div className="aviso aviso--info">
         <Icono nombre="escudo" tamano={18} />
         <p>
-          SICAMED no expide licencias: verifica que el acto administrativo cargado exista, esté
-          vigente y corresponda a la modalidad declarada. La licencia la otorga MinJusticia o
-          MinSalud según la modalidad.
+          El super administrador define la política de verificación y por eso no la aplica; nadie
+          verifica su propia organización; cada paso es del rol al que la política se lo asignó, y el
+          último exige un segundo analista. SICAMED no expide licencias: comprueba que el acto
+          administrativo exista, esté vigente y corresponda a la modalidad declarada.
         </p>
       </div>
 
@@ -257,6 +269,7 @@ export const Expedientes = () => {
             { valor: "EN_VERIFICACION", etiqueta: "En verificación" },
             { valor: "APROBADO", etiqueta: "Aprobados" },
             { valor: "DEVUELTO", etiqueta: "Devueltos" },
+            { valor: "RECHAZADO", etiqueta: "Rechazados" },
           ],
         }}
         selectores={[
@@ -286,85 +299,125 @@ export const Expedientes = () => {
         <>
           <Tarjeta
             titulo={`Trámite del expediente ${seleccionado.radicado}`}
-            descripcion={`Política ${seleccionado.politicaVersion}, congelada al radicar. Modo secuencial con doble control.`}
+            descripcion={`Política ${seleccionado.politicaVersion}, congelada al abrir. Los pasos se resuelven en orden: solo el primero sin resolver admite decisión.`}
             acciones={
               <Insignia tono={TONO_EXPEDIENTE[seleccionado.estado]}>
                 {ETIQUETA_EXPEDIENTE[seleccionado.estado]}
               </Insignia>
             }
+            pie={
+              tramiteCerrado(seleccionado.estado) ? (
+                <p className="pie-region">
+                  {seleccionado.estado === "APROBADO"
+                    ? "El expediente quedó aprobado. La habilitación de la organización y la cuenta de su representante legal las crea el bus de eventos, no esta pantalla: vuelve a la bandeja de solicitudes en unos segundos para verlo reflejado."
+                    : "El expediente quedó rechazado. La observación del paso que lo rechazó viaja como motivo a la solicitud, y es lo que va a leer quien radicó."}
+                </p>
+              ) : null
+            }
           >
             <ol className="pasos">
-              {seleccionado.pasos.map((paso) => (
-                <li key={paso.id} className="pasos__paso" data-veredicto={paso.veredicto}>
-                  <span className="pasos__orden mono">{paso.orden}</span>
-                  <span className="pasos__cuerpo">
-                    <strong>{ETIQUETA_ROL[paso.rol]}</strong>
-                    <span className="pasos__meta">
-                      SLA de {paso.slaHoras} horas
-                      {paso.revisor ? ` · resolvió ${paso.revisor}` : " · sin revisor asignado"}
-                      {paso.resuelto ? ` el ${fechaCorta(paso.resuelto)}` : ""}
-                    </span>
-                    {paso.observacion ? (
-                      <span className="expediente__observacion">{paso.observacion}</span>
-                    ) : null}
-                    {paso.huella ? <span className="pasos__meta mono">{paso.huella}</span> : null}
-                  </span>
-                  <span className="pasos__decision">
-                    <Insignia tono={TONO_PASO[paso.veredicto]}>{paso.veredicto}</Insignia>
-                    <SiTienePermiso permiso="cumplimiento:expediente:verificar">
-                      {paso.veredicto === "PENDIENTE" ? (
-                        <span className="expediente__acciones">
-                          <Boton
-                            variante="secundario"
-                            tamano="sm"
-                            icono="check"
-                            onClick={() =>
-                              setDecision({
-                                clase: "paso",
-                                pasoId: paso.id,
-                                orden: paso.orden,
-                                valor: "VERIFICADO",
-                              })
-                            }
-                          >
-                            Verificar
-                          </Boton>
-                          <Boton
-                            variante="fantasma"
-                            tamano="sm"
-                            icono="alerta"
-                            onClick={() =>
-                              setDecision({
-                                clase: "paso",
-                                pasoId: paso.id,
-                                orden: paso.orden,
-                                valor: "DEVUELTO",
-                              })
-                            }
-                          >
-                            Devolver
-                          </Boton>
+              {porOrden(seleccionado.pasos).map((paso) => {
+                const esTurno = enTurno?.id === paso.id;
+                const impedimento = esTurno ? impedimentoDelPaso(paso) : null;
+                return (
+                  <li key={paso.id} className="pasos__paso" data-veredicto={paso.veredicto}>
+                    <span className="pasos__orden mono">{paso.orden}</span>
+                    <span className="pasos__cuerpo">
+                      <strong>{paso.etiqueta}</strong>
+                      <span className="pasos__meta">
+                        Responsable {ETIQUETA_ROL[paso.rol]} · SLA de {paso.slaHoras} horas
+                        {paso.exigeDobleControl ? " · exige doble control" : ""}
+                        {paso.revisor ? ` · resolvió ${paso.revisor}` : ""}
+                        {paso.resuelto ? ` el ${fechaCorta(paso.resuelto)}` : ""}
+                      </span>
+                      {paso.observacion ? (
+                        <span className="expediente__observacion">{paso.observacion}</span>
+                      ) : null}
+                      {!esTurno && paso.veredicto === "PENDIENTE" && enTurno ? (
+                        <span className="pasos__meta">
+                          Espera a que se resuelva «{enTurno.etiqueta}».
                         </span>
                       ) : null}
-                    </SiTienePermiso>
-                  </span>
-                </li>
-              ))}
+                      {impedimento ? <span className="pasos__meta">{impedimento}</span> : null}
+                      {paso.huella ? <span className="pasos__meta mono">{paso.huella}</span> : null}
+                    </span>
+                    <span className="pasos__decision">
+                      <Insignia tono={TONO_PASO[paso.veredicto]}>
+                        {ETIQUETA_PASO[paso.veredicto]}
+                      </Insignia>
+                      <SiTienePermiso permiso="cumplimiento:expediente:verificar">
+                        {esTurno && impedimento === null ? (
+                          <span className="expediente__acciones">
+                            <Boton
+                              variante="secundario"
+                              tamano="sm"
+                              icono="check"
+                              onClick={() =>
+                                setDecision({
+                                  clase: "paso",
+                                  pasoId: paso.id,
+                                  orden: paso.orden,
+                                  etiqueta: paso.etiqueta,
+                                  valor: "VERIFICADO",
+                                })
+                              }
+                            >
+                              Aprobar
+                            </Boton>
+                            <Boton
+                              variante="fantasma"
+                              tamano="sm"
+                              icono="alerta"
+                              onClick={() =>
+                                setDecision({
+                                  clase: "paso",
+                                  pasoId: paso.id,
+                                  orden: paso.orden,
+                                  etiqueta: paso.etiqueta,
+                                  valor: "DEVUELTO",
+                                })
+                              }
+                            >
+                              Devolver
+                            </Boton>
+                            <Boton
+                              variante="peligro"
+                              tamano="sm"
+                              icono="cerrar"
+                              onClick={() =>
+                                setDecision({
+                                  clase: "paso",
+                                  pasoId: paso.id,
+                                  orden: paso.orden,
+                                  etiqueta: paso.etiqueta,
+                                  valor: "RECHAZADO",
+                                })
+                              }
+                            >
+                              Rechazar
+                            </Boton>
+                          </span>
+                        ) : null}
+                      </SiTienePermiso>
+                    </span>
+                  </li>
+                );
+              })}
             </ol>
           </Tarjeta>
 
           <Tarjeta
-            titulo={`Documentos de ${seleccionado.organizacion}`}
-            descripcion={ETIQUETA_ACTOR[seleccionado.tipoActor]}
+            titulo={`Soportes de ${seleccionado.organizacion}`}
+            descripcion={`${ETIQUETA_ACTOR[seleccionado.tipoActor]} · un soporte a la vez, y la observación es obligatoria salvo al aceptar.`}
             sinRelleno
             pie={
               <p className="pie-region mono">
-                Cada decisión de verificación queda como evento de trazabilidad con la huella del
-                documento, el revisor y el sello de tiempo
+                Cada decisión queda como evento de trazabilidad con la huella del documento, el
+                revisor y el sello de tiempo
               </p>
             }
           >
-            <RegionDesplazable etiqueta="Documentos del expediente" alto={420}>
+            <RegionDesplazable etiqueta="Soportes del expediente" alto={420}>
               <ul className="expediente">
                 {seleccionado.documentos.map((documento) => (
                   <li
@@ -381,7 +434,7 @@ export const Expedientes = () => {
                       <span className="expediente__meta">
                         Cargado el {fechaCorta(documento.cargado)}
                         {documento.vence ? ` · vence el ${fechaCorta(documento.vence)}` : " · sin vigencia"}
-                        {documento.verificadoPor ? ` · verificó ${documento.verificadoPor}` : ""}
+                        {documento.verificadoPor ? ` · decidió ${documento.verificadoPor}` : ""}
                       </span>
                       {documento.observacion ? (
                         <span className="expediente__observacion">{documento.observacion}</span>
@@ -393,38 +446,58 @@ export const Expedientes = () => {
                         {ETIQUETA_DOCUMENTO[documento.estado]}
                       </Insignia>
                       <SiTienePermiso permiso="cumplimiento:expediente:verificar">
-                        <span className="expediente__acciones">
-                          <Boton
-                            variante="secundario"
-                            tamano="sm"
-                            icono="check"
-                            disabled={documento.estado === "APROBADO"}
-                            onClick={() =>
-                              setDecision({
-                                clase: "documento",
-                                documentoId: documento.id,
-                                valor: "APROBADO",
-                              })
-                            }
-                          >
-                            Aprobar
-                          </Boton>
-                          <Boton
-                            variante="fantasma"
-                            tamano="sm"
-                            icono="alerta"
-                            disabled={documento.estado === "DEVUELTO"}
-                            onClick={() =>
-                              setDecision({
-                                clase: "documento",
-                                documentoId: documento.id,
-                                valor: "DEVUELTO",
-                              })
-                            }
-                          >
-                            Devolver
-                          </Boton>
-                        </span>
+                        {tramiteCerrado(seleccionado.estado) ? null : (
+                          <span className="expediente__acciones">
+                            <Boton
+                              variante="secundario"
+                              tamano="sm"
+                              icono="check"
+                              disabled={documento.estado === "APROBADO"}
+                              onClick={() =>
+                                setDecision({
+                                  clase: "documento",
+                                  documentoId: documento.id,
+                                  nombre: NOMBRE_DOCUMENTO[documento.tipo],
+                                  valor: "APROBADO",
+                                })
+                              }
+                            >
+                              Aceptar
+                            </Boton>
+                            <Boton
+                              variante="fantasma"
+                              tamano="sm"
+                              icono="alerta"
+                              disabled={documento.estado === "DEVUELTO"}
+                              onClick={() =>
+                                setDecision({
+                                  clase: "documento",
+                                  documentoId: documento.id,
+                                  nombre: NOMBRE_DOCUMENTO[documento.tipo],
+                                  valor: "DEVUELTO",
+                                })
+                              }
+                            >
+                              Devolver
+                            </Boton>
+                            <Boton
+                              variante="peligro"
+                              tamano="sm"
+                              icono="cerrar"
+                              disabled={documento.estado === "RECHAZADO"}
+                              onClick={() =>
+                                setDecision({
+                                  clase: "documento",
+                                  documentoId: documento.id,
+                                  nombre: NOMBRE_DOCUMENTO[documento.tipo],
+                                  valor: "RECHAZADO",
+                                })
+                              }
+                            >
+                              Rechazar
+                            </Boton>
+                          </span>
+                        )}
                       </SiTienePermiso>
                     </span>
                   </li>
@@ -438,19 +511,24 @@ export const Expedientes = () => {
       <DialogoFormulario
         abierto={decision !== null}
         titulo={
-          decision?.clase === "paso"
-            ? `${decision.valor === "VERIFICADO" ? "Verificar" : "Devolver"} el paso ${decision.orden}`
-            : decision?.valor === "APROBADO"
-              ? "Aprobar el documento"
-              : "Devolver el documento"
+          decision === null
+            ? ""
+            : decision.clase === "paso"
+              ? `${TITULO_DECISION[decision.valor]}: ${decision.etiqueta}`
+              : `${TITULO_DECISION[decision.valor]}: ${decision.nombre}`
         }
         descripcion={
-          devolviendo
-            ? "La observación es obligatoria: es lo que el solicitante verá para saber qué corregir. Queda registrada junto con tu nombre y el sello de tiempo."
-            : "Tu decisión queda sellada en el ledger con la huella del documento, tu identidad y la versión de política vigente al radicar."
+          decision?.valor === "RECHAZADO" && decision.clase === "paso"
+            ? "Rechazar un paso cierra el expediente entero. La observación viaja como motivo a la solicitud y es lo que va a leer quien radicó."
+            : decision?.valor === "DEVUELTO"
+              ? "Devolver deja el trámite abierto para que el actor subsane. La observación es obligatoria."
+              : decision?.clase === "paso"
+                ? "El expediente no se aprueba con un botón final: se cierra solo cuando el último paso queda resuelto."
+                : "Tu decisión queda sellada en el ledger con la huella del documento, tu identidad y la versión de política vigente."
         }
-        etiquetaEnviar={devolviendo ? "Devolver con observación" : "Confirmar verificación"}
+        etiquetaEnviar={decision === null ? "Confirmar" : TITULO_DECISION[decision.valor]}
         cargando={enCurso}
+        deshabilitado={faltaObservacion}
         error={errorDecision}
         onCerrar={cerrarDecision}
         onEnviar={confirmar}
@@ -461,14 +539,10 @@ export const Expedientes = () => {
       >
         <CampoArea
           etiqueta="Observación"
-          requerido={devolviendo}
+          requerido={decision !== null && exigeObservacion(decision.valor)}
           rows={4}
           value={observacion}
-          ayuda={
-            devolviendo
-              ? "Indica con precisión qué documento falta o qué no corresponde."
-              : "Opcional. Útil para dejar constancia de lo que se comprobó."
-          }
+          ayuda={decision === null ? undefined : AYUDA_DECISION[decision.valor]}
           onChange={(evento) => setObservacion(evento.target.value)}
         />
       </DialogoFormulario>

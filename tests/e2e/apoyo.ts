@@ -11,6 +11,7 @@ export const iniciarSesionComo = async (page: Page, perfil: string) => {
     INSTITUCIONAL: "Paula Andrea Rincón",
     ADMIN_INSTITUCIONAL: "Andrés Beltrán",
     ANALISTA_DOCUMENTAL: "Lida Almeciga",
+    ANALISTA_SEGUNDO_CONTROL: "Claudia Liliana Pardo",
     SUPER_ADMIN: "Diego Fernando Marín",
   };
   const etiqueta = nombres[perfil];
@@ -18,6 +19,12 @@ export const iniciarSesionComo = async (page: Page, perfil: string) => {
   await page.getByRole("button", { name: new RegExp(etiqueta) }).click();
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/app/);
+};
+
+export const cerrarSesion = async (page: Page) => {
+  await abrirMenuSiEsMovil(page);
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page).toHaveURL(/\/acceso/);
 };
 
 export const diligenciarOfertaValida = async (page: Page) => {

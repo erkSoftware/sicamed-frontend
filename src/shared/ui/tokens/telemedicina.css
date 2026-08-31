@@ -123,6 +123,25 @@
   fill: var(--telemed-brillo);
 }
 
+.telemed__ciudad {
+  fill: #f4fff8;
+  font-family: var(--fuente-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  paint-order: stroke fill;
+  stroke: rgba(3, 25, 14, 0.78);
+  stroke-width: 3.4;
+  stroke-linejoin: round;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 420ms var(--telemed-curva);
+}
+
+.telemed__nodos[data-rotulos="si"] .telemed__ciudad {
+  opacity: 1;
+}
+
 .telemed__hito {
   fill: none;
   stroke: var(--telemed-brillo);

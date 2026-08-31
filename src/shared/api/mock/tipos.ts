@@ -269,6 +269,7 @@ export type EstadoDocumento =
   | "EN_VERIFICACION"
   | "APROBADO"
   | "DEVUELTO"
+  | "RECHAZADO"
   | "VENCIDO";
 
 export type DocumentoExpediente = {
@@ -288,7 +289,8 @@ export type EstadoExpediente =
   | "RADICADO"
   | "EN_VERIFICACION"
   | "APROBADO"
-  | "DEVUELTO";
+  | "DEVUELTO"
+  | "RECHAZADO";
 
 export type Expediente = {
   id: string;
@@ -401,7 +403,7 @@ export type CuentaUsuario = {
   autenticacion: "OIDC" | "CLOUDFLARE" | "DEMOSTRACION";
 };
 
-export type EstadoSolicitud = "RECIBIDA" | "EXPEDIENTE_ABIERTO" | "DESCARTADA";
+export type EstadoSolicitud = "RECIBIDA" | "EN_TRAMITE" | "APROBADA" | "RECHAZADA";
 
 export type DocumentoAdjunto = {
   tipo: string;
@@ -421,10 +423,28 @@ export type SolicitudRegistro = {
   estado: EstadoSolicitud;
   recibida: string;
   expedienteId: string | null;
+  motivoRechazo: string | null;
   documentos: readonly DocumentoAdjunto[];
   huella: string;
   correoVerificado?: boolean;
   tokenVerificacion?: string;
+};
+
+export type SoporteDeclarado = {
+  tipo: string;
+  nombre: string;
+  soporteId: string;
+};
+
+export type SolicitudDetallada = SolicitudRegistro & {
+  organizacionId: string | null;
+  declarados: readonly SoporteDeclarado[];
+};
+
+export type ArchivoPublicado = {
+  url: string;
+  mime: string;
+  bytes: number;
 };
 
 export type SoporteSimulado = {
@@ -436,12 +456,15 @@ export type SoporteSimulado = {
   estado: "PENDIENTE" | "DISPONIBLE";
 };
 
-export type VeredictoPaso = "PENDIENTE" | "VERIFICADO" | "DEVUELTO";
+export type VeredictoPaso = "PENDIENTE" | "VERIFICADO" | "DEVUELTO" | "RECHAZADO";
 
 export type PasoVerificacion = {
   id: string;
+  reglaId: string;
+  etiqueta: string;
   orden: number;
   rol: Extract<RolPlataforma, "ANALISTA_DOCUMENTAL" | "ADMIN_INSTITUCIONAL">;
+  exigeDobleControl: boolean;
   veredicto: VeredictoPaso;
   revisor: string | null;
   resuelto: string | null;
@@ -532,4 +555,65 @@ export type LecturaAmbiente = {
   luz: number;
   estado: EstadoLectura;
   registro: string;
+};
+
+export type LimitesAsistente = {
+  duracionMaximaSegundos: number;
+  avisoPrevioSegundos: number;
+  limiteDiarioSegundos: number;
+  intentosMaximos: number;
+  ventanaIntentosHoras: number;
+  bloqueoAutomaticoDias: number;
+};
+
+export type ClaveAsistente = {
+  configurada: boolean;
+  enmascarada: string;
+};
+
+export type ConfiguracionAsistente = {
+  nombre: string;
+  saludo: string;
+  fraseFueraDeAlcance: string;
+  instruccionesExtra: string;
+  promptSistema: string;
+  mensajeAviso: string;
+  habilitado: boolean;
+  proveedor: string;
+  modelo: string;
+  modeloEfectivo: string;
+  modelosDisponibles: readonly string[];
+  voz: string;
+  vozEfectiva: string;
+  apiKey: ClaveAsistente;
+  limites: LimitesAsistente;
+  deFabrica: boolean;
+  actualizadoEn: string | null;
+  actualizadoPor: string;
+};
+
+export type TipoBloqueoAsistente = "temporary" | "permanent";
+
+export type BloqueoAsistente = {
+  id: string;
+  usuario: string;
+  motivo: string;
+  tipo: TipoBloqueoAsistente;
+  iniciaEn: string;
+  expiraEn: string | null;
+  activo: boolean;
+  creadoPor: string;
+  creadoEn: string;
+  desbloqueadoEn: string | null;
+  desbloqueadoPor: string;
+};
+
+export type EstadoLlamadasAsistente = {
+  puedeLlamar: boolean;
+  consumidoSegundos: number;
+  llamadasHoy: number;
+  limiteDiarioSegundos: number;
+  restanteDiarioSegundos: number;
+  duracionMaximaSegundos: number;
+  bloqueo: BloqueoAsistente | null;
 };

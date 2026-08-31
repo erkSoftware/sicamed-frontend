@@ -33,6 +33,7 @@ export type NombreIcono =
   | "reproducir"
   | "reloj"
   | "usuario"
+  | "asistente"
   | "mundo"
   | "candado"
   | "medico"
@@ -84,6 +85,7 @@ const TRAZOS: Record<NombreIcono, string> = {
   reproducir: "M7 4l13 8-13 8z",
   reloj: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
   usuario: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 21a7 7 0 0 1 14 0",
+  asistente: "M4 10.6v2.8M8 7.6v8.8M12 4.4v15.2M16 7.6v8.8M20 10.6v2.8",
   mundo: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18",
   candado: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4M12 15v3",
   medico: "M9 3v6a3 3 0 0 0 6 0V3M6 3h3M15 3h3M12 12v3a4 4 0 0 0 8 0v-2M20 10a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z",

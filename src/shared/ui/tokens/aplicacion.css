@@ -1170,7 +1170,8 @@
 
 .heroe-panel__acciones {
   margin-top: var(--e5);
-  gap: 0;
+  column-gap: var(--e5);
+  row-gap: var(--e3);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding-top: var(--e4);
   flex-wrap: wrap;
@@ -1178,8 +1179,8 @@
 
 .heroe-panel__boton {
   height: auto;
-  padding: 0 var(--e4) 0 0;
-  margin-right: var(--e4);
+  padding: 0 0 3px;
+  margin-right: 0;
   border: 0;
   border-radius: 0;
   background: none;
@@ -3121,5 +3122,261 @@ a.genealogia__nombre:hover {
   .pasos__decision,
   .discrepancias__decision {
     align-items: flex-start;
+  }
+}
+
+.vista-previa {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--texto-tenue);
+  font-size: var(--texto-sm);
+  line-height: 1.55;
+}
+
+.enlace-fila--boton {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.enlace-fila--boton:focus-visible {
+  outline: 2px solid var(--marca);
+  outline-offset: 3px;
+}
+
+.ficha__datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--e4);
+  margin: 0 0 var(--e5);
+}
+
+.ficha__dato dt {
+  font-size: var(--texto-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+  margin-bottom: var(--e1);
+}
+
+.ficha__dato dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e2);
+}
+
+.ficha__titulo {
+  margin: var(--e5) 0 var(--e3);
+  font-size: var(--texto-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.ficha__meta {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+}
+
+.ficha__soportes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+}
+
+.ficha__soporte {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e3) var(--e4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-md);
+  background: var(--superficie-alt);
+}
+
+.ficha__soporte > svg {
+  flex: none;
+  color: var(--texto-tenue);
+}
+
+.ficha__soporte-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ficha__soporte-texto .mono {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ficha__soporte-acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  flex: none;
+}
+
+.dialogo--pantalla {
+  width: min(1180px, calc(100vw - 2rem));
+  height: min(880px, calc(100dvh - 3rem));
+  max-height: calc(100dvh - 3rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.dialogo--pantalla .dialogo__cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  background: var(--piedra-100);
+  display: flex;
+}
+
+.visor__lienzo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: var(--e4);
+}
+
+.visor__zoom {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: zoom-in;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.visor__zoom img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 16rem);
+  object-fit: contain;
+  background: var(--blanco);
+  box-shadow: var(--sombra-md);
+}
+
+.visor__lienzo--ampliada {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.visor__lienzo--ampliada .visor__zoom {
+  cursor: zoom-out;
+  max-width: none;
+  max-height: none;
+}
+
+.visor__lienzo--ampliada .visor__zoom img {
+  max-width: none;
+  max-height: none;
+  width: auto;
+}
+
+.visor__pdf {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: none;
+  background: var(--piedra-100);
+}
+
+.visor__aviso {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e3);
+  padding: var(--e7) var(--e5);
+  text-align: center;
+  color: var(--texto-tenue);
+}
+
+.visor__motivo {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--texto);
+  max-width: 46ch;
+}
+
+.visor__pista {
+  margin: 0;
+  font-size: var(--texto-sm);
+  max-width: 52ch;
+}
+
+.visor__pie {
+  display: flex;
+  align-items: center;
+  gap: var(--e4);
+  width: 100%;
+}
+
+.visor__ficha {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.visor__ficha .mono {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visor__meta {
+  font-size: var(--texto-xs);
+  color: var(--texto-tenue);
+  white-space: nowrap;
+}
+
+.visor__pasos {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  flex: none;
+}
+
+@media (max-width: 720px) {
+  .ficha__soporte {
+    flex-wrap: wrap;
+  }
+
+  .ficha__soporte-acciones {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .visor__pie {
+    flex-wrap: wrap;
+    justify-content: space-between;
   }
 }

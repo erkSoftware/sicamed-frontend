@@ -30,12 +30,16 @@ import {
   TRANSFORMACIONES,
   discrepanciasSemilla,
 } from "./datosGobierno";
+import { CONFIGURACION_ASISTENTE_DE_FABRICA } from "./configuracionAsistente";
+import { BLOQUEOS_ASISTENTE } from "./llamadasAsistente";
 import type {
   ActaDestruccion,
   Agroinsumo,
   Atestacion,
   Beneficio,
+  BloqueoAsistente,
   CierreExterno,
+  ConfiguracionAsistente,
   Conexion,
   CuentaUsuario,
   CupoMicc,
@@ -91,6 +95,9 @@ const semilla = {
   soportes: [] as SoporteSimulado[],
   discrepancias: [...discrepanciasSemilla(CONEXIONES)] as Discrepancia[],
   politicaVersion: "POL-2026.1",
+  configuracionAsistente: { ...CONFIGURACION_ASISTENTE_DE_FABRICA } as ConfiguracionAsistente,
+  bloqueosAsistente: [...BLOQUEOS_ASISTENTE] as BloqueoAsistente[],
+  llamadasAsistente: [] as { llamadaId: string; usuario: string; segundos: number; abierta: boolean }[],
 };
 
 type Almacen = typeof semilla;
@@ -107,12 +114,25 @@ const vacia = (): Almacen => {
 const persistible = (): boolean =>
   modoMock && typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
 
+const esRegistro = (valor: unknown): valor is Record<string, unknown> =>
+  typeof valor === "object" && valor !== null && !Array.isArray(valor);
+
+export const fusionarAlmacen = <T>(base: T, guardado: unknown): T => {
+  if (!esRegistro(guardado)) return esRegistro(base) ? base : (guardado as T);
+  if (!esRegistro(base)) return guardado as T;
+  const salida: Record<string, unknown> = { ...base };
+  for (const clave of Object.keys(base)) {
+    if (clave in guardado) salida[clave] = fusionarAlmacen(base[clave], guardado[clave]);
+  }
+  return salida as T;
+};
+
 const restaurar = (clave: string, base: Almacen): Almacen => {
   if (!persistible()) return base;
   try {
     const guardado = window.sessionStorage.getItem(clave);
     if (!guardado) return base;
-    return { ...base, ...(JSON.parse(guardado) as Partial<Almacen>) };
+    return fusionarAlmacen(base, JSON.parse(guardado));
   } catch {
     return base;
   }

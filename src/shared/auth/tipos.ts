@@ -38,6 +38,8 @@ export const PERMISOS = [
   "admin:usuario:gestionar",
   "institucional:consultar",
   "asistente:sesion:abrir",
+  "asistente:configuracion:gestionar",
+  "asistente:llamadas:gestionar",
   "clinico:atencion:leer",
   "clinico:agenda:gestionar",
   "clinico:teleconsulta:atender",

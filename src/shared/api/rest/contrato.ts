@@ -219,6 +219,7 @@ export type SolicitudApi = {
 export type DocumentoDeclaradoApi = {
   nombre: string;
   tipo: string;
+  soporteId?: string | null;
 };
 
 export type SolicitudDetalleApi = SolicitudApi & {
@@ -750,4 +751,86 @@ export type RadicarSolicitudApi = {
   telefono: string;
   clave: string;
   documentos: readonly { tipo: string; soporteId: string }[];
+};
+
+export type LimitesAsistenteApi = {
+  duracionMaximaSegundos?: number | null;
+  avisoPrevioSegundos?: number | null;
+  limiteDiarioSegundos?: number | null;
+  intentosMaximos?: number | null;
+  ventanaIntentosHoras?: number | null;
+  bloqueoAutomaticoDias?: number | null;
+};
+
+export type ClaveAsistenteApi = {
+  configurada?: boolean | null;
+  enmascarada?: string | null;
+};
+
+export type ConfiguracionAsistenteApi = {
+  nombre: string;
+  saludo: string;
+  fraseFueraDeAlcance: string;
+  instruccionesExtra: string;
+  promptSistema?: string | null;
+  mensajeAviso?: string | null;
+  habilitado?: boolean | null;
+  proveedor?: string | null;
+  modelo?: string | null;
+  modeloEfectivo?: string | null;
+  modelosDisponibles?: readonly string[] | null;
+  voz: string;
+  vozEfectiva: string;
+  apiKey?: ClaveAsistenteApi | null;
+  limites?: LimitesAsistenteApi | null;
+  deFabrica: boolean;
+  actualizadoEn?: string | null;
+  actualizadoPor?: string | null;
+};
+
+export type GuardarConfiguracionAsistenteApi = {
+  nombre: string;
+  saludo: string;
+  fraseFueraDeAlcance: string;
+  instruccionesExtra: string;
+  promptSistema: string;
+  mensajeAviso: string;
+  habilitado: boolean;
+  proveedor: string;
+  modelo: string;
+  voz: string;
+  borrarApiKey: boolean;
+  limites: Required<{ [Clave in keyof LimitesAsistenteApi]: number }>;
+  apiKey?: string;
+};
+
+export type BloqueoAsistenteApi = {
+  id: string;
+  usuario: string;
+  motivo: string;
+  tipo: string;
+  iniciaEn: string;
+  expiraEn?: string | null;
+  activo: boolean;
+  creadoPor?: string | null;
+  creadoEn: string;
+  desbloqueadoEn?: string | null;
+  desbloqueadoPor?: string | null;
+};
+
+export type CrearBloqueoAsistenteApi = {
+  usuario: string;
+  motivo: string;
+  tipo: string;
+  dias?: number;
+};
+
+export type EstadoLlamadasAsistenteApi = {
+  puedeLlamar: boolean;
+  consumidoSegundos?: number | null;
+  llamadasHoy?: number | null;
+  limiteDiarioSegundos?: number | null;
+  restanteDiarioSegundos?: number | null;
+  duracionMaximaSegundos?: number | null;
+  bloqueo?: BloqueoAsistenteApi | null;
 };

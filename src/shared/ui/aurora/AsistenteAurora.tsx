@@ -1,12 +1,22 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Aurora } from "./Aurora";
 import { EsferaAurora } from "./EsferaAurora";
 import { HaloVoz } from "./HaloVoz";
+import { GuiaDeSeccion } from "./GuiaDeSeccion";
+import { PresentacionAurora, marcarPresentada, yaSePresento } from "./PresentacionAurora";
 import { useAurora } from "./almacen";
 import type { EstadoVoz } from "./almacen";
-import { iniciarConversacion, interrumpir, nivelDeVoz, terminarConversacion } from "./voz/motor";
+import {
+  despedirConversacion,
+  iniciarConversacion,
+  interrumpir,
+  nivelDeVoz,
+  terminarConversacion,
+} from "./voz/motor";
+import { minutos, reloj } from "../../api/mock/configuracionAsistente";
 import { usePermiso } from "../../rbac/usePermiso";
+import { useAuth } from "../../auth/useAuth";
 import { useConsultaMedios } from "../movimiento/useConsultaMedios";
 import { Boton } from "../primitivos/Boton";
 import { Icono } from "../primitivos/Icono";
@@ -28,15 +38,23 @@ export const AsistenteAurora = () => {
   const vozDemostrativa = useAurora((estado) => estado.vozDemostrativa);
   const transcripcion = useAurora((estado) => estado.transcripcion);
   const falloVoz = useAurora((estado) => estado.falloVoz);
+  const segundosRestantes = useAurora((estado) => estado.segundosRestantes);
+  const cupoRestante = useAurora((estado) => estado.cupoRestante);
   const mensajes = useAurora((estado) => estado.mensajes);
   const alternarVisible = useAurora((estado) => estado.alternarVisible);
+  const mostrar = useAurora((estado) => estado.mostrar);
+  const presentando = useAurora((estado) => estado.presentando);
+  const presentar = useAurora((estado) => estado.presentar);
+  const cerrarPresentacion = useAurora((estado) => estado.cerrarPresentacion);
   const ocultar = useAurora((estado) => estado.ocultar);
+  const [cierre, setCierre] = useState<string | null>(null);
 
   const soporteAudio = useRef<HTMLDivElement>(null);
   const audio = useRef<HTMLAudioElement | null>(null);
   const navegar = useNavigate();
   const ubicacion = useLocation();
   const puedeHablar = usePermiso("asistente:sesion:abrir");
+  const { permisos } = useAuth();
   const compacta = useConsultaMedios("(max-width: 640px)");
 
   const activa = voz !== "inactiva" && voz !== "fallo";
@@ -47,14 +65,15 @@ export const AsistenteAurora = () => {
   const ultimaFrase = [...mensajes].reverse().find((mensaje) => mensaje.autor === "aurora");
   const subtitulo = transcripcion.trim() || (activa ? (ultimaFrase?.texto ?? "") : "");
 
-  const entorno = useRef({ navegar, ruta: ubicacion.pathname });
-  entorno.current = { navegar, ruta: ubicacion.pathname };
+  const entorno = useRef({ navegar, ruta: ubicacion.pathname, permisos });
+  entorno.current = { navegar, ruta: ubicacion.pathname, permisos };
 
   const hablar = useCallback(() => {
     if (!audio.current) return;
     void iniciarConversacion({
       audio: audio.current,
       navegar: (ruta) => entorno.current.navegar(ruta),
+      permisos: entorno.current.permisos,
       contexto: { ruta: entorno.current.ruta },
     });
   }, []);
@@ -62,6 +81,21 @@ export const AsistenteAurora = () => {
   const colgar = useCallback(() => {
     terminarConversacion();
   }, []);
+
+  const vozPrevia = useRef(voz);
+
+  useEffect(() => {
+    const previa = vozPrevia.current;
+    vozPrevia.current = voz;
+    if (!compacta) return;
+    if (previa !== "escuchando" && previa !== "hablando") return;
+    if (voz !== "inactiva" && voz !== "fallo") return;
+    const cerrada = [...useAurora.getState().mensajes]
+      .reverse()
+      .find((mensaje) => mensaje.autor === "aurora");
+    setCierre(cerrada?.texto ?? null);
+    ocultar();
+  }, [voz, compacta, ocultar]);
 
   useEffect(() => {
     if (!visible) return undefined;
@@ -75,10 +109,10 @@ export const AsistenteAurora = () => {
   }, [visible, ocultar]);
 
   useEffect(() => {
-    const alSalir = () => terminarConversacion();
-    window.addEventListener("beforeunload", alSalir);
+    const alSalir = () => despedirConversacion();
+    window.addEventListener("pagehide", alSalir);
     return () => {
-      window.removeEventListener("beforeunload", alSalir);
+      window.removeEventListener("pagehide", alSalir);
       terminarConversacion();
     };
   }, []);
@@ -156,6 +190,18 @@ export const AsistenteAurora = () => {
 
               {subtitulo ? <p className="aurora-conversacion__subtitulo">{subtitulo}</p> : null}
 
+              {activa && segundosRestantes !== null ? (
+                <p className="aurora-conversacion__contador">
+                  <Icono nombre="reloj" tamano={14} />
+                  <span>
+                    Queda {reloj(segundosRestantes)} de esta llamada
+                    {cupoRestante !== null && cupoRestante > 0
+                      ? ` · ${minutos(cupoRestante)} de cupo hoy`
+                      : ""}
+                  </span>
+                </p>
+              ) : null}
+
               {falloVoz ? (
                 <p className="aurora-conversacion__fallo" role="alert">
                   <strong>{falloVoz.titulo}.</strong> {falloVoz.detalle}
@@ -188,18 +234,52 @@ export const AsistenteAurora = () => {
         </section>
       ) : null}
 
+      <GuiaDeSeccion
+        activa={compacta && !visible}
+        permisos={permisos}
+        puedeHablar={puedeHablar && vozDisponible}
+        cierre={cierre}
+        onHablar={() => {
+          setCierre(null);
+          if (!yaSePresento()) {
+            marcarPresentada();
+            presentar();
+            return;
+          }
+          mostrar();
+        }}
+        onCierreVisto={() => setCierre(null)}
+      />
+
+      <PresentacionAurora
+        abierta={presentando}
+        onCerrar={() => {
+          cerrarPresentacion();
+          mostrar();
+        }}
+      />
+
       <button
         type="button"
         className="aurora-lanzador"
         onClick={() => {
-          if (visible) terminarConversacion();
+          if (visible) {
+            terminarConversacion();
+            alternarVisible();
+            return;
+          }
+          if (!yaSePresento()) {
+            marcarPresentada();
+            presentar();
+            return;
+          }
           alternarVisible();
         }}
         aria-expanded={visible}
         aria-controls="aurora-panel"
         aria-label={visible ? "Cerrar a Aurora" : "Abrir a Aurora, la guía del sistema"}
       >
-        <Icono nombre={visible ? "cerrar" : "usuario"} tamano={18} />
+        <Icono nombre={visible ? "cerrar" : "asistente"} tamano={18} />
         <span aria-hidden="true">Aurora</span>
       </button>
     </div>

@@ -11,6 +11,7 @@ type Props = {
   descripcion?: string;
   etiquetaEnviar?: string;
   cargando?: boolean;
+  deshabilitado?: boolean;
   error?: unknown;
   ancho?: boolean;
   onCerrar: () => void;
@@ -25,6 +26,7 @@ export const DialogoFormulario = ({
   descripcion,
   etiquetaEnviar = "Guardar",
   cargando,
+  deshabilitado,
   error,
   ancho,
   onCerrar,
@@ -57,7 +59,12 @@ export const DialogoFormulario = ({
           <Boton variante="secundario" onClick={onCerrar}>
             Cancelar
           </Boton>
-          <Boton form="formulario-dialogo" type="submit" cargando={cargando}>
+          <Boton
+            form="formulario-dialogo"
+            type="submit"
+            cargando={cargando}
+            disabled={deshabilitado}
+          >
             {etiquetaEnviar}
           </Boton>
         </>

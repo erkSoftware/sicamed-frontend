@@ -72,6 +72,8 @@ export const PERMISOS_PLATAFORMA: readonly Permiso[] = [
   "ambiente:lectura:leer",
   "admin:politica:gestionar",
   "admin:usuario:gestionar",
+  "asistente:configuracion:gestionar",
+  "asistente:llamadas:gestionar",
   "institucional:consultar",
 ];
 
@@ -95,10 +97,16 @@ export const PERMISOS_INSTITUCIONAL: readonly Permiso[] = [
   "ambiente:lectura:leer",
   "institucional:consultar",
   "ruedas:convocatoria:leer",
+  "asistente:llamadas:gestionar",
+];
+
+const AJENOS_A_LA_OBSERVACION: readonly Permiso[] = [
+  "cumplimiento:expediente:verificar",
+  "asistente:llamadas:gestionar",
 ];
 
 export const PERMISOS_OBSERVACION: readonly Permiso[] = PERMISOS_INSTITUCIONAL.filter(
-  (permiso) => permiso !== "cumplimiento:expediente:verificar",
+  (permiso) => !AJENOS_A_LA_OBSERVACION.includes(permiso),
 );
 
 export const PERMISOS_CUMPLIMIENTO: readonly Permiso[] = [

@@ -21,10 +21,18 @@ const cargarComercial = async (modoApi: string, modoAuth: string) => {
 
 const responder = () =>
   vi.spyOn(globalThis, "fetch").mockResolvedValue(
-    new Response(JSON.stringify({ solicitudId: "sol-1", radicado: "R-1", estado: "RADICADA" }), {
-      status: 201,
-      headers: { "Content-Type": "application/json" },
-    }),
+    new Response(
+      JSON.stringify({
+        solicitudId: "sol-1",
+        radicado: "R-1",
+        estado: "RADICADA",
+        datos: [],
+        pagina: 1,
+        porPagina: 10,
+        total: 0,
+      }),
+      { status: 201, headers: { "Content-Type": "application/json" } },
+    ),
   );
 
 afterEach(() => {
@@ -43,10 +51,40 @@ describe("registro en modo hibrido", () => {
     );
   });
 
-  it("deja los listados del panel en el simulador", async () => {
+  it("lee la bandeja de solicitudes de donde salió la radicación", async () => {
     const comercial = await cargarComercial("mock", "servidor");
     const peticion = responder();
     await comercial.solicitudes({});
+    expect(peticion).toHaveBeenCalledTimes(1);
+    expect(new URL(String(peticion.mock.calls[0]?.[0])).pathname).toBe(
+      "/api/v1/comercial/actores/solicitudes",
+    );
+  });
+
+  it("abre el expediente contra el mismo servidor que guarda la solicitud", async () => {
+    const comercial = await cargarComercial("mock", "servidor");
+    const peticion = responder();
+    await comercial
+      .abrirExpediente({
+        solicitudId: "sol-1",
+        autor: {
+          usuarioId: "USR-1",
+          nombre: "Ana Ruiz",
+          organizacionId: "org-1",
+          rol: "ANALISTA_DOCUMENTAL",
+        },
+      })
+      .catch(() => undefined);
+    expect(new URL(String(peticion.mock.calls[0]?.[0])).pathname).toBe(
+      "/api/v1/comercial/cumplimiento/expedientes",
+    );
+  });
+
+  it("deja en el simulador los listados que el registro no produce", async () => {
+    const comercial = await cargarComercial("mock", "servidor");
+    const peticion = responder();
+    await comercial.cultivos({});
+    await comercial.lotes({});
     expect(peticion).not.toHaveBeenCalled();
   });
 

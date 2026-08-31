@@ -146,12 +146,16 @@ export const Registro = () => {
                 <span className="registro-requisitos__marca" aria-hidden="true">
                   <Icono nombre="documento" tamano={13} />
                 </span>
-                {requisito.etiqueta}
-                {requisito.obligatorio ? null : (
-                  <span className="registro-requisitos__opcional">opcional</span>
-                )}
-                {seContrastaContraRues(requisito.tipo) ? (
-                  <span className="registro-requisitos__opcional">contrastado con el RUES</span>
+                <span className="registro-requisitos__etiqueta">{requisito.etiqueta}</span>
+                {!requisito.obligatorio || seContrastaContraRues(requisito.tipo) ? (
+                  <span className="registro-requisitos__sellos">
+                    {requisito.obligatorio ? null : (
+                      <span className="registro-requisitos__opcional">opcional</span>
+                    )}
+                    {seContrastaContraRues(requisito.tipo) ? (
+                      <span className="registro-requisitos__opcional">contrastado con el RUES</span>
+                    ) : null}
+                  </span>
                 ) : null}
               </li>
             ))}
