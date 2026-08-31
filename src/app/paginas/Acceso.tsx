@@ -6,6 +6,7 @@ import { useAuth } from "../../shared/auth/useAuth";
 import { esModoDemostracion, pideCredenciales } from "../../shared/auth/proveedor";
 import { useComprobante } from "../../shared/seguridad/useComprobante";
 import { ComprobacionSeguridad } from "../../shared/ui/patrones/ComprobacionSeguridad";
+import { PistaDeslizar } from "../../shared/ui/patrones/PistaDeslizar";
 import type { Credenciales } from "../../shared/auth/tipos";
 import { PERFILES_DEMO } from "../../shared/auth/perfiles";
 import { EscenaCadena } from "../../shared/ui/graficos/escena/EscenaCadena";
@@ -302,7 +303,7 @@ export const Acceso = () => {
         </div>
       </div>
 
-      <aside className="acceso__escenario" data-modo={modo}>
+      <aside id="acceso-escenario" className="acceso__escenario" data-modo={modo}>
         {modo === "telemedicina" ? (
           <PeliculaTelemedicina />
         ) : (
@@ -325,6 +326,8 @@ export const Acceso = () => {
           </>
         )}
       </aside>
+
+      <PistaDeslizar destino="#acceso-escenario" />
     </div>
   );
 };

@@ -13,12 +13,16 @@ type Props = {
 
 export const Dialogo = ({ abierto, titulo, onCerrar, children, pie, ancho }: Props) => {
   const referencia = useRef<HTMLDialogElement>(null);
+  const encabezado = useRef<HTMLHeadingElement>(null);
   const rotulo = useId();
 
   useEffect(() => {
     const elemento = referencia.current;
     if (!elemento) return;
-    if (abierto && !elemento.open) elemento.showModal();
+    if (abierto && !elemento.open) {
+      elemento.showModal();
+      encabezado.current?.focus();
+    }
     if (!abierto && elemento.open) elemento.close();
   }, [abierto]);
 
@@ -36,10 +40,17 @@ export const Dialogo = ({ abierto, titulo, onCerrar, children, pie, ancho }: Pro
   return (
     <dialog ref={referencia} className={ancho ? "dialogo dialogo--ancho" : "dialogo"} aria-labelledby={rotulo}>
       <div className="dialogo__encabezado">
-        <h2 className="tarjeta__titulo" id={rotulo}>
+        <h2 className="tarjeta__titulo dialogo__rotulo" id={rotulo} ref={encabezado} tabIndex={-1}>
           {titulo}
         </h2>
-        <Boton variante="fantasma" tamano="sm" icono="cerrar" aria-label="Cerrar" onClick={onCerrar} />
+        <Boton
+          variante="fantasma"
+          tamano="sm"
+          icono="cerrar"
+          className="dialogo__cerrar"
+          aria-label={`Cerrar ${titulo}`}
+          onClick={onCerrar}
+        />
       </div>
       <div className="dialogo__cuerpo">{children}</div>
       {pie ? <div className="dialogo__pie">{pie}</div> : null}

@@ -452,3 +452,142 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+@media (max-width: 900px) {
+  .marco[data-menu="si"] .aurora-asistente {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .aurora-asistente {
+    right: var(--e3);
+    bottom: calc(var(--e3) + env(safe-area-inset-bottom));
+    gap: var(--e2);
+    max-width: calc(100vw - var(--e5));
+  }
+
+  .aurora-lanzador {
+    position: relative;
+    height: 36px;
+    width: 36px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .aurora-lanzador span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .aurora-lanzador::before {
+    display: none;
+  }
+
+  .aurora-asistente[data-abierto="si"] .aurora-lanzador {
+    border-color: var(--marca);
+  }
+
+  .aurora-panel {
+    width: min(280px, calc(100vw - var(--e5)));
+  }
+
+  .aurora-figura {
+    width: auto;
+    height: auto;
+  }
+
+  .aurora-figura__cerrar {
+    opacity: 1;
+  }
+}
+
+.aurora-figura--esfera {
+  display: grid;
+  place-items: center;
+  width: auto;
+  height: auto;
+  padding: 0;
+}
+
+.aurora-esfera {
+  --pulso: 0;
+  position: relative;
+  display: block;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  overflow: hidden;
+  transform: scale(calc(1 + var(--pulso) * 0.18));
+  box-shadow:
+    0 0 calc(14px + var(--pulso) * 26px) rgba(53, 185, 106, calc(0.32 + var(--pulso) * 0.45)),
+    inset 0 0 12px rgba(6, 48, 30, 0.35);
+}
+
+.aurora-esfera::before {
+  content: "";
+  position: absolute;
+  inset: -55%;
+  background:
+    radial-gradient(circle at 30% 30%, var(--lima-400) 0%, transparent 52%),
+    radial-gradient(circle at 74% 38%, var(--verde-300) 0%, transparent 50%),
+    radial-gradient(circle at 52% 78%, var(--verde-600) 0%, transparent 56%),
+    var(--verde-500);
+  filter: blur(10px) saturate(1.2);
+  animation:
+    aurora-esfera-giro 9s linear infinite,
+    aurora-esfera-tinte 14s ease-in-out infinite;
+}
+
+.aurora-esfera::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 33% 26%, rgba(255, 255, 255, 0.66), transparent 46%),
+    radial-gradient(circle at 72% 80%, rgba(6, 48, 30, 0.46), transparent 54%);
+}
+
+@keyframes aurora-esfera-giro {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes aurora-esfera-tinte {
+  0%,
+  100% {
+    filter: hue-rotate(-18deg) saturate(1.05);
+  }
+  50% {
+    filter: hue-rotate(20deg) saturate(1.3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-esfera::before {
+    animation: none;
+  }
+}
+
+.aurora-asistente[data-voz="inactiva"] .aurora-esfera,
+.aurora-asistente[data-voz="conectando"] .aurora-esfera {
+  opacity: 0.72;
+}
+
+.aurora-asistente[data-voz="fallo"] .aurora-esfera::before,
+.aurora-asistente[data-voz="permiso"] .aurora-esfera::before {
+  background:
+    radial-gradient(circle at 32% 30%, var(--piedra-300, #cbd2cd) 0%, transparent 52%),
+    radial-gradient(circle at 70% 74%, var(--piedra-500, #6f7a72) 0%, transparent 56%),
+    var(--piedra-400, #9aa49d);
+  animation-play-state: paused;
+}
