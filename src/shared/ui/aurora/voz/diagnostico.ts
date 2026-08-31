@@ -55,6 +55,17 @@ export const diagnosticar = (motivo: unknown): Diagnostico => {
   if (motivo instanceof ErrorApi) {
     const { status, type, title, detail, reintentarEn } = motivo.problema;
 
+    if (status === 403 && type.endsWith("asistente-usuario-bloqueado")) {
+      return {
+        vedar: false,
+        fallo: {
+          titulo: "Tu cuenta tiene la voz bloqueada",
+          detalle: detail,
+          reintentable: false,
+        },
+      };
+    }
+
     if (status === 403) {
       return {
         vedar: true,
@@ -92,6 +103,17 @@ export const diagnosticar = (motivo: unknown): Diagnostico => {
       return {
         vedar: false,
         fallo: { titulo: "El servicio de voz no respondió", detalle: detail, reintentable: true },
+      };
+    }
+
+    if (status === 429 && type.endsWith("asistente-limite-diario")) {
+      return {
+        vedar: false,
+        fallo: {
+          titulo: "Se agotó tu tiempo de voz de hoy",
+          detalle: `${detail} Vuelve mañana: el cupo se cuenta por día y no se recupera reintentando.`,
+          reintentable: false,
+        },
       };
     }
 

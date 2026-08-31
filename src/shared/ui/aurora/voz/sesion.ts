@@ -26,6 +26,7 @@ export type Conexion = {
   pc: RTCPeerConnection;
   canal: RTCDataChannel;
   microfono: MediaStream;
+  callId: string;
 };
 
 export type OpcionesConexion = {
@@ -40,6 +41,24 @@ export const claseDeFalloDeMedios = (motivo: unknown): ClaseFallo => {
   if (nombre === "NotAllowedError" || nombre === "SecurityError") return "permiso-negado";
   if (nombre === "NotReadableError" || nombre === "AbortError") return "microfono-ocupado";
   return "sin-microfono";
+};
+
+export const urlDeCanje = (sesion: SesionAsistente): string => {
+  const modelo = (sesion.modelo ?? "").trim();
+  if (modelo === "") return sesion.urlWebrtc;
+  try {
+    const url = new URL(sesion.urlWebrtc);
+    if (!url.searchParams.has("model")) url.searchParams.set("model", modelo);
+    return url.toString();
+  } catch {
+    return sesion.urlWebrtc;
+  }
+};
+
+export const identificadorDeLlamada = (respuesta: Response): string => {
+  const cabecera = respuesta.headers.get("Location") ?? "";
+  const cola = cabecera.split("/").pop()?.trim() ?? "";
+  return /^[A-Za-z0-9_-]+$/u.test(cola) ? cola : "";
 };
 
 export const pedirMicrofono = async (): Promise<MediaStream> => {
@@ -83,7 +102,7 @@ export const conectar = async (
 
   let respuesta: Response;
   try {
-    respuesta = await fetch(sesion.urlWebrtc, {
+    respuesta = await fetch(urlDeCanje(sesion), {
       method: "POST",
       body: pc.localDescription?.sdp ?? "",
       headers: {
@@ -101,8 +120,9 @@ export const conectar = async (
     throw new FalloVoz("proveedor", respuesta.status);
   }
 
+  const callId = identificadorDeLlamada(respuesta);
   await pc.setRemoteDescription({ type: "answer", sdp: await respuesta.text() });
-  return { pc, canal, microfono: opciones.microfono };
+  return { pc, canal, microfono: opciones.microfono, callId };
 };
 
 export const responderHerramienta = (

@@ -89,19 +89,31 @@ export const PERFILES_DEMO: readonly PerfilDemo[] = [
     organizacionId: "ORG-0001",
     organizacion: "Ministerio de Comercio, Industria y Turismo",
     descripcion:
-      "Resuelve el paso final del trámite de registro y caracteriza la organización. Nunca su propio expediente.",
+      "Caracteriza la organización y observa el trámite. Los pasos del expediente son del analista de cumplimiento, no suyos.",
     permisos: PERMISOS_INSTITUCIONAL,
   },
   {
     clave: "ANALISTA_DOCUMENTAL",
     nombre: "Lida Almeciga",
-    rol: "Analista de verificación documental",
+    rol: "Analista de cumplimiento",
     rolPlataforma: "ANALISTA_DOCUMENTAL",
     correo: "lida.almeciga@sicamed.gov.co",
     organizacionId: "ORG-0000",
     organizacion: "SICAMED · Administración de la plataforma",
     descripcion:
-      "Revisa los expedientes de registro y aprueba o devuelve cada documento con su observación.",
+      "Admite solicitudes a trámite, decide cada soporte y resuelve los pasos del expediente. No puede cerrar sola un registro.",
+    permisos: PERMISOS_CUMPLIMIENTO,
+  },
+  {
+    clave: "ANALISTA_SEGUNDO_CONTROL",
+    nombre: "Claudia Liliana Pardo",
+    rol: "Analista de cumplimiento · segundo control",
+    rolPlataforma: "ANALISTA_DOCUMENTAL",
+    correo: "claudia.pardo@sicamed.gov.co",
+    organizacionId: "ORG-0000",
+    organizacion: "SICAMED · Administración de la plataforma",
+    descripcion:
+      "La segunda analista que exige el doble control: cierra el paso de licencia competente en expedientes que no tocó antes.",
     permisos: PERMISOS_CUMPLIMIENTO,
   },
   {

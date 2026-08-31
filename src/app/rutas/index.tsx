@@ -26,7 +26,12 @@ import { Cupos } from "../../features/cupos";
 import { Transformacion } from "../../features/transformacion";
 import { Destruccion } from "../../features/destruccion";
 import { Usuarios } from "../../features/usuarios";
-import { HojaAurora, LaboratorioAurora } from "../../features/aurora";
+import {
+  ConfiguracionAurora,
+  HojaAurora,
+  LaboratorioAurora,
+  LlamadasAurora,
+} from "../../features/aurora";
 
 export const Enrutador = () => (
   <Routes>
@@ -230,6 +235,22 @@ export const Enrutador = () => (
         }
       />
       <Route path="aurora" element={<LaboratorioAurora />} />
+      <Route
+        path="aurora/configuracion"
+        element={
+          <GuardaDeRuta permiso="asistente:configuracion:gestionar">
+            <ConfiguracionAurora />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="aurora/llamadas"
+        element={
+          <GuardaDeRuta permiso="asistente:llamadas:gestionar">
+            <LlamadasAurora />
+          </GuardaDeRuta>
+        }
+      />
       <Route path="aurora/hoja" element={<HojaAurora />} />
       <Route path="salud/*" element={<ZonaClinica />} />
       <Route path="sin-permiso" element={<SinPermiso />} />

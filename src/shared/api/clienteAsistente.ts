@@ -1,4 +1,4 @@
-import { solicitar } from "./transporte";
+import { construirUrl, solicitar } from "./transporte";
 
 export type ClaseHerramienta = "ui" | "consulta" | "negocio";
 
@@ -16,6 +16,11 @@ export type SesionAsistente = {
   modelo: string;
   urlWebrtc: string;
   herramientas: readonly HerramientaAsistente[];
+  llamadaId?: string;
+  duracionMaximaSegundos?: number;
+  avisoEnSegundos?: number;
+  mensajeAviso?: string;
+  restanteDiarioSegundos?: number;
   demostracion?: boolean;
 };
 
@@ -24,6 +29,8 @@ export type ContextoAsistente = {
   pantalla?: string;
 };
 
+export type MotivoCierre = "user_ended" | "completed" | "connection_error" | "system_error";
+
 export const abrirSesionAsistente = async (
   contexto: ContextoAsistente = {},
 ): Promise<SesionAsistente> =>
@@ -31,3 +38,40 @@ export const abrirSesionAsistente = async (
     metodo: "POST",
     cuerpo: { contexto },
   });
+
+export const cuerpoDeCierre = (
+  motivo: MotivoCierre,
+  callId = "",
+): { motivo: MotivoCierre; callId?: string } =>
+  /^[A-Za-z0-9_-]+$/u.test(callId) ? { motivo, callId } : { motivo };
+
+export const cerrarLlamadaAsistente = async (
+  llamadaId: string,
+  motivo: MotivoCierre,
+  callId = "",
+): Promise<void> => {
+  if (!llamadaId) return;
+  try {
+    await solicitar<void>("comercial", `/asistente/llamadas/${llamadaId}/cierre`, {
+      metodo: "POST",
+      cuerpo: cuerpoDeCierre(motivo, callId),
+    });
+  } catch {
+    return;
+  }
+};
+
+export const despedirLlamadaAsistente = (
+  llamadaId: string,
+  motivo: MotivoCierre,
+  callId = "",
+): void => {
+  if (!llamadaId) return;
+  const url = construirUrl("comercial", `/asistente/llamadas/${llamadaId}/cierre`).toString();
+  const cuerpo = JSON.stringify(cuerpoDeCierre(motivo, callId));
+  if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+    navigator.sendBeacon(url, new Blob([cuerpo], { type: "application/json" }));
+    return;
+  }
+  void cerrarLlamadaAsistente(llamadaId, motivo, callId);
+};

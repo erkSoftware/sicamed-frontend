@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build && vite build --ssr && node tools/prerender.mjs",
     "build:spa": "tsc -b && vite build",
+    "build:e2e": "tsc -b && vite build --mode e2e",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",

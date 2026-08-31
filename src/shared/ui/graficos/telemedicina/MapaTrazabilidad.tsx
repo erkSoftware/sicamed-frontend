@@ -94,7 +94,7 @@ export const MapaTrazabilidad = ({ fase, region, etiquetaRegion }: Props) => {
             })}
           </g>
 
-          <g className="telemed__nodos">
+          <g className="telemed__nodos" data-rotulos={encuadre.centrado ? undefined : "si"}>
             {NODOS.map((nodo) => (
               <g key={`${nodo.papel}-${nodo.codigo}`}>
                 <circle
@@ -113,6 +113,15 @@ export const MapaTrazabilidad = ({ fase, region, etiquetaRegion }: Props) => {
                   r={5.5}
                   style={{ animationDelay: `${nodo.demora}ms` }}
                 />
+                <text
+                  className="telemed__ciudad"
+                  x={nodo.lado === "izquierda" ? nodo.x - 13 : nodo.x + 13}
+                  y={nodo.y + 4}
+                  textAnchor={nodo.lado === "izquierda" ? "end" : "start"}
+                  aria-hidden="true"
+                >
+                  {nodo.ciudad}
+                </text>
               </g>
             ))}
             {puntos.map((punto, indice) => (

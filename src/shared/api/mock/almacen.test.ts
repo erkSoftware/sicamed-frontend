@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { almacen, fijarAlmacenPropio, reiniciarAlmacen, usaAlmacenPropio } from "./almacen";
+import {
+  almacen,
+  fijarAlmacenPropio,
+  fusionarAlmacen,
+  reiniciarAlmacen,
+  usaAlmacenPropio,
+} from "./almacen";
 import { servidorMock } from "./servidorMock";
 import { aProblema, esCuentaSinOrganizacion } from "../problemDetails";
 
@@ -77,5 +83,47 @@ describe("la cuenta propia no hereda los datos de demostracion", () => {
     fijarAlmacenPropio(true);
     const error = await servidorMock.organizacionActual().catch((fallo: unknown) => fallo);
     expect(esCuentaSinOrganizacion(aProblema(error))).toBe(true);
+  });
+});
+
+describe("una sesion guardada antes de que el contrato creciera", () => {
+  it("no borra los campos que esa version del simulador todavia no escribia", () => {
+    const base = {
+      configuracionAsistente: {
+        nombre: "AURORA",
+        promptSistema: "",
+        limites: { duracionMaximaSegundos: 300 },
+      },
+      bloqueosAsistente: [{ id: "BLQ-0001" }],
+    };
+    const fusionado = fusionarAlmacen(base, {
+      configuracionAsistente: { nombre: "GUIA" },
+    });
+
+    expect(fusionado.configuracionAsistente).toEqual({
+      nombre: "GUIA",
+      promptSistema: "",
+      limites: { duracionMaximaSegundos: 300 },
+    });
+    expect(fusionado.bloqueosAsistente).toEqual([{ id: "BLQ-0001" }]);
+  });
+
+  it("lo escrito por la persona gana, y una coleccion vaciada sigue vacia", () => {
+    const fusionado = fusionarAlmacen(
+      { cultivos: [{ id: "CUL-0001" }], politicaVersion: "POL-2026.1" },
+      { cultivos: [], politicaVersion: "POL-2026.2" },
+    );
+    expect(fusionado).toEqual({ cultivos: [], politicaVersion: "POL-2026.2" });
+  });
+
+  it("un guardado corrupto no sustituye un objeto por un escalar", () => {
+    expect(
+      fusionarAlmacen(
+        { configuracionAsistente: { nombre: "AURORA" } },
+        { configuracionAsistente: null },
+      ),
+    ).toEqual({
+      configuracionAsistente: { nombre: "AURORA" },
+    });
   });
 });

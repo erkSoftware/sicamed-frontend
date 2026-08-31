@@ -16,7 +16,7 @@ export default defineConfig({
     { name: "movil", use: { ...devices["Pixel 5"] } },
   ],
   webServer: {
-    command: "npm run build && npm run preview -- --port 4173",
+    command: "npm run build:e2e && npm run preview -- --port 4173",
     url: "http://localhost:4173",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

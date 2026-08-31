@@ -48,7 +48,7 @@ describe("rechazos del 422 en el asistente de registro", () => {
 });
 
 const BASE: Formulario = {
-  nit: "901234567-7",
+  nit: "900123456-8",
   organizacion: "Cultivos de Prueba SAS",
   tipoActor: "CULTIVADOR",
   departamento: "19",
@@ -61,9 +61,15 @@ const BASE: Formulario = {
 };
 
 describe("validaciones que evitan un 422 previsible", () => {
-  it("exige el NIT con guion y digito de verificacion", () => {
-    expect(validarPaso(0, { ...BASE, nit: "901234567" }).nit).toBeDefined();
+  it("acepta las tres formas del NIT que acepta el servidor", () => {
     expect(validarPaso(0, BASE).nit).toBeUndefined();
+    expect(validarPaso(0, { ...BASE, nit: "900123456 8" }).nit).toBeUndefined();
+    expect(validarPaso(0, { ...BASE, nit: "9001234568" }).nit).toBeUndefined();
+  });
+
+  it("rechaza el NIT con menos de siete o mas de once digitos", () => {
+    expect(validarPaso(0, { ...BASE, nit: "123456" }).nit).toBeDefined();
+    expect(validarPaso(0, { ...BASE, nit: "123456789012" }).nit).toBeDefined();
   });
 
   it("rechaza el digito de verificacion que no cuadra y dice cual era", () => {
@@ -105,5 +111,64 @@ describe("validaciones que evitan un 422 previsible", () => {
         }),
       ).paso,
     ).toBe(3);
+  });
+});
+
+describe("limites que el servidor aplica al cuerpo de la solicitud", () => {
+  it("admite una razon social de tres caracteres y corta en doscientos", () => {
+    expect(validarPaso(0, { ...BASE, organizacion: "Uva" }).organizacion).toBeUndefined();
+    expect(validarPaso(0, { ...BASE, organizacion: "Uv" }).organizacion).toBeDefined();
+    expect(validarPaso(0, { ...BASE, organizacion: "a".repeat(200) }).organizacion).toBeUndefined();
+    expect(validarPaso(0, { ...BASE, organizacion: "a".repeat(201) }).organizacion).toBeDefined();
+  });
+
+  it("admite un representante de tres caracteres y corta en ciento sesenta", () => {
+    expect(validarPaso(2, { ...BASE, representante: "Ana" }).representante).toBeUndefined();
+    expect(validarPaso(2, { ...BASE, representante: "An" }).representante).toBeDefined();
+    expect(validarPaso(2, { ...BASE, representante: "  " }).representante).toBeDefined();
+    expect(validarPaso(2, { ...BASE, representante: "a".repeat(161) }).representante).toBeDefined();
+  });
+
+  it("exige del correo el mismo patron del servidor: dominio con al menos dos letras", () => {
+    expect(validarPaso(2, { ...BASE, correo: "ana@cultivos.co" }).correo).toBeUndefined();
+    expect(validarPaso(2, { ...BASE, correo: "ana@cultivos.c" }).correo).toBeDefined();
+    expect(validarPaso(2, { ...BASE, correo: "ana@cultivos.12" }).correo).toBeDefined();
+    expect(validarPaso(2, { ...BASE, correo: "ana@@cultivos.co" }).correo).toBeDefined();
+    expect(validarPaso(2, { ...BASE, correo: "ana cultivos.co" }).correo).toBeDefined();
+    expect(validarPaso(2, { ...BASE, correo: `${"a".repeat(200)}@x.co` }).correo).toBeDefined();
+  });
+
+  it("admite del telefono solo lo que admite el patron del servidor", () => {
+    expect(validarPaso(2, { ...BASE, telefono: "+57 315 555 4433" }).telefono).toBeUndefined();
+    expect(validarPaso(2, { ...BASE, telefono: "(031) 555-4433" }).telefono).toBeUndefined();
+    expect(validarPaso(2, { ...BASE, telefono: "315.555.4433" }).telefono).toBeDefined();
+    expect(validarPaso(2, { ...BASE, telefono: "315 555 ext. 12" }).telefono).toBeDefined();
+    expect(validarPaso(2, { ...BASE, telefono: "123456" }).telefono).toBeDefined();
+  });
+
+  it("no deja elegir un departamento que no este en la DIVIPOLA", () => {
+    expect(validarPaso(2, { ...BASE, departamento: "" }).departamento).toBeDefined();
+    expect(validarPaso(2, { ...BASE, departamento: "5", municipio: "" }).departamento).toBeDefined();
+    expect(validarPaso(2, BASE).departamento).toBeUndefined();
+  });
+
+  it("corta la clave en ciento veintiocho caracteres, el maximo de la API", () => {
+    const larga = "a".repeat(129);
+    expect(validarPaso(3, { ...BASE, clave: larga, claveRepetida: larga }).clave).toBeDefined();
+    const justa = "a".repeat(128);
+    expect(validarPaso(3, { ...BASE, clave: justa, claveRepetida: justa }).clave).toBeUndefined();
+  });
+
+  it("el NIT ya registrado muestra el mensaje del servidor en su propio campo", () => {
+    const anclado = anclarEnCampos(
+      new ErrorApi({
+        type: "https://sicamed.co/problemas/nit-ya-registrado",
+        title: "El NIT ya está registrado en el sistema",
+        detail: "Ese NIT ya tiene una solicitud en trámite.",
+        status: 409,
+      }),
+    );
+    expect(anclado.errores.nit).toBe("Ese NIT ya tiene una solicitud en trámite.");
+    expect(anclado.paso).toBe(0);
   });
 });

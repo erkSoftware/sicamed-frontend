@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { AsistenteAurora } from "./AsistenteAurora";
 import { useAurora } from "./almacen";
 import { terminarConversacion } from "./voz/motor";
+import { marcarPresentada, olvidarPresentacion } from "./PresentacionAurora";
 import { ContextoAuth } from "../../auth/contexto";
 import type { ValorAuth } from "../../auth/contexto";
 import type { Permiso } from "../../auth/tipos";
@@ -63,12 +64,23 @@ const SESION = {
   modelo: "gpt-realtime",
   urlWebrtc: "https://api.openai.com/v1/realtime/calls",
   herramientas: [],
+  llamadaId: "lla_prueba",
 };
 
-const respuestaDeRed = (url: string) =>
-  url.endsWith("/asistente/sesiones")
-    ? { ok: true, status: 201, headers: new Headers(), json: async () => SESION }
-    : { ok: true, status: 200, headers: new Headers(), text: async () => "v=0 respuesta" };
+const respuestaDeRed = (url: string) => {
+  if (url.endsWith("/asistente/sesiones")) {
+    return { ok: true, status: 201, headers: new Headers(), json: async () => SESION };
+  }
+  if (url.endsWith("/cierre")) {
+    return { ok: true, status: 204, headers: new Headers() };
+  }
+  return {
+    ok: true,
+    status: 200,
+    headers: new Headers({ Location: "/v1/realtime/calls/rtc_abc-123" }),
+    text: async () => "v=0 respuesta",
+  };
+};
 
 const red = vi.fn(
   async (...argumentos: Parameters<typeof fetch>) =>
@@ -110,6 +122,7 @@ const abrirPanel = async () => {
 };
 
 beforeEach(() => {
+  marcarPresentada();
   red.mockClear();
   vi.stubGlobal("AudioContext", contextoAudioFalso);
   vi.stubGlobal("RTCPeerConnection", vi.fn(conexionFalsa));
@@ -158,12 +171,28 @@ describe("AsistenteAurora", () => {
     expect(llamadaDeRed(0).url).toContain("/api/v1/comercial/asistente/sesiones");
 
     const canje = llamadaDeRed(1);
-    expect(canje.url).toBe(SESION.urlWebrtc);
+    expect(canje.url).toBe(`${SESION.urlWebrtc}?model=${SESION.modelo}`);
     expect(canje.opciones?.body).toBe("v=0 oferta");
 
     const cabeceras = canje.opciones?.headers as Record<string, string>;
     expect(cabeceras["Content-Type"]).toBe("application/sdp");
     expect(cabeceras.Authorization).toBe(`Bearer ${SESION.clientSecret}`);
+  });
+
+  it("cierra el registro de la llamada con el identificador que devolvió el proveedor", async () => {
+    montar();
+    await abrirPanel();
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+
+    await userEvent.click(screen.getByRole("button", { name: /Terminar/ }));
+
+    await waitFor(() => expect(red.mock.calls.length).toBeGreaterThan(2));
+    const cierre = llamadaDeRed(2);
+    expect(cierre.url).toContain("/asistente/llamadas/lla_prueba/cierre");
+    expect(JSON.parse(String(cierre.opciones?.body))).toEqual({
+      motivo: "user_ended",
+      callId: "rtc_abc-123",
+    });
   });
 
   it("explica el permiso negado sin culpar al usuario y deja reintentar", async () => {
@@ -197,5 +226,39 @@ describe("AsistenteAurora", () => {
 
     await waitFor(() => expect(useAurora.getState().voz).toBe("inactiva"));
     flujo.getTracks().forEach((pistaViva) => expect(pistaViva.stop).toHaveBeenCalled());
+  });
+});
+
+describe("la primera vez que se toca a Aurora", () => {
+  it("explica lo que puede hacer antes de abrir el micrófono", async () => {
+    olvidarPresentacion();
+    montar();
+    await abrirPanel();
+
+    expect(screen.getByRole("heading", { name: "Habla con AURORA" })).toBeInTheDocument();
+    expect(navigator.mediaDevices.getUserMedia).not.toHaveBeenCalled();
+    expect(useAurora.getState().visible).toBe(false);
+  });
+
+  it("salir de la presentación deja a Aurora abierta, no la cierra", async () => {
+    olvidarPresentacion();
+    montar();
+    await abrirPanel();
+    await userEvent.click(screen.getByRole("button", { name: /Salir de la presentación/ }));
+
+    expect(screen.queryByRole("heading", { name: "Habla con AURORA" })).not.toBeInTheDocument();
+    expect(useAurora.getState().visible).toBe(true);
+  });
+
+  it("después de verla una vez, tocar a Aurora abre la conversación directamente", async () => {
+    olvidarPresentacion();
+    montar();
+    await abrirPanel();
+    await userEvent.click(screen.getByRole("button", { name: /Salir de la presentación/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Cerrar a Aurora/ }));
+
+    await abrirPanel();
+    expect(screen.queryByRole("heading", { name: "Habla con AURORA" })).not.toBeInTheDocument();
+    expect(useAurora.getState().visible).toBe(true);
   });
 });

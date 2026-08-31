@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { digitoDeVerificacion, nitConDigito, revisarNit } from "./nit";
+import { digitoDeVerificacion, nitCanonico, nitConDigito, revisarNit } from "./nit";
 
 describe("digito de verificacion de la DIAN", () => {
   it.each([
@@ -30,10 +30,24 @@ describe("revision del NIT escrito", () => {
     expect(revisarNit(" 900123456-8 ")).toBeNull();
   });
 
+  it("acepta las tres formas de escribir el mismo NIT, como hace el servidor", () => {
+    expect(revisarNit("900123456-8")).toBeNull();
+    expect(revisarNit("900123456 8")).toBeNull();
+    expect(revisarNit("9001234568")).toBeNull();
+    expect(nitCanonico("9001234568")).toBe("900123456-8");
+    expect(nitCanonico("900123456 8")).toBe("900123456-8");
+  });
+
   it("distingue la forma mal escrita del digito equivocado", () => {
-    expect(revisarNit("900123456")?.fallo).toBe("forma");
     expect(revisarNit("abc-1")?.fallo).toBe("forma");
     expect(revisarNit("900123456-7")).toEqual({ fallo: "digito", esperado: "8" });
+  });
+
+  it("exige entre siete y once digitos contando el de verificacion", () => {
+    expect(revisarNit("123456")?.fallo).toBe("forma");
+    expect(revisarNit("123456789012")?.fallo).toBe("forma");
+    expect(revisarNit("1234567")?.fallo).not.toBe("forma");
+    expect(revisarNit("12345678901")?.fallo).not.toBe("forma");
   });
 
   it("le dice al usuario cual era el digito que faltaba", () => {

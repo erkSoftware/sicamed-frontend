@@ -306,6 +306,42 @@ Los dos catálogos son la diferencia entre «la operación se puede registrar» 
 «no se puede». Si solo pueden entregar una cosa de esta tabla, que sean esos
 dos.
 
+### 2.1 No hay forma documentada de bajar el soporte que adjuntó quien radicó
+
+La ficha de una solicitud ya está construida: `GET /actores/solicitudes/{id}`
+trae `documentosDeclarados` con `tipo`, `nombre` y `soporteId`, y la pantalla los
+lista, los enseña a pantalla completa y los deja descargar. Lo que no existe es
+**la ruta que convierte ese `soporteId` en el archivo**.
+
+Lo que hay en el §9 es `GET /medios/{medio_id}` → `MedioApi`, y el detalle del
+expediente sí trae `documentos[].medioId` rotulado «para descargarlo». Pero un
+soporte de radicación no es un medio: nace en `POST /actores/soportes:preparar`,
+en otro contexto y sin sesión. **No sabemos si `soporteId` sirve como
+`medio_id`.** El portal lo intenta por ahí porque es lo único publicado, y
+cuando el servidor no contesta una URL la pantalla lo dice tal cual —«el
+servidor no publicó una dirección para este soporte», con el identificador a la
+vista— en lugar de dejar un visor roto.
+
+Lo que pedimos es cualquiera de estas dos, no las dos:
+
+| Opción | Ruta | Qué devolvería |
+|---|---|---|
+| **A** (preferida) | `GET /actores/soportes/{soporte_id}` | `SoporteApi` con `nombre`, `mime`, `bytes` y una `url` firmada de lectura, con su vencimiento |
+| **B** | Que `documentosDeclarados[]` traiga ya `url`, `mime` y `bytes` | Ahorra N peticiones por ficha, que es lo que hoy cuesta pintar tres soportes |
+
+Dos cosas del lado de ustedes que importan más que la forma:
+
+- **La URL tiene que servir dentro de un `<img>` y un `<object>`**, es decir,
+  firmada en la propia URL. Si exige la cabecera `Authorization`, el navegador
+  no la manda en esas etiquetas y no hay visor posible sin descargar el archivo
+  a memoria antes.
+- **El almacén tiene que permitir el origen del portal en `GET`.** El §1.6 ya
+  pide esto para la subida; la lectura tiene el mismo problema.
+
+Mientras tanto el simulador sirve la ficha completa —PDF, imagen y un `.docx`
+para ejercitar el caso sin vista previa—, así que la pantalla se puede revisar
+entera sin backend.
+
 ---
 
 ## 3. Campos que faltan en esquemas que ya existen

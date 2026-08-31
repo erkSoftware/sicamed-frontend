@@ -9,6 +9,9 @@ import type {
   BeneficioApi,
   CierreApi,
   ConexionApi,
+  BloqueoAsistenteApi,
+  ConfiguracionAsistenteApi,
+  EstadoLlamadasAsistenteApi,
   CuentaApi,
   CultivoApi,
   CupoApi,
@@ -28,7 +31,9 @@ import type {
   RespuestaDirectorioApi,
   ResumenReportesApi,
   RuedaApi,
+  MedioApi,
   SolicitudApi,
+  SolicitudDetalleApi,
   SoporteApi,
   VerificacionCorreoApi,
   TransformacionApi,
@@ -39,6 +44,9 @@ import {
   aBeneficio,
   aCierre,
   aConexion,
+  aBloqueoAsistente,
+  aConfiguracionAsistente,
+  aEstadoLlamadasAsistente,
   aCuenta,
   aCultivo,
   aCupo,
@@ -55,7 +63,9 @@ import {
   aPlanta,
   aPolitica,
   aRueda,
+  aArchivoPublicado,
   aSolicitud,
+  aSolicitudDetallada,
   aTransformacion,
 } from "./rest/mapeadores";
 import type { DetallePlanta, Politica, RespuestaDirectorio } from "./rest/mapeadores";
@@ -66,6 +76,8 @@ import {
   cuerpoCrearLote,
   cuerpoDeclararMovimiento,
   cuerpoDecidirDocumento,
+  cuerpoBloquearAsistente,
+  cuerpoGuardarConfiguracionAsistente,
   cuerpoGuardarPolitica,
   cuerpoInvitarCuenta,
   cuerpoLevantarActa,
@@ -299,7 +311,7 @@ export const apiComercial = {
         }).then((acta) => aActaDestruccion(acta)),
 
   decidirDocumento: (entrada: Entrada<typeof servidorMock.decidirDocumento>) =>
-    modoMock
+    modoMockRegistro
       ? servidorMock.decidirDocumento(entrada)
       : solicitar<ExpedienteApi>("comercial", "/cumplimiento/expedientes/documentos", {
           metodo: "PATCH",
@@ -307,15 +319,68 @@ export const apiComercial = {
         }).then((expediente) => aExpediente(expediente)),
 
   resolverPaso: (entrada: Entrada<typeof servidorMock.resolverPaso>) =>
-    modoMock
+    modoMockRegistro
       ? servidorMock.resolverPaso(entrada)
       : solicitar<ExpedienteApi>("comercial", "/cumplimiento/expedientes/pasos", {
           metodo: "PATCH",
           cuerpo: cuerpoResolverPaso(entrada),
         }).then((expediente) => aExpediente(expediente)),
 
-  guardarPolitica: (entrada: Entrada<typeof servidorMock.guardarPolitica>): Promise<Politica> =>
+  configuracionAsistente: () =>
     modoMock
+      ? servidorMock.configuracionAsistente()
+      : solicitar<ConfiguracionAsistenteApi>("comercial", "/asistente/configuracion").then(
+          aConfiguracionAsistente,
+        ),
+
+  guardarConfiguracionAsistente: (
+    entrada: Entrada<typeof servidorMock.guardarConfiguracionAsistente>,
+  ) =>
+    modoMock
+      ? servidorMock.guardarConfiguracionAsistente(entrada)
+      : solicitar<ConfiguracionAsistenteApi>("comercial", "/asistente/configuracion", {
+          metodo: "PUT",
+          cuerpo: cuerpoGuardarConfiguracionAsistente(entrada),
+        }).then(aConfiguracionAsistente),
+
+  probarConexionAsistente: (): Promise<void> =>
+    modoMock
+      ? servidorMock.probarConexionAsistente().then(() => undefined)
+      : solicitar<void>("comercial", "/asistente/configuracion/prueba", { metodo: "POST" }),
+
+  bloqueosAsistente: (filtro: { soloActivos?: boolean } = {}) =>
+    modoMock
+      ? servidorMock.bloqueosAsistente(filtro)
+      : solicitar<readonly BloqueoAsistenteApi[]>("comercial", "/asistente/bloqueos", {
+          parametros: { soloActivos: filtro.soloActivos ?? true },
+        }).then((bloqueos) => bloqueos.map(aBloqueoAsistente)),
+
+  bloquearAsistente: (entrada: Entrada<typeof servidorMock.bloquearAsistente>) =>
+    modoMock
+      ? servidorMock.bloquearAsistente(entrada)
+      : solicitar<BloqueoAsistenteApi>("comercial", "/asistente/bloqueos", {
+          metodo: "POST",
+          cuerpo: cuerpoBloquearAsistente(entrada),
+        }).then(aBloqueoAsistente),
+
+  desbloquearAsistente: (entrada: Entrada<typeof servidorMock.desbloquearAsistente>) =>
+    modoMock
+      ? servidorMock.desbloquearAsistente(entrada)
+      : solicitar<BloqueoAsistenteApi>(
+          "comercial",
+          `/asistente/bloqueos/${entrada.id}/desbloqueo`,
+          { metodo: "POST" },
+        ).then(aBloqueoAsistente),
+
+  estadoLlamadasAsistente: (entrada: Entrada<typeof servidorMock.estadoLlamadasAsistente>) =>
+    modoMock
+      ? servidorMock.estadoLlamadasAsistente(entrada)
+      : solicitar<EstadoLlamadasAsistenteApi>("comercial", "/asistente/llamadas/estado").then(
+          aEstadoLlamadasAsistente,
+        ),
+
+  guardarPolitica: (entrada: Entrada<typeof servidorMock.guardarPolitica>): Promise<Politica> =>
+    modoMockRegistro
       ? servidorMock.guardarPolitica(entrada)
       : solicitar<PoliticaApi>("comercial", "/cumplimiento/politica-verificacion", {
           metodo: "PUT",
@@ -323,13 +388,25 @@ export const apiComercial = {
         }).then(aPolitica),
 
   solicitudes: (filtro: FiltroListado = {}) =>
-    modoMock
+    modoMockRegistro
       ? servidorMock.solicitudes(filtro)
       : listar<SolicitudApi, ReturnType<typeof aSolicitud>>(
           "/actores/solicitudes",
           aSolicitud,
           filtro,
         ),
+
+  solicitud: (solicitudId: string) =>
+    modoMockRegistro
+      ? servidorMock.solicitud(solicitudId)
+      : solicitar<SolicitudDetalleApi>("comercial", `/actores/solicitudes/${solicitudId}`).then(
+          aSolicitudDetallada,
+        ),
+
+  archivoDeSoporte: (soporteId: string) =>
+    modoMockRegistro
+      ? servidorMock.archivoDeSoporte(soporteId)
+      : solicitar<MedioApi>("comercial", `/medios/${soporteId}`).then(aArchivoPublicado),
 
   requisitosDeActor: (tipoActor: Entrada<typeof servidorMock.requisitosDeActor>) =>
     modoMockRegistro
@@ -396,7 +473,7 @@ export const apiComercial = {
         ),
 
   abrirExpediente: (entrada: Entrada<typeof servidorMock.abrirExpediente>) =>
-    modoMock
+    modoMockRegistro
       ? servidorMock.abrirExpediente(entrada)
       : solicitar<ExpedienteApi>("comercial", "/cumplimiento/expedientes", {
           metodo: "POST",
@@ -568,7 +645,7 @@ export const apiComercial = {
         : sinContrato("listar los beneficios de la organización"),
 
   expedientes: (filtro: FiltroListado = {}) =>
-    modoMock
+    modoMockRegistro
       ? servidorMock.expedientes(filtro)
       : listar<ExpedienteApi, ReturnType<typeof aExpediente>>(
           "/cumplimiento/expedientes",
@@ -577,7 +654,7 @@ export const apiComercial = {
         ),
 
   politicaVerificacion: (): Promise<Politica> =>
-    modoMock
+    modoMockRegistro
       ? servidorMock.politicaVerificacion()
       : solicitar<PoliticaApi>("comercial", "/cumplimiento/politica-verificacion").then(aPolitica),
 

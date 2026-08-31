@@ -17,7 +17,7 @@ import {
   rechazoDeLaPreparacion,
 } from "../../shared/api/rest/actores";
 import { DEPARTAMENTOS, esMunicipioDe, municipiosDe } from "../../shared/ubicacion/divipola";
-import { revisarNit } from "../../shared/identificacion/nit";
+import { nitCanonico, revisarNit } from "../../shared/identificacion/nit";
 import type { TipoActor } from "../../shared/api/mock/tipos";
 import { Lamina } from "./Laminas";
 import type { Motivo } from "./Laminas";
@@ -112,42 +112,82 @@ const PASO_DEL_CAMPO: Partial<Record<keyof Formulario, number>> = {
 const esCampoDelFormulario = (campo: string): campo is keyof Formulario => campo in PASO_DEL_CAMPO;
 
 export const anclarEnCampos = (rechazo: unknown): { errores: Errores; paso: number | null } => {
+  const problema = aProblema(rechazo);
   const errores: Errores = {};
   let paso: number | null = null;
-  for (const [campo, motivo] of Object.entries(erroresPorCampo(aProblema(rechazo)))) {
+  for (const [campo, motivo] of Object.entries(erroresPorCampo(problema))) {
     if (!esCampoDelFormulario(campo)) continue;
     errores[campo] = motivo;
     const propio = PASO_DEL_CAMPO[campo];
     if (propio !== undefined && (paso === null || propio < paso)) paso = propio;
   }
+  if (problema.type.endsWith("/nit-ya-registrado") && errores.nit === undefined) {
+    errores.nit = problema.detail;
+    paso = 0;
+  }
   return { errores, paso };
 };
+
+export const LIMITES = {
+  organizacion: { minimo: 3, maximo: 200 },
+  representante: { minimo: 3, maximo: 160 },
+  correo: { minimo: 5, maximo: 200 },
+  telefono: { minimo: 7, maximo: 30 },
+  clave: { minimo: CLAVE_MINIMA, maximo: 128 },
+  documentos: 12,
+} as const;
+
+const FORMA_CORREO = /^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$/;
+
+const FORMA_TELEFONO = /^\+?[\d\s()-]{7,20}$/;
+
+const esDepartamento = (codigo: string): boolean =>
+  DEPARTAMENTOS.some((entrada) => entrada.codigo === codigo);
 
 export const validarPaso = (indice: number, valores: Formulario): Errores => {
   const errores: Errores = {};
   if (indice === 0) {
     const revision = revisarNit(valores.nit);
     if (revision?.fallo === "forma")
-      errores.nit = "Formato esperado: 900123456-8 (NIT con dígito de verificación).";
+      errores.nit = "Escribe el NIT con su dígito de verificación: 900123456-8, 900123456 8 o 9001234568.";
     else if (revision?.fallo === "digito")
       errores.nit = `El dígito de verificación no corresponde: para ese NIT es ${revision.esperado}.`;
-    if (valores.organizacion.trim().length < 6)
-      errores.organizacion = "Indica la razón social completa.";
+    const organizacion = valores.organizacion.trim();
+    if (organizacion.length < LIMITES.organizacion.minimo)
+      errores.organizacion = `La razón social necesita al menos ${LIMITES.organizacion.minimo} caracteres.`;
+    else if (organizacion.length > LIMITES.organizacion.maximo)
+      errores.organizacion = `La razón social admite hasta ${LIMITES.organizacion.maximo} caracteres.`;
   }
   if (indice === 2) {
-    if (!valores.departamento) errores.departamento = "Selecciona el departamento.";
+    if (!esDepartamento(valores.departamento))
+      errores.departamento = "Selecciona el departamento.";
     if (!valores.municipio) errores.municipio = "Selecciona el municipio.";
     else if (!esMunicipioDe(valores.municipio, valores.departamento))
       errores.municipio = "Ese municipio no pertenece al departamento elegido.";
-    if (valores.representante.trim().length < 6)
-      errores.representante = "Indica el nombre del representante legal.";
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(valores.correo))
-      errores.correo = "Indica un correo de contacto válido.";
-    if (valores.telefono.trim().length < 7) errores.telefono = "Indica un teléfono de contacto.";
+
+    const representante = valores.representante.trim();
+    if (representante.length < LIMITES.representante.minimo)
+      errores.representante = `El nombre del representante necesita al menos ${LIMITES.representante.minimo} caracteres.`;
+    else if (representante.length > LIMITES.representante.maximo)
+      errores.representante = `El nombre del representante admite hasta ${LIMITES.representante.maximo} caracteres.`;
+
+    const correo = valores.correo.trim();
+    if (correo.length > LIMITES.correo.maximo)
+      errores.correo = `El correo admite hasta ${LIMITES.correo.maximo} caracteres.`;
+    else if (correo.length < LIMITES.correo.minimo || !FORMA_CORREO.test(correo))
+      errores.correo = "Indica un correo de contacto válido: nombre@dominio.co.";
+
+    const telefono = valores.telefono.trim();
+    if (telefono.length > LIMITES.telefono.maximo)
+      errores.telefono = `El teléfono admite hasta ${LIMITES.telefono.maximo} caracteres.`;
+    else if (!FORMA_TELEFONO.test(telefono))
+      errores.telefono = "Solo se admiten dígitos, espacios, paréntesis, guiones y un + inicial: +57 315 555 4433.";
   }
   if (indice === 3) {
-    if (valores.clave.length < CLAVE_MINIMA)
-      errores.clave = `La contraseña debe tener al menos ${CLAVE_MINIMA} caracteres.`;
+    if (valores.clave.length < LIMITES.clave.minimo)
+      errores.clave = `La contraseña debe tener al menos ${LIMITES.clave.minimo} caracteres.`;
+    else if (valores.clave.length > LIMITES.clave.maximo)
+      errores.clave = `La contraseña admite hasta ${LIMITES.clave.maximo} caracteres.`;
     else if (valores.clave !== valores.claveRepetida)
       errores.claveRepetida = "Las dos contraseñas no coinciden.";
   }
@@ -285,17 +325,18 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
     setRechazo(null);
     try {
       const radicacion = await apiComercial.radicarSolicitud({
-        nit: valores.nit.trim(),
+        nit: nitCanonico(valores.nit) ?? valores.nit.trim(),
         organizacion: valores.organizacion.trim(),
         tipoActor: valores.tipoActor,
         departamento: valores.departamento,
         municipio: valores.municipio,
         representante: valores.representante.trim(),
-        correo: valores.correo.trim(),
+        correo: valores.correo.trim().toLowerCase(),
         telefono: valores.telefono.trim(),
         clave: valores.clave,
         documentos: requisitos
           .filter((requisito) => adjuntos[requisito.tipo]?.soporteId)
+          .slice(0, LIMITES.documentos)
           .map((requisito) => ({
             tipo: requisito.tipo,
             soporteId: adjuntos[requisito.tipo]?.soporteId ?? "",
@@ -304,7 +345,7 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
       });
       onRadicada({
         radicado: radicacion.id,
-        correo: valores.correo.trim(),
+        correo: valores.correo.trim().toLowerCase(),
         mensaje: radicacion.mensaje,
         faltantes: requisitos.filter(
           (requisito) => !requisito.obligatorio && !adjuntos[requisito.tipo]?.soporteId,
@@ -402,15 +443,18 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
               <CampoTexto
                 etiqueta="NIT"
                 requerido
+                inputMode="numeric"
+                maxLength={20}
                 value={valores.nit}
                 error={errores.nit}
-                ayuda="Incluye el guion y el dígito de verificación."
+                ayuda="Con su dígito de verificación. Da igual el guion: 900123456-8 o 9001234568."
                 placeholder="900123456-8"
                 onChange={(evento) => actualizar("nit")(evento.target.value)}
               />
               <CampoTexto
                 etiqueta="Razón social"
                 requerido
+                maxLength={LIMITES.organizacion.maximo}
                 value={valores.organizacion}
                 error={errores.organizacion}
                 ayuda="Tal como aparece en el certificado del RUES."
@@ -481,6 +525,7 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
               <CampoTexto
                 etiqueta="Representante legal"
                 requerido
+                maxLength={LIMITES.representante.maximo}
                 value={valores.representante}
                 error={errores.representante}
                 ayuda="Es la persona a cuyo nombre queda la cuenta de la organización."
@@ -492,6 +537,7 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
                   requerido
                   type="email"
                   autoComplete="email"
+                  maxLength={LIMITES.correo.maximo}
                   value={valores.correo}
                   error={errores.correo}
                   ayuda="Aquí llegan el radicado y el enlace para verificar el correo."
@@ -500,8 +546,12 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
                 <CampoTexto
                   etiqueta="Teléfono"
                   requerido
+                  inputMode="tel"
+                  maxLength={LIMITES.telefono.maximo}
+                  placeholder="+57 315 555 4433"
                   value={valores.telefono}
                   error={errores.telefono}
+                  ayuda="Dígitos, espacios, paréntesis, guiones y un + inicial."
                   onChange={(evento) => actualizar("telefono")(evento.target.value)}
                 />
               </div>
@@ -519,15 +569,17 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
                 etiqueta="Contraseña"
                 requerido
                 autoComplete="new-password"
+                maxLength={LIMITES.clave.maximo}
                 value={valores.clave}
                 error={errores.clave}
-                ayuda={`Mínimo ${CLAVE_MINIMA} caracteres.`}
+                ayuda={`Entre ${LIMITES.clave.minimo} y ${LIMITES.clave.maximo} caracteres.`}
                 onChange={(evento) => actualizar("clave")(evento.target.value)}
               />
               <CampoClave
                 etiqueta="Repite la contraseña"
                 requerido
                 autoComplete="new-password"
+                maxLength={LIMITES.clave.maximo}
                 value={valores.claveRepetida}
                 error={errores.claveRepetida}
                 onChange={(evento) => actualizar("claveRepetida")(evento.target.value)}
@@ -631,7 +683,7 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
                 </div>
                 <div>
                   <dt>Razón social</dt>
-                  <dd>{valores.organizacion}</dd>
+                  <dd title={valores.organizacion}>{valores.organizacion}</dd>
                 </div>
                 <div>
                   <dt>Tipo de actor</dt>
@@ -649,11 +701,11 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
                 </div>
                 <div>
                   <dt>Representante</dt>
-                  <dd>{valores.representante}</dd>
+                  <dd title={valores.representante}>{valores.representante}</dd>
                 </div>
                 <div>
                   <dt>Contacto</dt>
-                  <dd>
+                  <dd title={`${valores.correo} · ${valores.telefono}`}>
                     {valores.correo} · {valores.telefono}
                   </dd>
                 </div>
@@ -667,7 +719,9 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
                       <span className="asistente__adjunto-marca" aria-hidden="true">
                         <Icono nombre={listo ? "check" : "documento"} tamano={14} />
                       </span>
-                      <span className="asistente__adjunto-nombre">{requisito.etiqueta}</span>
+                      <span className="asistente__adjunto-nombre" title={requisito.etiqueta}>
+                        {requisito.etiqueta}
+                      </span>
                       <span className="asistente__adjunto-dato mono">
                         {listo && adjunto?.archivo
                           ? formatearPeso(adjunto.archivo.size)

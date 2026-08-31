@@ -27,24 +27,31 @@ test("registrar un predio lo agrega al listado y lo sella en el ledger", async (
   await expect(page.getByText(new RegExp(nombre)).first()).toBeVisible();
 });
 
-test("el super administrador no puede verificar expedientes y ve la razon", async ({ page }) => {
+test("el super administrador ve el expediente pero no se le ofrece decidirlo", async ({ page }) => {
   await iniciarSesionComo(page, "SUPER_ADMIN");
   await page.goto("/app/expedientes");
   await expect(page.getByRole("heading", { name: "Expedientes de registro" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Verificar" })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Revisar" }).first().click();
+  await expect(page.getByRole("heading", { name: /Trámite del expediente/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Aceptar" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Rechazar" })).toHaveCount(0);
 });
 
-test("el analista verifica un documento y la decision persiste tras recargar", async ({ page }) => {
+test("el analista acepta un soporte y la decision queda en el ledger", async ({ page }) => {
   await iniciarSesionComo(page, "ANALISTA_DOCUMENTAL");
   await page.goto("/app/expedientes");
 
   await page.getByRole("button", { name: "Revisar" }).first().click();
-  const aprobar = page.getByRole("button", { name: "Aprobar" }).and(page.locator(":not([disabled])")).first();
-  await aprobar.click();
+  const aceptar = page
+    .getByRole("button", { name: "Aceptar" })
+    .and(page.locator(":not([disabled])"))
+    .first();
+  await aceptar.click();
 
   const dialogo = page.getByRole("dialog");
   await dialogo.getByLabel(/Observación/).fill("Documento legible y correspondiente al NIT.");
-  await dialogo.getByRole("button", { name: "Confirmar verificación" }).click();
+  await dialogo.getByRole("button", { name: "Aceptar el soporte", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
 
   await page.goto("/app/trazabilidad");

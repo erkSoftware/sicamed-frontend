@@ -89,14 +89,14 @@ describe("separacion de funciones en la verificacion documental", () => {
     const expediente = almacen.expedientes.find((registro) =>
       registro.pasos.every((paso) => paso.veredicto === "PENDIENTE"),
     );
-    const segundo = expediente?.pasos[1];
+    const ultimo = expediente?.pasos[expediente.pasos.length - 1];
     const problema = await problemaDe(
       servidorMock.resolverPaso({
         expedienteId: expediente?.id ?? "",
-        pasoId: segundo?.id ?? "",
+        pasoId: ultimo?.id ?? "",
         veredicto: "VERIFICADO",
         observacion: "",
-        autor: INSTITUCIONAL,
+        autor: ANALISTA,
       }),
     );
     expect(problema.status).toBe(409);
@@ -424,7 +424,7 @@ describe("registro publico de actores", () => {
     expect(problema.status).toBe(409);
   });
 
-  it("abrir el expediente crea la organizacion, su checklist y la invitacion", async () => {
+  it("abrir el expediente inscribe la organizacion y fija su checklist, sin crear cuentas", async () => {
     const solicitud = await servidorMock.radicarSolicitud({
       nit: "901999888-9",
       organizacion: "Cultivos de Prueba S.A.S.",
@@ -442,11 +442,15 @@ describe("registro publico de actores", () => {
     });
     expect(expediente.estado).toBe("RADICADO");
     expect(expediente.documentos.length).toBeGreaterThan(0);
-    expect(expediente.pasos).toHaveLength(2);
+    expect(expediente.pasos).toHaveLength(4);
+    expect(expediente.pasos.every((paso) => paso.veredicto === "PENDIENTE")).toBe(true);
     expect(expediente.politicaVersion).toBe(almacen.politicaVersion);
     expect(
+      almacen.solicitudes.find((registro) => registro.id === solicitud.id)?.estado,
+    ).toBe("EN_TRAMITE");
+    expect(
       almacen.cuentas.some((cuenta) => cuenta.correo === "nueva.prueba@ejemplo.co"),
-    ).toBe(true);
+    ).toBe(false);
     expect(almacen.organizaciones.some((registro) => registro.nit === "901999888-9")).toBe(true);
   });
 });

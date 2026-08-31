@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiComercial } from "../../../shared/api/clienteComercial";
-import type { FiltroListado } from "../../../shared/api/mock/servidorMock";
+import type { FiltroListado, Pagina } from "../../../shared/api/mock/servidorMock";
+import type { Expediente } from "../../../shared/api/mock/tipos";
 
 export const useExpedientes = (filtro: FiltroListado) =>
   useQuery({
@@ -20,6 +21,29 @@ export const useSolicitudes = (filtro: FiltroListado) =>
     queryFn: () => apiComercial.solicitudes(filtro),
   });
 
+export const useSolicitud = (solicitudId: string | null) =>
+  useQuery({
+    queryKey: ["comercial", "solicitud", solicitudId],
+    queryFn: () => apiComercial.solicitud(solicitudId ?? ""),
+    enabled: solicitudId !== null,
+  });
+
+const pintarExpediente = (
+  cliente: ReturnType<typeof useQueryClient>,
+  expediente: Expediente,
+) => {
+  cliente.setQueriesData<Pagina<Expediente>>(
+    { queryKey: ["comercial", "expedientes"] },
+    (pagina) =>
+      pagina
+        ? {
+            ...pagina,
+            datos: pagina.datos.map((uno) => (uno.id === expediente.id ? expediente : uno)),
+          }
+        : pagina,
+  );
+};
+
 const invalidarTramite = (cliente: ReturnType<typeof useQueryClient>) => {
   void cliente.invalidateQueries({ queryKey: ["comercial", "expedientes"] });
   void cliente.invalidateQueries({ queryKey: ["comercial", "solicitudes"] });
@@ -30,7 +54,10 @@ export const useDecidirDocumento = () => {
   const cliente = useQueryClient();
   return useMutation({
     mutationFn: apiComercial.decidirDocumento,
-    onSuccess: () => invalidarTramite(cliente),
+    onSuccess: (expediente) => {
+      pintarExpediente(cliente, expediente);
+      invalidarTramite(cliente);
+    },
   });
 };
 
@@ -38,7 +65,12 @@ export const useResolverPaso = () => {
   const cliente = useQueryClient();
   return useMutation({
     mutationFn: apiComercial.resolverPaso,
-    onSuccess: () => invalidarTramite(cliente),
+    onSuccess: (expediente) => {
+      pintarExpediente(cliente, expediente);
+      invalidarTramite(cliente);
+      void cliente.invalidateQueries({ queryKey: ["comercial", "organizaciones"] });
+      void cliente.invalidateQueries({ queryKey: ["comercial", "cuentas"] });
+    },
   });
 };
 
@@ -60,7 +92,6 @@ export const useAbrirExpediente = () => {
     onSuccess: () => {
       invalidarTramite(cliente);
       void cliente.invalidateQueries({ queryKey: ["comercial", "organizaciones"] });
-      void cliente.invalidateQueries({ queryKey: ["comercial", "cuentas"] });
     },
   });
 };

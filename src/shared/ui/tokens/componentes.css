@@ -352,6 +352,7 @@ select.campo__control {
   box-shadow: var(--sombra-lg);
   width: min(560px, calc(100vw - 2rem));
   max-height: calc(100dvh - 4rem);
+  overflow: hidden;
 }
 
 .dialogo::backdrop {
@@ -486,6 +487,13 @@ select.campo__control {
 
 .error-normativo__detalle {
   color: var(--texto);
+}
+
+.error-normativo__salida {
+  color: var(--texto);
+  font-weight: 500;
+  border-left: 2px solid var(--peligro-borde);
+  padding-left: var(--e3);
 }
 
 .error-normativo__fundamento {

@@ -1,4 +1,5 @@
 import { ErrorApi } from "../problemDetails";
+import type { ErrorDeCampo } from "../problemDetails";
 import { normalizar } from "../../i18n/formato";
 import {
   almacen,
@@ -13,7 +14,19 @@ import {
 } from "./almacen";
 import { OFERTAS_PUBLICAS, SERIE_PUBLICACIONES } from "./datos";
 import { NOMBRE_DOCUMENTO } from "./datosProceso";
+import { ETIQUETA_ROL } from "./datosGobierno";
 import { requisitosDeActor } from "./requisitosActor";
+import { pasosIniciales } from "./pasosDeVerificacion";
+import { archivoDeSoporte, detallarSolicitud } from "./soportesDeRegistro";
+import {
+  VOZ_DEL_DESPLIEGUE,
+  erroresDeConfiguracion,
+  enmascararClave,
+  sanearTextoDeAsistente,
+  MODELO_DEL_DESPLIEGUE,
+} from "./configuracionAsistente";
+import { situacionDeBloqueo } from "./llamadasAsistente";
+import type { BorradorConfiguracionAsistente } from "./configuracionAsistente";
 import type { DocumentoAdjunto } from "./tipos";
 import { DEPARTAMENTOS, ETAPAS_PROCESO, TOTALES_NACIONALES } from "./catalogos";
 import { CITAS, INDICADORES_CLINICOS, NOTAS, PACIENTES, PRESCRIPCIONES } from "./datosClinicos";
@@ -28,9 +41,10 @@ import type {
   EstadoLote,
   Expediente,
   Oferta,
+  BloqueoAsistente,
   Organizacion,
-  PasoVerificacion,
   RolPlataforma,
+  TipoBloqueoAsistente,
   TipoActor,
   TipoLabor,
   TipoLote,
@@ -71,6 +85,7 @@ const rechazar = (problema: {
   status: number;
   norma?: string;
   accion?: { etiqueta: string; ruta: string };
+  errores?: readonly ErrorDeCampo[];
 }): Promise<never> => Promise.reject(new ErrorApi(problema));
 
 const rechazarSinOrganizacion = (): Promise<never> =>
@@ -1244,7 +1259,7 @@ export const servidorMock = {
   decidirDocumento: (entrada: {
     expedienteId: string;
     documentoId: string;
-    decision: Extract<EstadoDocumento, "APROBADO" | "DEVUELTO">;
+    decision: DecisionDocumento;
     observacion: string;
     autor: Autor;
   }) => {
@@ -1258,12 +1273,12 @@ export const servidorMock = {
     const negado = negarVerificacion(expediente, entrada.autor);
     if (negado) return negado;
 
-    if (entrada.decision === "DEVUELTO" && !entrada.observacion.trim()) {
+    if (entrada.decision !== "APROBADO" && !entrada.observacion.trim()) {
       return rechazar({
         type: "https://sicamed.co/problemas/devolucion-sin-motivo",
-        title: "Devolver exige una observación",
+        title: "Devolver o rechazar exige una observación",
         detail:
-          "Una devolución sin motivo no le dice al solicitante qué corregir. La observación es " +
+          "Una decisión adversa sin motivo no le dice al solicitante qué corregir. La observación es " +
           "obligatoria y queda registrada junto con el revisor y el sello de tiempo.",
         status: 422,
         norma: "Res. 1241/2026 Art. 7 · debido proceso administrativo",
@@ -1283,7 +1298,7 @@ export const servidorMock = {
     const actualizado: Expediente = {
       ...expediente,
       documentos,
-      estado: estadoDerivado(documentos, expediente.tipoActor),
+      estado: estadoTrasDecidirDocumentos(expediente, documentos),
       analista: entrada.autor.nombre,
     };
     almacen.expedientes[indice] = actualizado;
@@ -1305,7 +1320,7 @@ export const servidorMock = {
   resolverPaso: (entrada: {
     expedienteId: string;
     pasoId: string;
-    veredicto: Extract<VeredictoResoluble, "VERIFICADO" | "DEVUELTO">;
+    veredicto: VeredictoResoluble;
     observacion: string;
     autor: Autor;
   }) => {
@@ -1322,57 +1337,75 @@ export const servidorMock = {
     const paso = expediente.pasos.find((registro) => registro.id === entrada.pasoId);
     if (!paso) return rechazarNoEncontrado("Paso de verificación", entrada.pasoId);
 
+    if (paso.veredicto !== "PENDIENTE") {
+      return rechazar({
+        type: "https://sicamed.co/problemas/paso-ya-resuelto",
+        title: "Ese paso ya está resuelto",
+        detail:
+          `${paso.etiqueta} quedó como ${paso.veredicto} y los pasos no se reabren. ` +
+          "Relee el expediente para ver en qué punto va el trámite.",
+        status: 409,
+        norma: "Blueprint §5.3-bis · los pasos no se reabren",
+      });
+    }
+
     if (paso.rol !== entrada.autor.rol) {
       return rechazar({
         type: "https://sicamed.co/problemas/paso-de-otro-rol",
         title: "Este paso corresponde a otro rol",
         detail:
-          `El paso ${paso.orden} está asignado al rol ${paso.rol} y tu sesión actúa como ` +
-          `${entrada.autor.rol}. Un rol solo resuelve el paso que le corresponde: no puede saltar pasos ajenos.`,
+          `«${paso.etiqueta}» está asignado a ${ETIQUETA_ROL[paso.rol]} y tu sesión actúa como ` +
+          `${ETIQUETA_ROL[entrada.autor.rol]}. Un rol solo resuelve el paso que la política le asignó.`,
         status: 403,
         norma: "Blueprint §5.3-bis · invariante 3 del ExpedienteDeRegistro",
       });
     }
 
-    const anteriores = expediente.pasos.filter((registro) => registro.orden < paso.orden);
-    const pendiente = anteriores.find((registro) => registro.veredicto !== "VERIFICADO");
+    const pendiente = expediente.pasos.find(
+      (registro) => registro.orden < paso.orden && registro.veredicto === "PENDIENTE",
+    );
     if (pendiente) {
       return rechazar({
         type: "https://sicamed.co/problemas/paso-fuera-de-orden",
         title: "Hay un paso anterior sin resolver",
         detail:
-          `La política vigente es secuencial: el paso ${pendiente.orden} (${pendiente.rol}) todavía ` +
-          `no está verificado. No se puede resolver el paso ${paso.orden} antes que él.`,
+          `La política vigente es secuencial: «${pendiente.etiqueta}» (paso ${pendiente.orden}) todavía ` +
+          `está pendiente. No se puede resolver el paso ${paso.orden} antes que él.`,
         status: 409,
         norma: "Blueprint §5.3-bis · política de revisión SECUENCIAL",
       });
     }
 
-    const yaResolvio = expediente.pasos.find(
-      (registro) => registro.revisor === entrada.autor.nombre && registro.id !== paso.id,
-    );
+    const yaResolvio =
+      paso.exigeDobleControl &&
+      expediente.pasos.find(
+        (registro) => registro.id !== paso.id && registro.revisor === entrada.autor.nombre,
+      );
     if (yaResolvio) {
       return rechazar({
         type: "https://sicamed.co/problemas/doble-control",
-        title: "El doble control impide que la misma persona resuelva dos pasos",
+        title: "El doble control exige un segundo analista",
         detail:
-          `${entrada.autor.nombre} ya resolvió el paso ${yaResolvio.orden} de este expediente. ` +
-          "La política exige doble control: dos personas distintas deben concurrir en el trámite.",
+          `${entrada.autor.nombre} ya resolvió «${yaResolvio.etiqueta}» en este expediente, y ` +
+          `«${paso.etiqueta}» exige doble control: lo cierra alguien que no haya tocado ningún otro paso.`,
         status: 403,
         norma: "Blueprint §5.3-bis · exige_doble_control",
       });
     }
 
-    if (entrada.veredicto === "DEVUELTO" && !entrada.observacion.trim()) {
+    if (entrada.veredicto !== "VERIFICADO" && !entrada.observacion.trim()) {
       return rechazar({
         type: "https://sicamed.co/problemas/devolucion-sin-motivo",
-        title: "Devolver exige una observación",
-        detail: "Las observaciones son obligatorias al devolver un expediente al solicitante.",
+        title: "Devolver o rechazar exige una observación",
+        detail:
+          "La observación de este paso es lo que el solicitante va a leer como motivo. Sin ella el " +
+          "trámite se cierra sin decirle a nadie qué pasó.",
         status: 422,
         norma: "Res. 1241/2026 Art. 7 · debido proceso administrativo",
       });
     }
 
+    const observacion = entrada.observacion.trim() || null;
     const pasos = expediente.pasos.map((registro) =>
       registro.id === paso.id
         ? {
@@ -1380,45 +1413,301 @@ export const servidorMock = {
             veredicto: entrada.veredicto,
             revisor: entrada.autor.nombre,
             resuelto: ahora(),
-            observacion: entrada.observacion.trim() || null,
+            observacion,
             huella: nuevaHuella(),
           }
         : registro,
     );
+    const rechazado = pasos.some((registro) => registro.veredicto === "RECHAZADO");
+    const devuelto = pasos.some((registro) => registro.veredicto === "DEVUELTO");
     const todosVerificados = pasos.every((registro) => registro.veredicto === "VERIFICADO");
-    const alguienDevolvio = pasos.some((registro) => registro.veredicto === "DEVUELTO");
     const actualizado: Expediente = {
       ...expediente,
       pasos,
-      estado: alguienDevolvio ? "DEVUELTO" : todosVerificados ? "APROBADO" : "EN_VERIFICACION",
+      estado: rechazado
+        ? "RECHAZADO"
+        : devuelto
+          ? "DEVUELTO"
+          : todosVerificados
+            ? "APROBADO"
+            : "EN_VERIFICACION",
+      analista: entrada.autor.nombre,
     };
     almacen.expedientes[indice] = actualizado;
 
     registrarEvento({
-      tipo: entrada.veredicto === "VERIFICADO" ? "PASO_VERIFICADO" : "EXPEDIENTE_DEVUELTO",
+      tipo:
+        entrada.veredicto === "VERIFICADO"
+          ? "PASO_VERIFICADO"
+          : entrada.veredicto === "RECHAZADO"
+            ? "EXPEDIENTE_RECHAZADO"
+            : "EXPEDIENTE_DEVUELTO",
       descripcion:
-        `Paso ${paso.orden} (${paso.rol}) del expediente ${expediente.radicado} resuelto como ` +
-        `${entrada.veredicto} bajo la política ${expediente.politicaVersion}`,
+        `«${paso.etiqueta}» del expediente ${expediente.radicado} quedó ${entrada.veredicto} bajo la ` +
+        `política ${expediente.politicaVersion}`,
       entidad: "Expediente",
       entidadId: expediente.id,
       actor: entrada.autor.nombre,
       organizacionId: expediente.organizacionId,
     });
 
-    if (todosVerificados) {
-      registrarEvento({
-        tipo: "EVIDENCIA_VERIFICADA",
-        descripcion:
-          `El expediente ${expediente.radicado} alcanzó evidencia documental verificada. ` +
-          "Habilita la caracterización de la organización y el origen DOCUMENTAL_VERIFICADA",
-        entidad: "Expediente",
-        entidadId: expediente.id,
-        actor: entrada.autor.nombre,
-        organizacionId: expediente.organizacionId,
-      });
+    if (todosVerificados || rechazado) {
+      cerrarTramite(actualizado, observacion ?? "", entrada.autor);
     }
 
     return demorar(actualizado);
+  },
+
+  configuracionAsistente: () => demorar({ ...almacen.configuracionAsistente }),
+
+  guardarConfiguracionAsistente: (entrada: {
+    borrador: BorradorConfiguracionAsistente;
+    autor: Autor;
+  }) => {
+    if (entrada.autor.rol !== "SUPER_ADMIN") {
+      return rechazar({
+        type: "https://sicamed.co/problemas/asistente-configuracion-restringida",
+        title: "Solo el super administrador configura a AURORA",
+        detail:
+          "Hablar con AURORA lo puede hacer casi cualquier rol; decidir qué le dice AURORA a toda " +
+          "una entidad exige el permiso asistente:configuracion:gestionar.",
+        status: 403,
+        norma: "Blueprint §8.4 · gobierno del asistente",
+      });
+    }
+
+    const errores = Object.entries(
+      erroresDeConfiguracion(entrada.borrador, almacen.configuracionAsistente.modelosDisponibles),
+    ).map(([campo, motivo]) => ({ campo, motivo }));
+    if (errores.length > 0) {
+      return rechazar({
+        type: "https://sicamed.co/problemas/configuracion-asistente-invalida",
+        title: "La configuración del asistente no es válida",
+        detail:
+          "Revisa los campos marcados: el nombre, el saludo y la frase de rechazo no pueden " +
+          "quedar vacíos, el aviso tiene que caber dentro de la llamada y los límites van dentro " +
+          "de su rango.",
+        status: 422,
+        errores,
+      });
+    }
+
+    const voz = sanearTextoDeAsistente(entrada.borrador.voz);
+    const modelo = sanearTextoDeAsistente(entrada.borrador.modelo);
+    const clave = entrada.borrador.apiKey.trim();
+    const anterior = almacen.configuracionAsistente.apiKey;
+
+    almacen.configuracionAsistente = {
+      nombre: sanearTextoDeAsistente(entrada.borrador.nombre),
+      saludo: sanearTextoDeAsistente(entrada.borrador.saludo),
+      fraseFueraDeAlcance: sanearTextoDeAsistente(entrada.borrador.fraseFueraDeAlcance),
+      instruccionesExtra: sanearTextoDeAsistente(entrada.borrador.instruccionesExtra),
+      promptSistema: sanearTextoDeAsistente(entrada.borrador.promptSistema),
+      mensajeAviso: sanearTextoDeAsistente(entrada.borrador.mensajeAviso),
+      habilitado: entrada.borrador.habilitado,
+      proveedor: sanearTextoDeAsistente(entrada.borrador.proveedor) || "openai",
+      modelo,
+      modeloEfectivo: modelo === "" ? MODELO_DEL_DESPLIEGUE : modelo,
+      modelosDisponibles: almacen.configuracionAsistente.modelosDisponibles,
+      voz,
+      vozEfectiva: voz === "" ? VOZ_DEL_DESPLIEGUE : voz,
+      apiKey: entrada.borrador.borrarApiKey
+        ? { configurada: false, enmascarada: "" }
+        : clave === ""
+          ? anterior
+          : { configurada: true, enmascarada: enmascararClave(clave) },
+      limites: { ...entrada.borrador.limites },
+      deFabrica: false,
+      actualizadoEn: ahora(),
+      actualizadoPor: entrada.autor.nombre,
+    };
+
+    registrarEvento({
+      tipo: "ASISTENTE_CONFIGURADO",
+      descripcion:
+        "Se actualizó lo que AURORA dice al abrir sesión. No cambia las conversaciones en curso: " +
+        "gobierna las aperturas siguientes",
+      entidad: "ASISTENTE",
+      entidadId: "CONFIGURACION",
+      actor: entrada.autor.nombre,
+      organizacionId: entrada.autor.organizacionId,
+    });
+
+    return demorar({ ...almacen.configuracionAsistente });
+  },
+
+  probarConexionAsistente: () => {
+    if (!almacen.configuracionAsistente.apiKey.configurada) {
+      return rechazar({
+        type: "https://sicamed.co/problemas/asistente-credencial-rechazada",
+        title: "El proveedor no aceptó la credencial",
+        detail:
+          "No hay una API Key guardada para esta entidad. Escríbela, guarda y vuelve a probar: la " +
+          "prueba usa la credencial guardada, no la que está en el formulario.",
+        status: 502,
+      });
+    }
+    return demorar(undefined);
+  },
+
+  bloqueosAsistente: (filtro: { soloActivos?: boolean } = {}) => {
+    const soloActivos = filtro.soloActivos ?? true;
+    const listado = almacen.bloqueosAsistente
+      .filter((bloqueo) => (soloActivos ? situacionDeBloqueo(bloqueo) === "activo" : true))
+      .slice()
+      .sort((uno, otro) => otro.creadoEn.localeCompare(uno.creadoEn));
+    return demorar(listado.map((bloqueo) => ({ ...bloqueo })));
+  },
+
+  bloquearAsistente: (entrada: {
+    usuario: string;
+    motivo: string;
+    tipo: TipoBloqueoAsistente;
+    dias: number;
+    autor: Autor;
+  }) => {
+    const usuario = entrada.usuario.trim();
+    const motivo = sanearTextoDeAsistente(entrada.motivo);
+    if (usuario === "" || motivo === "") {
+      return rechazar({
+        type: "https://sicamed.co/problemas/asistente-bloqueo-invalido",
+        title: "Faltan datos del bloqueo",
+        detail: "Un bloqueo necesita el identificador del usuario y el motivo que lo justifica.",
+        status: 422,
+      });
+    }
+
+    if (entrada.tipo === "temporary" && (!Number.isInteger(entrada.dias) || entrada.dias < 1)) {
+      return rechazar({
+        type: "https://sicamed.co/problemas/asistente-bloqueo-invalido",
+        title: "Un bloqueo temporal necesita días",
+        detail: "Indica cuántos días dura el bloqueo, o hazlo permanente.",
+        status: 422,
+      });
+    }
+
+    const vigente = almacen.bloqueosAsistente.find(
+      (bloqueo) => bloqueo.usuario === usuario && situacionDeBloqueo(bloqueo) === "activo",
+    );
+    if (vigente) {
+      return rechazar({
+        type: "https://sicamed.co/problemas/asistente-bloqueo-invalido",
+        title: "Esa persona ya tiene un bloqueo activo",
+        detail:
+          "Los bloqueos no se apilan: con dos encima del mismo usuario, «desbloquear» aparentaría " +
+          "funcionar sin funcionar. Levanta el que ya existe en vez de crear otro.",
+        status: 422,
+      });
+    }
+
+    const creado: BloqueoAsistente = {
+      id: `BLQ-${(almacen.bloqueosAsistente.length + 1).toString().padStart(4, "0")}`,
+      usuario,
+      motivo,
+      tipo: entrada.tipo,
+      iniciaEn: ahora(),
+      expiraEn:
+        entrada.tipo === "temporary"
+          ? new Date(Date.now() + entrada.dias * 24 * 60 * 60 * 1000).toISOString()
+          : null,
+      activo: true,
+      creadoPor: entrada.autor.nombre,
+      creadoEn: ahora(),
+      desbloqueadoEn: null,
+      desbloqueadoPor: "",
+    };
+    almacen.bloqueosAsistente = [creado, ...almacen.bloqueosAsistente];
+
+    registrarEvento({
+      tipo: "ASISTENTE_BLOQUEO_CREADO",
+      descripcion: `Se bloqueó la voz de ${usuario}: ${motivo}`,
+      entidad: "ASISTENTE",
+      entidadId: creado.id,
+      actor: entrada.autor.nombre,
+      organizacionId: entrada.autor.organizacionId,
+    });
+
+    return demorar({ ...creado });
+  },
+
+  desbloquearAsistente: (entrada: { id: string; autor: Autor }) => {
+    const bloqueo = almacen.bloqueosAsistente.find((registro) => registro.id === entrada.id);
+    if (!bloqueo) {
+      return rechazar({
+        type: "https://sicamed.co/problemas/asistente-bloqueo-desconocido",
+        title: "Ese bloqueo no existe",
+        detail: `No hay un bloqueo con el identificador ${entrada.id} en esta entidad.`,
+        status: 404,
+      });
+    }
+
+    const levantado: BloqueoAsistente = {
+      ...bloqueo,
+      activo: false,
+      desbloqueadoEn: ahora(),
+      desbloqueadoPor: entrada.autor.nombre,
+    };
+    almacen.bloqueosAsistente = almacen.bloqueosAsistente.map((registro) =>
+      registro.id === entrada.id ? levantado : registro,
+    );
+
+    registrarEvento({
+      tipo: "ASISTENTE_BLOQUEO_LEVANTADO",
+      descripcion: `Se levantó el bloqueo de voz de ${bloqueo.usuario}`,
+      entidad: "ASISTENTE",
+      entidadId: bloqueo.id,
+      actor: entrada.autor.nombre,
+      organizacionId: entrada.autor.organizacionId,
+    });
+
+    return demorar({ ...levantado });
+  },
+
+  estadoLlamadasAsistente: (entrada: { autor: Autor }) => {
+    const limites = almacen.configuracionAsistente.limites;
+    const consumido = almacen.llamadasAsistente
+      .filter((llamada) => llamada.usuario === entrada.autor.usuarioId)
+      .reduce((suma, llamada) => suma + llamada.segundos, 0);
+    const bloqueo =
+      almacen.bloqueosAsistente.find(
+        (registro) =>
+          registro.usuario === entrada.autor.usuarioId && situacionDeBloqueo(registro) === "activo",
+      ) ?? null;
+    const restante =
+      limites.limiteDiarioSegundos === 0
+        ? 0
+        : Math.max(0, limites.limiteDiarioSegundos - consumido);
+
+    return demorar({
+      puedeLlamar:
+        bloqueo === null && (limites.limiteDiarioSegundos === 0 || restante > 0),
+      consumidoSegundos: consumido,
+      llamadasHoy: almacen.llamadasAsistente.filter(
+        (llamada) => llamada.usuario === entrada.autor.usuarioId,
+      ).length,
+      limiteDiarioSegundos: limites.limiteDiarioSegundos,
+      restanteDiarioSegundos: restante,
+      duracionMaximaSegundos: limites.duracionMaximaSegundos,
+      bloqueo: bloqueo ? { ...bloqueo } : null,
+    });
+  },
+
+  cerrarLlamadaAsistente: (entrada: { llamadaId: string; segundos?: number; autor: Autor }) => {
+    const registrada = almacen.llamadasAsistente.find(
+      (llamada) => llamada.llamadaId === entrada.llamadaId,
+    );
+    if (registrada) {
+      registrada.abierta = false;
+      return demorar({ ...registrada });
+    }
+    const nueva = {
+      llamadaId: entrada.llamadaId,
+      usuario: entrada.autor.usuarioId,
+      segundos: entrada.segundos ?? 0,
+      abierta: false,
+    };
+    almacen.llamadasAsistente = [...almacen.llamadasAsistente, nueva];
+    return demorar({ ...nueva });
   },
 
   politicaVerificacion: () =>
@@ -1474,6 +1763,15 @@ export const servidorMock = {
     );
     return demorar(paginar(resultado, filtro.pagina, filtro.porPagina ?? 10));
   },
+
+  solicitud: (solicitudId: string) => {
+    const solicitud = almacen.solicitudes.find((una) => una.id === solicitudId);
+    if (!solicitud) return rechazarNoEncontrado("La solicitud", solicitudId);
+    return demorar(detallarSolicitud(solicitud, almacen.soportes));
+  },
+
+  archivoDeSoporte: (soporteId: string) =>
+    demorar(archivoDeSoporte(soporteId, almacen.soportes, almacen.solicitudes)),
 
   requisitosDeActor: (tipoActor: TipoActor) => demorar(requisitosDeActor(tipoActor)),
 
@@ -1567,6 +1865,7 @@ export const servidorMock = {
       estado: "RECIBIDA" as const,
       recibida: ahora(),
       expedienteId: null,
+      motivoRechazo: null,
       documentos: entrada.documentos ?? [],
       huella: nuevaHuella(),
       correoVerificado: false,
@@ -1640,30 +1939,7 @@ export const servidorMock = {
       huella: nuevaHuella(),
     }));
 
-    const pasos: readonly PasoVerificacion[] = [
-      {
-        id: `${idExpediente}-P1`,
-        orden: 1,
-        rol: "ANALISTA_DOCUMENTAL",
-        veredicto: "PENDIENTE",
-        revisor: null,
-        resuelto: null,
-        observacion: null,
-        slaHoras: 72,
-        huella: null,
-      },
-      {
-        id: `${idExpediente}-P2`,
-        orden: 2,
-        rol: "ADMIN_INSTITUCIONAL",
-        veredicto: "PENDIENTE",
-        revisor: null,
-        resuelto: null,
-        observacion: null,
-        slaHoras: 48,
-        huella: null,
-      },
-    ];
+    const pasos = pasosIniciales(idExpediente);
 
     const expediente: Expediente = {
       id: idExpediente,
@@ -1682,27 +1958,13 @@ export const servidorMock = {
     almacen.expedientes.unshift(expediente);
     almacen.solicitudes[indice] = {
       ...solicitud,
-      estado: "EXPEDIENTE_ABIERTO",
+      estado: "EN_TRAMITE",
       expedienteId: expediente.id,
     };
 
-    almacen.cuentas.unshift({
-      id: siguienteId("USR"),
-      nombre: solicitud.representante,
-      correo: solicitud.correo,
-      rol: "REPRESENTANTE_LEGAL",
-      organizacionId: organizacion.id,
-      organizacion: organizacion.nombre,
-      estado: "INVITADA",
-      creada: ahora(),
-      ultimoAcceso: null,
-      invitadaPor: entrada.autor.nombre,
-      autenticacion: "OIDC",
-    });
-
     registrarEvento({
       tipo: "ORGANIZACION_REGISTRADA",
-      descripcion: `Se registró ${organizacion.nombre} en estado EN_TRAMITE y se invitó a su representante legal`,
+      descripcion: `Se inscribió ${organizacion.nombre} en estado EN_TRAMITE mientras se verifica su expediente`,
       entidad: "Organización",
       entidadId: organizacion.id,
       actor: entrada.autor.nombre,
@@ -2033,7 +2295,78 @@ export const servidorMock = {
     }),
 };
 
-type VeredictoResoluble = "VERIFICADO" | "DEVUELTO";
+type VeredictoResoluble = "VERIFICADO" | "DEVUELTO" | "RECHAZADO";
+
+type DecisionDocumento = Extract<EstadoDocumento, "APROBADO" | "DEVUELTO" | "RECHAZADO">;
+
+const cerrarTramite = (expediente: Expediente, motivo: string, autor: Autor): void => {
+  const aprobado = expediente.estado === "APROBADO";
+  const indiceSolicitud = almacen.solicitudes.findIndex(
+    (solicitud) => solicitud.expedienteId === expediente.id,
+  );
+  const solicitud = almacen.solicitudes[indiceSolicitud];
+  if (solicitud) {
+    almacen.solicitudes[indiceSolicitud] = {
+      ...solicitud,
+      estado: aprobado ? "APROBADA" : "RECHAZADA",
+      motivoRechazo: aprobado ? null : motivo,
+    };
+  }
+
+  const indiceOrganizacion = almacen.organizaciones.findIndex(
+    (organizacion) => organizacion.id === expediente.organizacionId,
+  );
+  const organizacion = almacen.organizaciones[indiceOrganizacion];
+
+  if (!aprobado) {
+    registrarEvento({
+      tipo: "SOLICITUD_RECHAZADA",
+      descripcion:
+        `El expediente ${expediente.radicado} quedó rechazado. El solicitante recibe como motivo: ` +
+        `«${motivo}»`,
+      entidad: "Solicitud",
+      entidadId: solicitud?.id ?? expediente.id,
+      actor: autor.nombre,
+      organizacionId: expediente.organizacionId,
+    });
+    return;
+  }
+
+  if (organizacion) {
+    almacen.organizaciones[indiceOrganizacion] = { ...organizacion, estado: "HABILITADA" };
+  }
+
+  const correo = solicitud?.correo ?? organizacion?.correo ?? "";
+  const yaTieneCuenta = almacen.cuentas.some(
+    (cuenta) => normalizar(cuenta.correo) === normalizar(correo),
+  );
+  if (organizacion && correo !== "" && !yaTieneCuenta) {
+    almacen.cuentas.unshift({
+      id: siguienteId("USR"),
+      nombre: solicitud?.representante ?? organizacion.representante,
+      correo,
+      rol: "REPRESENTANTE_LEGAL",
+      organizacionId: organizacion.id,
+      organizacion: organizacion.nombre,
+      estado: "ACTIVA",
+      creada: ahora(),
+      ultimoAcceso: null,
+      invitadaPor: "Consumidor de eventos de SICAMED",
+      autenticacion: "OIDC",
+    });
+  }
+
+  registrarEvento({
+    tipo: "SOLICITUD_APROBADA",
+    descripcion:
+      `El expediente ${expediente.radicado} quedó aprobado: la organización queda habilitada y la ` +
+      "cuenta del representante legal se crea sola por bus de eventos",
+    entidad: "Solicitud",
+    entidadId: solicitud?.id ?? expediente.id,
+    actor: "Consumidor de eventos de SICAMED",
+    organizacionId: expediente.organizacionId,
+  });
+};
 
 const negarVerificacion = (expediente: Expediente, autor: Autor): Promise<never> | null => {
   if (autor.rol === "SUPER_ADMIN") {
@@ -2074,19 +2407,18 @@ const negarVerificacion = (expediente: Expediente, autor: Autor): Promise<never>
   return null;
 };
 
-const estadoDerivado = (
+const estadoTrasDecidirDocumentos = (
+  expediente: Expediente,
   documentos: readonly DocumentoExpediente[],
-  tipoActor: TipoActor,
 ): Expediente["estado"] => {
-  const obligatorio = (documento: DocumentoExpediente) =>
-    almacen.politica.find(
-      (regla) => regla.tipoActor === tipoActor && regla.documento === documento.tipo,
-    )?.obligatorio ?? false;
-  if (documentos.some((documento) => documento.estado === "DEVUELTO")) return "DEVUELTO";
-  if (documentos.some((documento) => documento.estado === "EN_VERIFICACION")) return "EN_VERIFICACION";
-  if (documentos.some((documento) => obligatorio(documento) && documento.estado !== "APROBADO"))
-    return "RADICADO";
-  return "APROBADO";
+  if (expediente.estado === "APROBADO" || expediente.estado === "RECHAZADO") return expediente.estado;
+  if (
+    documentos.some(
+      (documento) => documento.estado === "DEVUELTO" || documento.estado === "RECHAZADO",
+    )
+  )
+    return "DEVUELTO";
+  return "EN_VERIFICACION";
 };
 
 const VIA_POR_PRODUCTO: Record<string, "FNE" | "CONTRATO_DIRECTO" | "EXPORTACION"> = {

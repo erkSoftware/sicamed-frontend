@@ -159,7 +159,7 @@ export const CUENTAS: readonly CuentaUsuario[] = [
 export const ETIQUETA_ROL: Record<RolPlataforma, string> = {
   SUPER_ADMIN: "Super administrador",
   ADMIN_INSTITUCIONAL: "Administrador institucional",
-  ANALISTA_DOCUMENTAL: "Analista de verificación documental",
+  ANALISTA_DOCUMENTAL: "Analista de cumplimiento",
   REPRESENTANTE_LEGAL: "Representante legal",
   OPERARIO_CAMPO: "Operario de campo",
   EQUIPO_CLINICO: "Equipo clínico",
@@ -327,7 +327,7 @@ export const DESTRUCCIONES: readonly ActaDestruccion[] = Array.from({ length: 24
   };
 });
 
-const ESTADOS_SOLICITUD = ["RECIBIDA", "EXPEDIENTE_ABIERTO", "EXPEDIENTE_ABIERTO", "DESCARTADA"] as const;
+const ESTADOS_SOLICITUD = ["RECIBIDA", "EN_TRAMITE", "APROBADA", "RECHAZADA"] as const;
 
 export const SOLICITUDES: readonly SolicitudRegistro[] = Array.from({ length: 9 }, (_, i) => {
   const cultivo = CULTIVOS[(i * 23) % CULTIVOS.length] as Cultivo;
@@ -344,7 +344,11 @@ export const SOLICITUDES: readonly SolicitudRegistro[] = Array.from({ length: 9 
     telefono: `+57 60${enteroEntre(azar, 1, 8)} ${enteroEntre(azar, 200, 899)} ${enteroEntre(azar, 1000, 9999)}`,
     estado,
     recibida: fechaRelativa(-(1 + i * 6)),
-    expedienteId: estado === "EXPEDIENTE_ABIERTO" ? identificador("EXP", i) : null,
+    expedienteId: estado === "RECIBIDA" ? null : identificador("EXP", i),
+    motivoRechazo:
+      estado === "RECHAZADA"
+        ? "La licencia adjunta corresponde a otra modalidad y su vigencia expiró antes de radicar."
+        : null,
     documentos: POLITICA_VERIFICACION.filter(
       (regla) =>
         regla.tipoActor ===

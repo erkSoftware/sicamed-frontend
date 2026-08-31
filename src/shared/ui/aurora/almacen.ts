@@ -25,6 +25,7 @@ export type FalloVozVisible = {
 
 type EstadoAurora = {
   visible: boolean;
+  presentando: boolean;
   accion: AccionAurora;
   encuadre: Encuadre;
   mensajes: readonly Mensaje[];
@@ -33,9 +34,13 @@ type EstadoAurora = {
   vozDemostrativa: boolean;
   transcripcion: string;
   falloVoz: FalloVozVisible | null;
+  segundosRestantes: number | null;
+  cupoRestante: number | null;
   alternarVisible: () => void;
   mostrar: () => void;
   ocultar: () => void;
+  presentar: () => void;
+  cerrarPresentacion: () => void;
   fijarAccion: (accion: AccionAurora, milisegundos?: number) => void;
   fijarEncuadre: (encuadre: Encuadre) => void;
   decir: (texto: string, accion?: AccionAurora) => void;
@@ -43,6 +48,8 @@ type EstadoAurora = {
   fijarVoz: (voz: EstadoVoz) => void;
   vedarVoz: () => void;
   fijarDemostrativa: (demostrativa: boolean) => void;
+  fijarRestante: (segundos: number | null) => void;
+  fijarCupo: (segundos: number | null) => void;
   transcribir: (fragmento: string) => void;
   cerrarTurnoDeVoz: (texto?: string) => void;
   fallarVoz: (fallo: FalloVozVisible) => void;
@@ -107,6 +114,7 @@ const responder = (texto: string) => {
 
 export const useAurora = create<EstadoAurora>((set, get) => ({
   visible: false,
+  presentando: false,
   accion: ACCION_INICIAL,
   encuadre: "busto",
   mensajes: [],
@@ -115,10 +123,14 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
   vozDemostrativa: false,
   transcripcion: "",
   falloVoz: null,
+  segundosRestantes: null,
+  cupoRestante: null,
 
   alternarVisible: () => set({ visible: !get().visible }),
   mostrar: () => set({ visible: true }),
   ocultar: () => set({ visible: false }),
+  presentar: () => set({ presentando: true, visible: false }),
+  cerrarPresentacion: () => set({ presentando: false }),
 
   fijarAccion: (accion, milisegundos) => {
     window.clearTimeout(temporizador);
@@ -159,6 +171,10 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
 
   fijarDemostrativa: (demostrativa) => set({ vozDemostrativa: demostrativa }),
 
+  fijarRestante: (segundos) => set({ segundosRestantes: segundos }),
+
+  fijarCupo: (segundos) => set({ cupoRestante: segundos }),
+
   transcribir: (fragmento) => set({ transcripcion: get().transcripcion + fragmento }),
 
   cerrarTurnoDeVoz: (texto) => {
@@ -178,7 +194,14 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
 
   reiniciar: () => {
     window.clearTimeout(temporizador);
-    set({ mensajes: [], accion: ACCION_INICIAL, transcripcion: "", falloVoz: null });
+    set({
+      mensajes: [],
+      accion: ACCION_INICIAL,
+      transcripcion: "",
+      falloVoz: null,
+      segundosRestantes: null,
+      cupoRestante: null,
+    });
   },
 }));
 

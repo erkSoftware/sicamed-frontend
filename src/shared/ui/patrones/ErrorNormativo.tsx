@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { esLimiteDeTasa, segundosDeEspera } from "../../api/problemDetails";
+import { salidaDelProblema } from "../../api/salidas";
 import type { ProblemDetail } from "../../api/problemDetails";
 import { Icono } from "../primitivos/Icono";
 
@@ -10,6 +11,7 @@ type Props = {
 
 export const ErrorNormativo = ({ problema, onReintentar }: Props) => {
   const espera = esLimiteDeTasa(problema) ? segundosDeEspera(problema) : 0;
+  const salida = salidaDelProblema(problema);
   return (
     <div role="alert" aria-live="assertive" className="error-normativo">
       <h3 className="error-normativo__titulo">
@@ -17,6 +19,7 @@ export const ErrorNormativo = ({ problema, onReintentar }: Props) => {
         {problema.title}
       </h3>
       <p className="error-normativo__detalle">{problema.detail}</p>
+      {salida ? <p className="error-normativo__salida">Qué hacer: {salida}</p> : null}
       {problema.norma ? (
         <p className="error-normativo__fundamento">Fundamento normativo: {problema.norma}</p>
       ) : null}

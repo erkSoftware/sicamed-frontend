@@ -12,6 +12,8 @@ export const MIMES_ADMITIDOS: readonly string[] = [
 
 export const BYTES_MAXIMOS = 10 * 1024 * 1024;
 
+export const NOMBRE_MAXIMO = 200;
+
 export const CLAVE_MINIMA = 12;
 
 export type ArchivoDeSoporte = {
@@ -36,6 +38,9 @@ export const motivoDeRechazo = (
   bytesMaximos: number = BYTES_MAXIMOS,
 ): string | null => {
   if (archivo.bytes === 0) return "El archivo está vacío.";
+  if (archivo.nombre.length === 0) return "El archivo no tiene nombre.";
+  if (archivo.nombre.length > NOMBRE_MAXIMO)
+    return `El nombre del archivo supera los ${NOMBRE_MAXIMO} caracteres. Renómbralo antes de subirlo.`;
   if (!mimes.includes(archivo.mime))
     return `El formato ${archivo.mime || "desconocido"} no está admitido. Se admiten PDF, JPG, PNG y WEBP.`;
   if (archivo.bytes > bytesMaximos) return `El archivo supera el máximo de ${megas(bytesMaximos)} MB.`;
