@@ -327,57 +327,41 @@ export const apiComercial = {
         }).then((expediente) => aExpediente(expediente)),
 
   configuracionAsistente: () =>
-    modoMock
-      ? servidorMock.configuracionAsistente()
-      : solicitar<ConfiguracionAsistenteApi>("comercial", "/asistente/configuracion").then(
-          aConfiguracionAsistente,
-        ),
+    solicitar<ConfiguracionAsistenteApi>("comercial", "/asistente/configuracion").then(
+      aConfiguracionAsistente,
+    ),
 
   guardarConfiguracionAsistente: (
     entrada: Entrada<typeof servidorMock.guardarConfiguracionAsistente>,
   ) =>
-    modoMock
-      ? servidorMock.guardarConfiguracionAsistente(entrada)
-      : solicitar<ConfiguracionAsistenteApi>("comercial", "/asistente/configuracion", {
-          metodo: "PUT",
-          cuerpo: cuerpoGuardarConfiguracionAsistente(entrada),
-        }).then(aConfiguracionAsistente),
+    solicitar<ConfiguracionAsistenteApi>("comercial", "/asistente/configuracion", {
+      metodo: "PUT",
+      cuerpo: cuerpoGuardarConfiguracionAsistente(entrada),
+    }).then(aConfiguracionAsistente),
 
   probarConexionAsistente: (): Promise<void> =>
-    modoMock
-      ? servidorMock.probarConexionAsistente().then(() => undefined)
-      : solicitar<void>("comercial", "/asistente/configuracion/prueba", { metodo: "POST" }),
+    solicitar<void>("comercial", "/asistente/configuracion/prueba", { metodo: "POST" }),
 
   bloqueosAsistente: (filtro: { soloActivos?: boolean } = {}) =>
-    modoMock
-      ? servidorMock.bloqueosAsistente(filtro)
-      : solicitar<readonly BloqueoAsistenteApi[]>("comercial", "/asistente/bloqueos", {
-          parametros: { soloActivos: filtro.soloActivos ?? true },
-        }).then((bloqueos) => bloqueos.map(aBloqueoAsistente)),
+    solicitar<readonly BloqueoAsistenteApi[]>("comercial", "/asistente/bloqueos", {
+      parametros: { soloActivos: filtro.soloActivos ?? true },
+    }).then((bloqueos) => bloqueos.map(aBloqueoAsistente)),
 
   bloquearAsistente: (entrada: Entrada<typeof servidorMock.bloquearAsistente>) =>
-    modoMock
-      ? servidorMock.bloquearAsistente(entrada)
-      : solicitar<BloqueoAsistenteApi>("comercial", "/asistente/bloqueos", {
-          metodo: "POST",
-          cuerpo: cuerpoBloquearAsistente(entrada),
-        }).then(aBloqueoAsistente),
+    solicitar<BloqueoAsistenteApi>("comercial", "/asistente/bloqueos", {
+      metodo: "POST",
+      cuerpo: cuerpoBloquearAsistente(entrada),
+    }).then(aBloqueoAsistente),
 
   desbloquearAsistente: (entrada: Entrada<typeof servidorMock.desbloquearAsistente>) =>
-    modoMock
-      ? servidorMock.desbloquearAsistente(entrada)
-      : solicitar<BloqueoAsistenteApi>(
-          "comercial",
-          `/asistente/bloqueos/${entrada.id}/desbloqueo`,
-          { metodo: "POST" },
-        ).then(aBloqueoAsistente),
+    solicitar<BloqueoAsistenteApi>("comercial", `/asistente/bloqueos/${entrada.id}/desbloqueo`, {
+      metodo: "POST",
+    }).then(aBloqueoAsistente),
 
-  estadoLlamadasAsistente: (entrada: Entrada<typeof servidorMock.estadoLlamadasAsistente>) =>
-    modoMock
-      ? servidorMock.estadoLlamadasAsistente(entrada)
-      : solicitar<EstadoLlamadasAsistenteApi>("comercial", "/asistente/llamadas/estado").then(
-          aEstadoLlamadasAsistente,
-        ),
+  estadoLlamadasAsistente: () =>
+    solicitar<EstadoLlamadasAsistenteApi>("comercial", "/asistente/llamadas/estado").then(
+      aEstadoLlamadasAsistente,
+    ),
 
   guardarPolitica: (entrada: Entrada<typeof servidorMock.guardarPolitica>): Promise<Politica> =>
     modoMockRegistro
