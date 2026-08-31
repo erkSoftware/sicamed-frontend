@@ -16,6 +16,7 @@ import { IsotipoMono } from "../../shared/ui/primitivos/IsotipoMono";
 import type { NombreIcono } from "../../shared/ui/primitivos/Icono";
 import { PaletaComandos } from "../../shared/ui/comandos/PaletaComandos";
 import { AsistenteAurora } from "../../shared/ui/aurora/AsistenteAurora";
+import { RecorridoPanel } from "../../shared/ui/patrones/RecorridoPanel";
 import { SelectorTema } from "../../shared/tema/SelectorTema";
 import { useTema } from "../../shared/tema/almacen";
 import { iniciales } from "../../shared/i18n/formato";
@@ -155,13 +156,16 @@ export const LayoutApp = () => {
             <strong>{sesion?.usuario.nombre}</strong>
             <span>{sesion?.usuario.rol}</span>
           </span>
-          <Boton
-            variante="fantasma"
-            tamano="sm"
-            icono="salir"
-            aria-label="Cerrar sesión"
-            onClick={() => void cerrarSesion()}
-          />
+          <span className="lateral__pie-mandos">
+            <SelectorTema />
+            <Boton
+              variante="fantasma"
+              tamano="sm"
+              icono="salir"
+              aria-label="Cerrar sesión"
+              onClick={() => void cerrarSesion()}
+            />
+          </span>
         </div>
       </aside>
 
@@ -178,19 +182,24 @@ export const LayoutApp = () => {
             onClick={() => setAbierto((valor) => !valor)}
           />
           <nav className="barra__migas" aria-label="Ruta actual">
-            <Link to="/app">Inicio</Link>
-            {modulo ? (
-              <>
-                <span aria-hidden="true">/</span>
-                <span className="barra__modulo">{modulo.etiqueta}</span>
-              </>
-            ) : null}
-            {actual ? (
-              <>
-                <span aria-hidden="true">/</span>
-                <span className="barra__titulo">{actual.etiqueta}</span>
-              </>
-            ) : null}
+            <span className="barra__migas-corta">
+              {actual?.etiqueta ?? modulo?.etiqueta ?? "Inicio"}
+            </span>
+            <span className="barra__migas-larga">
+              <Link to="/app">Inicio</Link>
+              {modulo ? (
+                <>
+                  <span aria-hidden="true">/</span>
+                  <span className="barra__modulo">{modulo.etiqueta}</span>
+                </>
+              ) : null}
+              {actual ? (
+                <>
+                  <span aria-hidden="true">/</span>
+                  <span className="barra__titulo">{actual.etiqueta}</span>
+                </>
+              ) : null}
+            </span>
           </nav>
 
           <div className="barra__acciones">
@@ -238,6 +247,8 @@ export const LayoutApp = () => {
       />
 
       <AsistenteAurora />
+
+      <RecorridoPanel />
     </div>
   );
 };

@@ -366,23 +366,29 @@ export const AsistenteRegistro = ({ abierto, onCerrar, onRadicada }: Props) => {
       <div className="asistente">
         <aside className="asistente__guia">
           <Lamina motivo={actual.motivo} />
-          <ol className="asistente__pasos">
+          <ol className="asistente__pasos" aria-label={`Pasos del registro, ${paso + 1} de ${PASOS.length}`}>
             {PASOS.map((definicion, indice) => (
               <li
                 key={definicion.clave}
                 className="asistente__paso"
                 data-estado={indice === paso ? "actual" : indice < paso ? "hecho" : "futuro"}
+                aria-current={indice === paso ? "step" : undefined}
               >
                 <span className="asistente__marca" aria-hidden="true">
                   {indice < paso ? <Icono nombre="check" tamano={13} /> : indice + 1}
                 </span>
-                {definicion.rotulo}
+                <span className="asistente__rotulo">{definicion.rotulo}</span>
+                {indice < paso ? <span className="solo-lectores"> (completado)</span> : null}
               </li>
             ))}
           </ol>
         </aside>
 
         <div className="asistente__cuerpo">
+          <p className="solo-lectores" role="status">
+            Paso {paso + 1} de {PASOS.length}: {actual.titulo}
+          </p>
+
           {rechazo ? (
             <ErrorNormativo problema={aProblema(rechazo)} onReintentar={() => setRechazo(null)} />
           ) : null}
