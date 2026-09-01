@@ -17,7 +17,7 @@ import { NOMBRE_DOCUMENTO } from "./datosProceso";
 import { ETIQUETA_ROL } from "./datosGobierno";
 import { requisitosDeActor } from "./requisitosActor";
 import { pasosIniciales } from "./pasosDeVerificacion";
-import { archivoDeSoporte, detallarSolicitud } from "./soportesDeRegistro";
+import { descargaDeSoporte, detallarSolicitud } from "./soportesDeRegistro";
 import {
   VOZ_DEL_DESPLIEGUE,
   erroresDeConfiguracion,
@@ -1561,6 +1561,7 @@ export const servidorMock = {
 
   bloquearAsistente: (entrada: {
     usuario: string;
+    usuarioNombre?: string;
     motivo: string;
     tipo: TipoBloqueoAsistente;
     dias: number;
@@ -1603,6 +1604,7 @@ export const servidorMock = {
     const creado: BloqueoAsistente = {
       id: `BLQ-${(almacen.bloqueosAsistente.length + 1).toString().padStart(4, "0")}`,
       usuario,
+      usuarioNombre: sanearTextoDeAsistente(entrada.usuarioNombre ?? ""),
       motivo,
       tipo: entrada.tipo,
       iniciaEn: ahora(),
@@ -1611,10 +1613,12 @@ export const servidorMock = {
           ? new Date(Date.now() + entrada.dias * 24 * 60 * 60 * 1000).toISOString()
           : null,
       activo: true,
-      creadoPor: entrada.autor.nombre,
+      creadoPor: entrada.autor.usuarioId,
+      creadoPorNombre: entrada.autor.nombre,
       creadoEn: ahora(),
       desbloqueadoEn: null,
       desbloqueadoPor: "",
+      desbloqueadoPorNombre: "",
     };
     almacen.bloqueosAsistente = [creado, ...almacen.bloqueosAsistente];
 
@@ -1645,7 +1649,8 @@ export const servidorMock = {
       ...bloqueo,
       activo: false,
       desbloqueadoEn: ahora(),
-      desbloqueadoPor: entrada.autor.nombre,
+      desbloqueadoPor: entrada.autor.usuarioId,
+      desbloqueadoPorNombre: entrada.autor.nombre,
     };
     almacen.bloqueosAsistente = almacen.bloqueosAsistente.map((registro) =>
       registro.id === entrada.id ? levantado : registro,
@@ -1770,8 +1775,25 @@ export const servidorMock = {
     return demorar(detallarSolicitud(solicitud, almacen.soportes));
   },
 
-  archivoDeSoporte: (soporteId: string) =>
-    demorar(archivoDeSoporte(soporteId, almacen.soportes, almacen.solicitudes)),
+  descargaDeSoporte: (entrada: { solicitudId: string; soporteId: string }) => {
+    const descarga = descargaDeSoporte(
+      entrada.solicitudId,
+      entrada.soporteId,
+      almacen.soportes,
+      almacen.solicitudes,
+    );
+    if (!descarga) {
+      return rechazar({
+        type: "https://sicamed.co/problemas/soporte-desconocido",
+        title: "Ese soporte no respalda esta solicitud",
+        detail:
+          "El documento ya no está disponible, o nunca estuvo atado a esta radicación. No es un " +
+          "fallo que se arregle reintentando.",
+        status: 404,
+      });
+    }
+    return demorar(descarga);
+  },
 
   requisitosDeActor: (tipoActor: TipoActor) => demorar(requisitosDeActor(tipoActor)),
 

@@ -21,6 +21,7 @@ export type FalloVozVisible = {
   titulo: string;
   detalle: string;
   reintentable: boolean;
+  esperaSegundos?: number;
 };
 
 type EstadoAurora = {
@@ -34,6 +35,7 @@ type EstadoAurora = {
   vozDemostrativa: boolean;
   transcripcion: string;
   falloVoz: FalloVozVisible | null;
+  reintentoDesde: number;
   segundosRestantes: number | null;
   cupoRestante: number | null;
   alternarVisible: () => void;
@@ -123,6 +125,7 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
   vozDemostrativa: false,
   transcripcion: "",
   falloVoz: null,
+  reintentoDesde: 0,
   segundosRestantes: null,
   cupoRestante: null,
 
@@ -164,7 +167,7 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
     if (voz === "escuchando") estado.fijarAccion("escuchar");
     if (voz === "conectando") estado.fijarAccion("pensar");
     if (voz === "inactiva" || voz === "fallo") estado.fijarAccion(ACCION_INICIAL);
-    set({ voz, ...(voz === "fallo" ? {} : { falloVoz: null }) });
+    set({ voz, ...(voz === "fallo" ? {} : { falloVoz: null, reintentoDesde: 0 }) });
   },
 
   vedarVoz: () => set({ vozDisponible: false }),
@@ -189,7 +192,12 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
 
   fallarVoz: (fallo) => {
     get().fijarAccion(ACCION_INICIAL);
-    set({ voz: "fallo", falloVoz: fallo, transcripcion: "" });
+    set({
+      voz: "fallo",
+      falloVoz: fallo,
+      reintentoDesde: fallo.esperaSegundos ? Date.now() + fallo.esperaSegundos * 1000 : 0,
+      transcripcion: "",
+    });
   },
 
   reiniciar: () => {
@@ -199,6 +207,7 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
       accion: ACCION_INICIAL,
       transcripcion: "",
       falloVoz: null,
+      reintentoDesde: 0,
       segundosRestantes: null,
       cupoRestante: null,
     });

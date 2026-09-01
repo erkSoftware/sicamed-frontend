@@ -1,7 +1,7 @@
 import { adjuntoDeMuestra, imagenDeMuestra, pdfDeMuestra } from "./archivosDeMuestra";
 import { requisitosDeActor } from "./requisitosActor";
 import type {
-  ArchivoPublicado,
+  DescargaDeSoporte,
   SolicitudDetallada,
   SolicitudRegistro,
   SoporteDeclarado,
@@ -62,45 +62,55 @@ const pesoDeLaUrl = (url: string): number => {
   return url.includes(";base64,") ? Math.round((carga.length * 3) / 4) : carga.length;
 };
 
-export const archivoDeSoporte = (
+export const descargaDeSoporte = (
+  solicitudId: string,
   soporteId: string,
   soportes: readonly SoporteSimulado[],
   solicitudes: readonly SolicitudRegistro[],
-): ArchivoPublicado => {
-  const guardado = soportes.find((uno) => uno.soporteId === soporteId);
-  const solicitud = solicitudes.find((una) =>
-    una.documentos.some((documento) => documento.soporteId === soporteId),
-  );
+): DescargaDeSoporte | null => {
+  const solicitud = solicitudes.find((una) => una.id === solicitudId);
   const documento = solicitud?.documentos.find((uno) => uno.soporteId === soporteId);
-  const tipo = guardado?.tipo ?? documento?.tipo ?? "SOPORTE";
-  const titulo = etiquetaDelTipo(tipo, solicitud?.tipoActor ?? "CULTIVADOR");
+  if (!solicitud || !documento || soporteId === "") return null;
+
+  const guardado = soportes.find((uno) => uno.soporteId === soporteId);
+  const tipo = guardado?.tipo ?? documento.tipo;
+  const titulo = etiquetaDelTipo(tipo, solicitud.tipoActor);
+  const nombre = guardado?.nombre ?? nombreDelSoporte(tipo, soporteId);
   const mime =
     guardado?.mime && guardado.mime !== "application/octet-stream"
       ? guardado.mime
       : MIMES[extensionDelSoporte(soporteId)];
+  const expiraEn = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  const publicada = (url: string, tipoReal: string): DescargaDeSoporte => ({
+    soporteId,
+    url,
+    nombre,
+    mime: tipoReal,
+    bytes: guardado?.bytes || pesoDeLaUrl(url),
+    expiraEn,
+  });
 
   if (mime.startsWith("image/")) {
-    const url = imagenDeMuestra(
-      titulo.slice(0, 46),
-      solicitud?.nit.slice(0, 9) ?? "SICAMED",
-      dispersion(soporteId) % 360,
+    return publicada(
+      imagenDeMuestra(titulo.slice(0, 46), solicitud.nit.slice(0, 9), dispersion(soporteId) % 360),
+      "image/svg+xml",
     );
-    return { url, mime: "image/svg+xml", bytes: guardado?.bytes || pesoDeLaUrl(url) };
   }
 
   if (mime === "application/pdf") {
-    const url = pdfDeMuestra(titulo.slice(0, 60), [
-      `Organizacion: ${solicitud?.organizacion ?? "Sin asociar"}`,
-      `NIT: ${solicitud?.nit ?? "sin dato"}`,
-      `Representante: ${solicitud?.representante ?? "sin dato"}`,
-      `Soporte: ${soporteId}`,
-      "",
-      "Documento de demostracion generado por el simulador de SICAMED.",
-      "En el servidor real aqui viaja el archivo que adjunto quien radico.",
-    ]);
-    return { url, mime, bytes: guardado?.bytes || pesoDeLaUrl(url) };
+    return publicada(
+      pdfDeMuestra(titulo.slice(0, 60), [
+        `Organizacion: ${solicitud.organizacion}`,
+        `NIT: ${solicitud.nit}`,
+        `Representante: ${solicitud.representante}`,
+        `Soporte: ${soporteId}`,
+        "",
+        "Documento de demostracion generado por el simulador de SICAMED.",
+        "En el servidor real aqui viaja el archivo que adjunto quien radico.",
+      ]),
+      mime,
+    );
   }
 
-  const url = adjuntoDeMuestra(nombreDelSoporte(tipo, soporteId), mime);
-  return { url, mime, bytes: guardado?.bytes || pesoDeLaUrl(url) };
+  return publicada(adjuntoDeMuestra(nombreDelSoporte(tipo, soporteId), mime), mime);
 };

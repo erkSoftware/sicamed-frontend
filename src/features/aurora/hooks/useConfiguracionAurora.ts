@@ -35,6 +35,16 @@ export const useBloqueosAurora = (soloActivos: boolean) =>
     retry: false,
   });
 
+export const useCuentasParaBloqueo = (busqueda: string, habilitado: boolean) =>
+  useQuery({
+    queryKey: [...CLAVE_BLOQUEOS_AURORA, "cuentas", busqueda],
+    queryFn: () => apiComercial.cuentas({ busqueda, porPagina: 20 }),
+    enabled: habilitado,
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+  });
+
 export const useBloquearAurora = () => {
   const cliente = useQueryClient();
   return useMutation({

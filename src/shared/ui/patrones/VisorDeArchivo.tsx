@@ -17,6 +17,7 @@ export type ArchivoVisible = {
   mime: string;
   bytes: number;
   cargando?: boolean;
+  fallo?: string;
 };
 
 type Props = {
@@ -66,6 +67,19 @@ const Lienzo = ({ archivo }: { archivo: ArchivoVisible }) => {
       <div className="visor__aviso">
         <span className="girador" style={{ width: 22, height: 22 }} />
         <p className="visor__pista">Pidiendo el archivo al servidor…</p>
+      </div>
+    );
+  }
+
+  if (archivo.fallo) {
+    return (
+      <div className="visor__aviso">
+        <Icono nombre="alerta" tamano={40} />
+        <p className="visor__motivo">{archivo.fallo}</p>
+        <p className="visor__pista">
+          La dirección de descarga se firma en el momento de pedirla y vive unos minutos. Cierra el
+          visor y vuelve a pulsar «Ver» si crees que solo caducó.
+        </p>
       </div>
     );
   }

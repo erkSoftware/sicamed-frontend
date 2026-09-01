@@ -461,12 +461,17 @@ export const cuerpoGuardarConfiguracionAsistente = (entrada: {
 
 export const cuerpoBloquearAsistente = (entrada: {
   usuario: string;
+  usuarioNombre?: string;
   motivo: string;
   tipo: TipoBloqueoAsistente;
   dias: number;
-}): CrearBloqueoAsistenteApi => ({
-  usuario: entrada.usuario.trim(),
-  motivo: sanearTextoDeAsistente(entrada.motivo),
-  tipo: entrada.tipo,
-  ...(entrada.tipo === "temporary" ? { dias: entrada.dias } : {}),
-});
+}): CrearBloqueoAsistenteApi => {
+  const nombre = sanearTextoDeAsistente(entrada.usuarioNombre ?? "");
+  return {
+    usuario: entrada.usuario.trim(),
+    ...(nombre === "" ? {} : { usuarioNombre: nombre }),
+    motivo: sanearTextoDeAsistente(entrada.motivo),
+    tipo: entrada.tipo,
+    ...(entrada.tipo === "temporary" ? { dias: entrada.dias } : {}),
+  };
+};

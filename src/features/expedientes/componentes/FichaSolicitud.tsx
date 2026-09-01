@@ -10,6 +10,7 @@ import { VisorDeArchivo } from "../../../shared/ui/patrones/VisorDeArchivo";
 import type { ArchivoVisible } from "../../../shared/ui/patrones/VisorDeArchivo";
 import { apiComercial } from "../../../shared/api/clienteComercial";
 import { aProblema } from "../../../shared/api/problemDetails";
+import { usePermiso } from "../../../shared/rbac/usePermiso";
 import { fechaCorta } from "../../../shared/i18n/formato";
 import { nombreDeDepartamento, nombreDeMunicipio } from "../../../shared/ubicacion/divipola";
 import { useRequisitos } from "../../../publico/registro/requisitos";
@@ -23,6 +24,23 @@ type Props = {
   onCerrar: () => void;
 };
 
+const SIN_ARCHIVO =
+  "Esta solicitud lo declaró sin adjuntar nada: es una radicación anterior a que se subieran los soportes.";
+
+const motivoDelFallo = (error: unknown): string => {
+  const problema = aProblema(error);
+  if (problema.status === 404) {
+    return "El documento ya no está disponible: ese soporte no respalda esta solicitud.";
+  }
+  if (problema.status === 403) {
+    return "Tu rol no puede abrir los soportes de una solicitud.";
+  }
+  if (problema.status === 401) {
+    return "La sesión caducó mientras leías la ficha. Vuelve a entrar y ábrelo otra vez.";
+  }
+  return problema.detail || problema.title;
+};
+
 const Dato = ({ rotulo, children }: { rotulo: string; children: ReactNode }) => (
   <div className="ficha__dato">
     <dt>{rotulo}</dt>
@@ -32,33 +50,57 @@ const Dato = ({ rotulo, children }: { rotulo: string; children: ReactNode }) => 
 
 export const FichaSolicitud = ({ solicitud, onCerrar }: Props) => {
   const [enPantalla, setEnPantalla] = useState<number | null>(null);
+  const [pedidos, setPedidos] = useState<readonly string[]>([]);
 
   const detalle = useSolicitud(solicitud?.id ?? null);
   const requisitos = useRequisitos(solicitud?.tipoActor ?? "CULTIVADOR", solicitud !== null);
+  const puedeAbrir = usePermiso("cumplimiento:solicitud:tramitar");
 
   const declarados = useMemo(() => detalle.data?.declarados ?? [], [detalle.data]);
+  const solicitudId = solicitud?.id ?? "";
 
   const consultas = useQueries({
     queries: declarados.map((declarado) => ({
-      queryKey: ["comercial", "soporte", declarado.soporteId],
-      queryFn: () => apiComercial.archivoDeSoporte(declarado.soporteId),
-      enabled: declarado.soporteId !== "",
+      queryKey: ["comercial", "soporte", solicitudId, declarado.soporteId],
+      queryFn: () =>
+        apiComercial.descargaDeSoporte({ solicitudId, soporteId: declarado.soporteId }),
+      enabled:
+        puedeAbrir && declarado.soporteId !== "" && pedidos.includes(declarado.soporteId),
       staleTime: 5 * 60_000,
+      gcTime: 5 * 60_000,
       retry: false,
     })),
   });
 
   const catalogo = requisitos.data?.documentos ?? [];
 
-  const archivos: readonly ArchivoVisible[] = declarados.map((declarado, i) => ({
-    id: declarado.soporteId,
-    titulo: etiquetaDeclarada(declarado.tipo, catalogo),
-    nombre: declarado.nombre,
-    url: consultas[i]?.data?.url ?? "",
-    mime: consultas[i]?.data?.mime ?? "",
-    bytes: consultas[i]?.data?.bytes ?? 0,
-    cargando: consultas[i]?.isPending && declarado.soporteId !== "",
-  }));
+  const archivos: readonly ArchivoVisible[] = declarados.map((declarado, i) => {
+    const consulta = consultas[i];
+    return {
+      id: declarado.soporteId,
+      titulo: etiquetaDeclarada(declarado.tipo, catalogo),
+      nombre: declarado.nombre,
+      url: consulta?.data?.url ?? "",
+      mime: consulta?.data?.mime ?? "",
+      bytes: consulta?.data?.bytes ?? 0,
+      cargando: consulta?.isFetching === true,
+      ...(declarado.soporteId === ""
+        ? { fallo: SIN_ARCHIVO }
+        : consulta?.error
+          ? { fallo: motivoDelFallo(consulta.error) }
+          : {}),
+    };
+  });
+
+  const abrirEn = (indice: number) => {
+    const declarado = declarados[indice];
+    if (declarado && declarado.soporteId !== "") {
+      setPedidos((previos) =>
+        previos.includes(declarado.soporteId) ? previos : [...previos, declarado.soporteId],
+      );
+    }
+    setEnPantalla(indice);
+  };
 
   if (!solicitud) return null;
 
@@ -148,18 +190,29 @@ export const FichaSolicitud = ({ solicitud, onCerrar }: Props) => {
                 <span className="mono ficha__meta">{archivo.nombre}</span>
                 <span className="ficha__meta">
                   {archivo.cargando
-                    ? "Resolviendo el archivo…"
-                    : archivo.url === ""
-                      ? "El servidor no publicó una dirección"
-                      : [extensionDe(archivo.nombre).toUpperCase(), pesoLegible(archivo.bytes)]
+                    ? "Pidiendo la dirección al servidor…"
+                    : archivo.fallo
+                      ? archivo.fallo
+                      : [
+                          extensionDe(archivo.nombre).toUpperCase(),
+                          pesoLegible(archivo.bytes),
+                        ]
                           .filter(Boolean)
                           .join(" · ")}
                 </span>
               </div>
               <div className="ficha__soporte-acciones">
-                <Boton variante="secundario" tamano="sm" icono="ojo" onClick={() => setEnPantalla(i)}>
-                  Ver
-                </Boton>
+                {archivo.id !== "" && puedeAbrir ? (
+                  <Boton
+                    variante="secundario"
+                    tamano="sm"
+                    icono="ojo"
+                    cargando={archivo.cargando}
+                    onClick={() => abrirEn(i)}
+                  >
+                    Ver
+                  </Boton>
+                ) : null}
                 {archivo.url ? (
                   <a
                     className="boton boton--fantasma boton--sm"
@@ -182,7 +235,7 @@ export const FichaSolicitud = ({ solicitud, onCerrar }: Props) => {
         abierto={enPantalla !== null}
         archivos={archivos}
         indice={enPantalla ?? 0}
-        onIndice={setEnPantalla}
+        onIndice={abrirEn}
         onCerrar={() => setEnPantalla(null)}
       />
     </>
