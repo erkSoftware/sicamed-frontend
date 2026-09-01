@@ -447,6 +447,12 @@ export type ArchivoPublicado = {
   bytes: number;
 };
 
+export type DescargaDeSoporte = ArchivoPublicado & {
+  soporteId: string;
+  nombre: string;
+  expiraEn: string;
+};
+
 export type SoporteSimulado = {
   soporteId: string;
   tipo: string;
@@ -597,15 +603,18 @@ export type TipoBloqueoAsistente = "temporary" | "permanent";
 export type BloqueoAsistente = {
   id: string;
   usuario: string;
+  usuarioNombre: string;
   motivo: string;
   tipo: TipoBloqueoAsistente;
   iniciaEn: string;
   expiraEn: string | null;
   activo: boolean;
   creadoPor: string;
+  creadoPorNombre: string;
   creadoEn: string;
   desbloqueadoEn: string | null;
   desbloqueadoPor: string;
+  desbloqueadoPorNombre: string;
 };
 
 export type EstadoLlamadasAsistente = {

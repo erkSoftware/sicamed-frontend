@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { clasificarEvento, leerEvento } from "./eventos";
 import { normalizarRms, seguir } from "./nivel";
 import { envolventeHabla, trocear } from "./demostracion";
-import { diagnosticar } from "./diagnostico";
+import { ESPERA_ENTRE_INTENTOS, diagnosticar } from "./diagnostico";
+import { cupoDelDia, vedaDelCupo } from "./cupo";
 import { FalloVoz, identificadorDeLlamada, urlDeCanje } from "./sesion";
 import { cuerpoDeCierre } from "../../../api/clienteAsistente";
 import { mensajeDeAviso, planDeLlamada } from "./llamada";
@@ -156,6 +157,134 @@ describe("diagnosticar", () => {
 
   it("cae en un mensaje propio ante un motivo desconocido", () => {
     expect(diagnosticar(new Error("cualquiera")).fallo.reintentable).toBe(true);
+  });
+
+  it("nada de lo que no se arregla repitiéndolo ofrece reintento", () => {
+    const irreintentables = [
+      problema(403, "https://sicamed.co/problemas/asistente-usuario-bloqueado"),
+      problema(429, "https://sicamed.co/problemas/asistente-limite-diario"),
+      problema(403, "https://sicamed.co/problemas/permiso-denegado"),
+      problema(422, "https://sicamed.co/problemas/configuracion-asistente-invalida"),
+      problema(502, "https://sicamed.co/problemas/asistente-credencial-rechazada"),
+      problema(503, "https://sicamed.co/problemas/asistente-deshabilitado"),
+      problema(503, "https://sicamed.co/problemas/asistente-no-configurado"),
+    ];
+    irreintentables.forEach((error) => expect(diagnosticar(error).fallo.reintentable).toBe(false));
+  });
+
+  it("todo lo que sí se reintenta contra el borde exige esperar entre intentos", () => {
+    const conEspera = [
+      problema(503, "https://sicamed.co/problemas/proveedor-realtime-no-disponible"),
+      problema(503, "https://sicamed.co/problemas/otra-cosa"),
+      problema(429, "https://sicamed.co/problemas/demasiadas-peticiones"),
+      problema(500, "https://sicamed.co/problemas/error-inesperado"),
+    ];
+    conEspera.forEach((error) => {
+      const { fallo } = diagnosticar(error);
+      expect(fallo.reintentable).toBe(true);
+      expect(fallo.esperaSegundos).toBeGreaterThanOrEqual(ESPERA_ENTRE_INTENTOS);
+    });
+  });
+
+  it("un 429 con espera declarada nunca reintenta antes que el servidor", () => {
+    const largo = new ErrorApi({
+      type: "https://sicamed.co/problemas/demasiadas-peticiones",
+      title: "Título",
+      detail: "Detalle",
+      status: 429,
+      reintentarEn: 90,
+    });
+    expect(diagnosticar(largo).fallo.esperaSegundos).toBe(90);
+  });
+
+  it("el permiso del micrófono se reintenta sin espera: no gasta intentos del borde", () => {
+    expect(diagnosticar(new FalloVoz("permiso-negado")).fallo.esperaSegundos).toBeUndefined();
+    expect(diagnosticar(new FalloVoz("proveedor")).fallo.esperaSegundos).toBe(
+      ESPERA_ENTRE_INTENTOS,
+    );
+  });
+});
+
+const estadoBase = {
+  puedeLlamar: true,
+  consumidoSegundos: 0,
+  llamadasHoy: 0,
+  limiteDiarioSegundos: 600,
+  restanteDiarioSegundos: 600,
+  duracionMaximaSegundos: 300,
+  bloqueo: null,
+};
+
+const bloqueoBase = {
+  id: "BLQ-0001",
+  usuario: "USR-0007",
+  usuarioNombre: "Laura Restrepo",
+  motivo: "Exceso de intentos de llamada",
+  tipo: "temporary" as const,
+  iniciaEn: "2026-09-01T00:00:00Z",
+  expiraEn: "2026-10-01T00:00:00Z",
+  activo: true,
+  creadoPor: "sistema",
+  creadoPorNombre: "",
+  creadoEn: "2026-09-01T00:00:00Z",
+  desbloqueadoEn: null,
+  desbloqueadoPor: "",
+  desbloqueadoPorNombre: "",
+};
+
+describe("vedaDelCupo", () => {
+  it("quien puede llamar no ve ninguna veda", () => {
+    expect(vedaDelCupo(estadoBase)).toBeNull();
+  });
+
+  it("el bloqueo se explica con su motivo, su vencimiento y quién lo puso", () => {
+    const veda = vedaDelCupo({ ...estadoBase, puedeLlamar: false, bloqueo: bloqueoBase });
+    expect(veda?.titulo).toContain("bloqueada");
+    expect(veda?.detalle).toContain("Exceso de intentos de llamada");
+    expect(veda?.detalle).toContain("exceso de intentos");
+  });
+
+  it("un permanente no inventa fecha de vencimiento", () => {
+    const veda = vedaDelCupo({
+      ...estadoBase,
+      puedeLlamar: false,
+      bloqueo: {
+        ...bloqueoBase,
+        expiraEn: null,
+        tipo: "permanent",
+        creadoPor: "USR-0001",
+        creadoPorNombre: "Diego Marín",
+      },
+    });
+    expect(veda?.detalle).toContain("No tiene fecha de vencimiento");
+    expect(veda?.detalle).toContain("Diego Marín");
+  });
+
+  it("el cupo agotado no se confunde con un bloqueo", () => {
+    const veda = vedaDelCupo({ ...estadoBase, puedeLlamar: false, restanteDiarioSegundos: 0 });
+    expect(veda?.titulo).toContain("tiempo de voz de hoy");
+  });
+
+  it("sin tope diario y sin bloqueo, el no poder llamar es de la entidad", () => {
+    const veda = vedaDelCupo({
+      ...estadoBase,
+      puedeLlamar: false,
+      limiteDiarioSegundos: 0,
+      restanteDiarioSegundos: 0,
+    });
+    expect(veda?.titulo).toContain("no está disponible");
+  });
+});
+
+describe("cupoDelDia", () => {
+  it("un cupo de cero segundos declara la ausencia de tope, no la de tiempo", () => {
+    expect(cupoDelDia({ ...estadoBase, limiteDiarioSegundos: 0, restanteDiarioSegundos: 0 })).toBeNull();
+  });
+
+  it("con tope, dice cuánto queda", () => {
+    expect(cupoDelDia({ ...estadoBase, restanteDiarioSegundos: 300 })).toBe(
+      "Te quedan 5 min de cupo hoy",
+    );
   });
 });
 

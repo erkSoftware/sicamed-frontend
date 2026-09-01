@@ -67,9 +67,69 @@ const SESION = {
   llamadaId: "lla_prueba",
 };
 
+const ESTADO_LIBRE = {
+  puedeLlamar: true,
+  consumidoSegundos: 0,
+  llamadasHoy: 0,
+  limiteDiarioSegundos: 600,
+  restanteDiarioSegundos: 600,
+  duracionMaximaSegundos: 300,
+  bloqueo: null,
+};
+
+const BLOQUEO = {
+  id: "BLQ-0001",
+  usuario: "USR-0007",
+  usuarioNombre: "Laura Restrepo Ossa",
+  motivo: "Exceso de intentos de llamada",
+  tipo: "temporary",
+  iniciaEn: "2026-09-01T00:00:00Z",
+  expiraEn: "2026-10-01T00:00:00Z",
+  activo: true,
+  creadoPor: "sistema",
+  creadoPorNombre: "",
+  creadoEn: "2026-09-01T00:00:00Z",
+  desbloqueadoEn: null,
+  desbloqueadoPor: "",
+  desbloqueadoPorNombre: "",
+};
+
+const ESTADO_BLOQUEADO = { ...ESTADO_LIBRE, puedeLlamar: false, bloqueo: BLOQUEO };
+
+let estadoDeLlamadas: unknown = ESTADO_LIBRE;
+let respuestaDeSesion: unknown = null;
+let respuestaDeDesbloqueo: unknown = null;
+
+const problema = (status: number, type: string, detail: string) => ({
+  ok: false,
+  status,
+  headers: new Headers(),
+  json: async () => ({ type, title: "Título", detail, status }),
+});
+
 const respuestaDeRed = (url: string) => {
+  if (url.endsWith("/desbloqueo")) {
+    return (
+      respuestaDeDesbloqueo ?? {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({ ...BLOQUEO, activo: false, desbloqueadoEn: "2026-09-02T00:00:00Z" }),
+      }
+    );
+  }
+  if (url.endsWith("/asistente/llamadas/estado")) {
+    return { ok: true, status: 200, headers: new Headers(), json: async () => estadoDeLlamadas };
+  }
   if (url.endsWith("/asistente/sesiones")) {
-    return { ok: true, status: 201, headers: new Headers(), json: async () => SESION };
+    return (
+      respuestaDeSesion ?? {
+        ok: true,
+        status: 201,
+        headers: new Headers(),
+        json: async () => SESION,
+      }
+    );
   }
   if (url.endsWith("/cierre")) {
     return { ok: true, status: 204, headers: new Headers() };
@@ -87,10 +147,15 @@ const red = vi.fn(
     respuestaDeRed(String(argumentos[0])) as unknown as Response,
 );
 
-const llamadaDeRed = (indice: number) => {
-  const registro = red.mock.calls[indice];
-  if (!registro) throw new Error(`no hubo llamada de red ${indice}`);
-  return { url: String(registro[0]), opciones: registro[1] };
+const llamadasA = (fragmento: string) =>
+  red.mock.calls
+    .filter((registro) => String(registro[0]).includes(fragmento))
+    .map((registro) => ({ url: String(registro[0]), opciones: registro[1] }));
+
+const llamadaA = (fragmento: string) => {
+  const encontrada = llamadasA(fragmento)[0];
+  if (!encontrada) throw new Error(`no hubo llamada de red a ${fragmento}`);
+  return encontrada;
 };
 
 const autorizacion = (permisos: readonly Permiso[]): ValorAuth =>
@@ -123,6 +188,9 @@ const abrirPanel = async () => {
 
 beforeEach(() => {
   marcarPresentada();
+  estadoDeLlamadas = ESTADO_LIBRE;
+  respuestaDeSesion = null;
+  respuestaDeDesbloqueo = null;
   red.mockClear();
   vi.stubGlobal("AudioContext", contextoAudioFalso);
   vi.stubGlobal("RTCPeerConnection", vi.fn(conexionFalsa));
@@ -135,7 +203,13 @@ beforeEach(() => {
 
 afterEach(() => {
   terminarConversacion();
-  useAurora.setState({ visible: false, mensajes: [], vozDisponible: true, falloVoz: null });
+  useAurora.setState({
+    visible: false,
+    mensajes: [],
+    vozDisponible: true,
+    falloVoz: null,
+    reintentoDesde: 0,
+  });
   vi.unstubAllGlobals();
 });
 
@@ -168,9 +242,11 @@ describe("AsistenteAurora", () => {
     await abrirPanel();
     await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
 
-    expect(llamadaDeRed(0).url).toContain("/api/v1/comercial/asistente/sesiones");
+    expect(llamadaA("/asistente/sesiones").url).toContain(
+      "/api/v1/comercial/asistente/sesiones",
+    );
 
-    const canje = llamadaDeRed(1);
+    const canje = llamadaA(SESION.urlWebrtc);
     expect(canje.url).toBe(`${SESION.urlWebrtc}?model=${SESION.modelo}`);
     expect(canje.opciones?.body).toBe("v=0 oferta");
 
@@ -186,8 +262,8 @@ describe("AsistenteAurora", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /Terminar/ }));
 
-    await waitFor(() => expect(red.mock.calls.length).toBeGreaterThan(2));
-    const cierre = llamadaDeRed(2);
+    await waitFor(() => expect(llamadasA("/cierre")).toHaveLength(1));
+    const cierre = llamadaA("/cierre");
     expect(cierre.url).toContain("/asistente/llamadas/lla_prueba/cierre");
     expect(JSON.parse(String(cierre.opciones?.body))).toEqual({
       motivo: "user_ended",
@@ -248,6 +324,7 @@ describe("la primera vez que se toca a Aurora", () => {
 
     expect(screen.queryByRole("heading", { name: "Habla con AURORA" })).not.toBeInTheDocument();
     expect(useAurora.getState().visible).toBe(true);
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
   });
 
   it("después de verla una vez, tocar a Aurora abre la conversación directamente", async () => {
@@ -260,5 +337,155 @@ describe("la primera vez que se toca a Aurora", () => {
     await abrirPanel();
     expect(screen.queryByRole("heading", { name: "Habla con AURORA" })).not.toBeInTheDocument();
     expect(useAurora.getState().visible).toBe(true);
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+  });
+});
+
+describe("el cupo se consulta antes de abrir el micrófono", () => {
+  it("pregunta por el estado antes de pedir una sesión", async () => {
+    montar();
+    await abrirPanel();
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+
+    const estado = llamadaA("/asistente/llamadas/estado");
+    expect(estado.opciones?.method ?? "GET").toBe("GET");
+    expect(red.mock.calls.findIndex((registro) => String(registro[0]).includes("/estado"))).toBe(0);
+  });
+
+  it("colgar releé el cupo y no vuelve a abrir la sesión por su cuenta", async () => {
+    montar();
+    await abrirPanel();
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+
+    await userEvent.click(screen.getByRole("button", { name: /Terminar/ }));
+    await waitFor(() => expect(llamadasA("/asistente/llamadas/estado")).toHaveLength(2));
+
+    expect(llamadasA("/asistente/sesiones")).toHaveLength(1);
+    expect(useAurora.getState().voz).toBe("inactiva");
+    expect(screen.getByRole("button", { name: /Hablar con Aurora/ })).toBeEnabled();
+  });
+
+  it("una cuenta bloqueada no gasta ni un intento y ve el motivo con su fecha", async () => {
+    estadoDeLlamadas = ESTADO_BLOQUEADO;
+
+    montar();
+    await abrirPanel();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/voz bloqueada/i);
+    expect(screen.getByRole("alert")).toHaveTextContent(/Exceso de intentos de llamada/);
+    expect(screen.getByRole("alert")).toHaveTextContent(/exceso de intentos/i);
+    expect(llamadasA("/asistente/sesiones")).toHaveLength(0);
+    expect(navigator.mediaDevices.getUserMedia).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: /Hablar con Aurora/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Reintentar/ })).not.toBeInTheDocument();
+  });
+
+  it("quien administra los bloqueos se levanta el suyo desde el propio panel", async () => {
+    estadoDeLlamadas = ESTADO_BLOQUEADO;
+
+    montar(["asistente:sesion:abrir", "asistente:llamadas:gestionar"]);
+    await abrirPanel();
+
+    const levantar = await screen.findByRole("button", { name: /Levantar mi bloqueo/ });
+    estadoDeLlamadas = ESTADO_LIBRE;
+    await userEvent.click(levantar);
+
+    await waitFor(() => expect(llamadasA("/asistente/bloqueos/")).toHaveLength(1));
+    expect(llamadaA("/asistente/bloqueos/").url).toContain("/BLQ-0001/desbloqueo");
+    expect(llamadaA("/asistente/bloqueos/").opciones?.method).toBe("POST");
+
+    expect(await screen.findByRole("button", { name: /Hablar con Aurora/ })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(llamadasA("/asistente/sesiones")).toHaveLength(0);
+  });
+
+  it("sin el permiso de gestionar bloqueos el panel no ofrece levantarlo", async () => {
+    estadoDeLlamadas = ESTADO_BLOQUEADO;
+
+    montar();
+    await abrirPanel();
+
+    await screen.findByRole("alert");
+    expect(screen.queryByRole("button", { name: /Levantar mi bloqueo/ })).not.toBeInTheDocument();
+  });
+
+  it("si debajo quedaba otro bloqueo lo dice en vez de fingir que ya puede hablar", async () => {
+    estadoDeLlamadas = ESTADO_BLOQUEADO;
+
+    montar(["asistente:sesion:abrir", "asistente:llamadas:gestionar"]);
+    await abrirPanel();
+
+    const levantar = await screen.findByRole("button", { name: /Levantar mi bloqueo/ });
+    estadoDeLlamadas = {
+      ...ESTADO_BLOQUEADO,
+      bloqueo: { ...BLOQUEO, id: "BLQ-0009" },
+    };
+    await userEvent.click(levantar);
+
+    expect(await screen.findByText(/hay otro encima creado después/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Hablar con Aurora/ })).not.toBeInTheDocument();
+  });
+
+  it("el cupo agotado se explica sin invitar a repetir la apertura", async () => {
+    estadoDeLlamadas = { ...ESTADO_LIBRE, puedeLlamar: false, restanteDiarioSegundos: 0 };
+
+    montar();
+    await abrirPanel();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/tiempo de voz de hoy/i);
+    expect(llamadasA("/asistente/sesiones")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: /Hablar con Aurora/ })).not.toBeInTheDocument();
+  });
+
+  it("sin tope diario no anuncia cero minutos de cupo", async () => {
+    estadoDeLlamadas = {
+      ...ESTADO_LIBRE,
+      limiteDiarioSegundos: 0,
+      restanteDiarioSegundos: 0,
+    };
+
+    montar();
+    await abrirPanel();
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+
+    expect(screen.queryByText(/sin límite de cupo hoy/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/0 min de cupo/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("los rechazos no se reintentan solos", () => {
+  it("un 403 de bloqueo no deja ningún botón que vuelva a abrir sesión", async () => {
+    respuestaDeSesion = problema(
+      403,
+      "https://sicamed.co/problemas/asistente-usuario-bloqueado",
+      "Su cuenta tiene la voz bloqueada hasta el 2026-10-01.",
+    );
+
+    montar();
+    await abrirPanel();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/voz bloqueada/i);
+    expect(screen.queryByRole("button", { name: /Reintentar/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Hablar con Aurora/ })).not.toBeInTheDocument();
+    expect(llamadasA("/asistente/sesiones")).toHaveLength(1);
+  });
+
+  it("el 503 del proveedor deja reintentar, pero no antes de treinta segundos", async () => {
+    respuestaDeSesion = problema(
+      503,
+      "https://sicamed.co/problemas/proveedor-realtime-no-disponible",
+      "El proveedor de voz no respondió.",
+    );
+
+    montar();
+    await abrirPanel();
+
+    const boton = await screen.findByRole("button", { name: /Reintentar en/ });
+    expect(boton).toBeDisabled();
+    expect(boton).toHaveTextContent(/Reintentar en 30 s/);
+    expect(llamadasA("/asistente/sesiones")).toHaveLength(1);
+
+    await userEvent.click(boton);
+    expect(llamadasA("/asistente/sesiones")).toHaveLength(1);
   });
 });

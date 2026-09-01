@@ -7,6 +7,8 @@ export type Diagnostico = {
   fallo: FalloVozVisible;
 };
 
+export const ESPERA_ENTRE_INTENTOS = 30;
+
 const POR_MEDIOS: Record<string, FalloVozVisible> = {
   "permiso-negado": {
     titulo: "Falta el permiso del micrófono",
@@ -28,20 +30,28 @@ const POR_MEDIOS: Record<string, FalloVozVisible> = {
   proveedor: {
     titulo: "El audio no se pudo establecer",
     detalle:
-      "El proveedor de voz rechazó la conexión. No es un problema de permisos: reintenta en unos segundos.",
+      "El proveedor de voz rechazó la conexión. No es un problema de permisos, pero abrir otra " +
+      "sesión gasta un intento de tu cuenta: espera antes de repetirlo.",
     reintentable: true,
+    esperaSegundos: ESPERA_ENTRE_INTENTOS,
   },
   red: {
     titulo: "El audio no llegó a conectarse",
-    detalle: "La llamada no salió de este equipo. Revisa tu conexión e intenta de nuevo.",
+    detalle:
+      "La llamada no salió de este equipo. Revisa tu conexión antes de repetirlo: cada apertura " +
+      "gasta un intento de tu cuenta.",
     reintentable: true,
+    esperaSegundos: ESPERA_ENTRE_INTENTOS,
   },
 };
 
 const GENERICO: FalloVozVisible = {
   titulo: "No fue posible abrir la conversación",
-  detalle: "Algo interrumpió la apertura de la sesión de voz. Intenta de nuevo en unos segundos.",
+  detalle:
+    "Algo interrumpió la apertura de la sesión de voz. Cada intento cuenta contra tu cuenta, " +
+    "así que espera antes de repetirlo.",
   reintentable: true,
+  esperaSegundos: ESPERA_ENTRE_INTENTOS,
 };
 
 const apagado = (tipo: string): boolean =>
@@ -77,6 +87,28 @@ export const diagnosticar = (motivo: unknown): Diagnostico => {
       };
     }
 
+    if (status === 422 && type.endsWith("configuracion-asistente-invalida")) {
+      return {
+        vedar: false,
+        fallo: {
+          titulo: "La configuración de Aurora no es válida",
+          detalle: `${detail} No se arregla repitiéndolo: avisa a quien administra a Aurora en esta entidad.`,
+          reintentable: false,
+        },
+      };
+    }
+
+    if (status === 502 && type.endsWith("asistente-credencial-rechazada")) {
+      return {
+        vedar: false,
+        fallo: {
+          titulo: "La credencial de voz de la entidad no vale",
+          detalle: `${detail} Es un problema de configuración, no tuyo: avisa a quien administra a Aurora.`,
+          reintentable: false,
+        },
+      };
+    }
+
     if (status === 503 && type.endsWith("asistente-deshabilitado")) {
       return {
         vedar: true,
@@ -102,7 +134,12 @@ export const diagnosticar = (motivo: unknown): Diagnostico => {
     if (status === 503) {
       return {
         vedar: false,
-        fallo: { titulo: "El servicio de voz no respondió", detalle: detail, reintentable: true },
+        fallo: {
+          titulo: "El servicio de voz no respondió",
+          detalle: `${detail} Abrir otra sesión gasta un intento de tu cuenta: espera antes de repetirlo.`,
+          reintentable: true,
+          esperaSegundos: ESPERA_ENTRE_INTENTOS,
+        },
       };
     }
 
@@ -118,14 +155,26 @@ export const diagnosticar = (motivo: unknown): Diagnostico => {
     }
 
     if (status === 429) {
-      const espera = reintentarEn ? ` Reintenta en ${Math.ceil(reintentarEn)} segundos.` : "";
       return {
         vedar: false,
-        fallo: { titulo: "Demasiadas peticiones", detalle: `${detail}${espera}`, reintentable: true },
+        fallo: {
+          titulo: "Demasiadas peticiones",
+          detalle: detail,
+          reintentable: true,
+          esperaSegundos: Math.max(Math.ceil(reintentarEn ?? 0), ESPERA_ENTRE_INTENTOS),
+        },
       };
     }
 
-    return { vedar: false, fallo: { titulo: title, detalle: detail, reintentable: true } };
+    return {
+      vedar: false,
+      fallo: {
+        titulo: title,
+        detalle: detail,
+        reintentable: true,
+        esperaSegundos: ESPERA_ENTRE_INTENTOS,
+      },
+    };
   }
 
   return { vedar: false, fallo: GENERICO };

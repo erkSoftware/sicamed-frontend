@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { EncabezadoPagina } from "../../../shared/ui/patrones/EncabezadoPagina";
 import { TablaConFiltros } from "../../../shared/ui/patrones/TablaConFiltros";
 import { EstadoVacio } from "../../../shared/ui/patrones/EstadoVacio";
@@ -81,6 +81,16 @@ export const Usuarios = () => {
   const autor = useAutor();
 
   const visibles = consulta.data?.datos ?? [];
+  const nombresDeOrganizacion = useMemo(
+    () =>
+      new Map(
+        (organizaciones.data?.datos ?? []).map((organizacion) => [
+          organizacion.id,
+          organizacion.nombre,
+        ]),
+      ),
+    [organizaciones.data],
+  );
   const activas = visibles.filter((cuenta) => cuenta.estado === "ACTIVA").length;
   const invitadas = visibles.filter((cuenta) => cuenta.estado === "INVITADA").length;
   const sinAcceso = visibles.filter((cuenta) => cuenta.ultimoAcceso === null).length;
@@ -123,7 +133,7 @@ export const Usuarios = () => {
     {
       clave: "organizacion",
       encabezado: "Organización",
-      render: (cuenta) => cuenta.organizacion,
+      render: (cuenta) => nombresDeOrganizacion.get(cuenta.organizacionId) ?? cuenta.organizacion,
     },
     {
       clave: "rol",
@@ -176,7 +186,7 @@ export const Usuarios = () => {
       encabezado: "Invitada por",
       render: (cuenta) => (
         <span>
-          {cuenta.invitadaPor}
+          {cuenta.invitadaPor || "—"}
           <br />
           <span className="enlace-fila__meta">{fechaCorta(cuenta.creada)}</span>
         </span>

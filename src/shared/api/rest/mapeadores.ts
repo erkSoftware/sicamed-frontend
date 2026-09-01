@@ -27,9 +27,9 @@ import type {
   RespuestaDirectorioApi,
   ReglaApi,
   RuedaApi,
-  MedioApi,
   SolicitudApi,
   SolicitudDetalleApi,
+  DescargaSoporteApi,
   TransformacionApi,
 } from "./contrato";
 import { aNumero, aNulo, aTexto, soloFecha } from "./conversiones";
@@ -78,7 +78,7 @@ import type {
   ReglaVerificacion,
   RolPlataforma,
   RuedaNegocio,
-  ArchivoPublicado,
+  DescargaDeSoporte,
   SolicitudDetallada,
   SolicitudRegistro,
   TipoDocumento,
@@ -597,35 +597,14 @@ export const aSolicitudDetallada = (api: SolicitudDetalleApi): SolicitudDetallad
   })),
 });
 
-const MIMES_POR_FORMATO: Readonly<Record<string, string>> = {
-  pdf: "application/pdf",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
-  gif: "image/gif",
-  avif: "image/avif",
-  svg: "image/svg+xml",
-};
-
-export const aMimeDeFormato = (formato: string): string => {
-  const limpio = formato.trim().toLowerCase();
-  if (limpio === "") return "";
-  return limpio.includes("/") ? limpio : (MIMES_POR_FORMATO[limpio] ?? "");
-};
-
-export const aArchivoPublicado = (api: MedioApi): ArchivoPublicado => {
-  const variantes = api.variantes ?? [];
-  const original =
-    variantes.find((variante) => variante.etiqueta === "original") ??
-    [...variantes].sort((una, otra) => (otra.bytes ?? 0) - (una.bytes ?? 0))[0];
-
-  return {
-    url: original?.url ?? "",
-    mime: aMimeDeFormato(original?.formato ?? ""),
-    bytes: original?.bytes ?? 0,
-  };
-};
+export const aDescargaDeSoporte = (api: DescargaSoporteApi): DescargaDeSoporte => ({
+  soporteId: aTexto(api.soporteId),
+  url: aTexto(api.url),
+  nombre: aTexto(api.nombre),
+  mime: aTexto(api.mime),
+  bytes: aNumero(api.bytes),
+  expiraEn: aTexto(api.expiraEn),
+});
 
 const ESTADO_DOCUMENTO = {
   ACEPTADO: "APROBADO",
@@ -851,15 +830,18 @@ const aTipoBloqueo = (tipo: string): TipoBloqueoAsistente =>
 export const aBloqueoAsistente = (api: BloqueoAsistenteApi): BloqueoAsistente => ({
   id: aTexto(api.id),
   usuario: aTexto(api.usuario),
+  usuarioNombre: aTexto(api.usuarioNombre),
   motivo: aTexto(api.motivo),
   tipo: aTipoBloqueo(aTexto(api.tipo, "temporary")),
   iniciaEn: aTexto(api.iniciaEn),
   expiraEn: aNulo(api.expiraEn),
   activo: api.activo,
   creadoPor: aTexto(api.creadoPor),
+  creadoPorNombre: aTexto(api.creadoPorNombre),
   creadoEn: aTexto(api.creadoEn),
   desbloqueadoEn: aNulo(api.desbloqueadoEn),
   desbloqueadoPor: aTexto(api.desbloqueadoPor),
+  desbloqueadoPorNombre: aTexto(api.desbloqueadoPorNombre),
 });
 
 export const aEstadoLlamadasAsistente = (

@@ -726,6 +726,15 @@ export type SoporteApi = {
   bytes: number;
 };
 
+export type DescargaSoporteApi = {
+  soporteId: string;
+  url: string;
+  expiraEn: string;
+  nombre: string;
+  mime: string;
+  bytes: number;
+};
+
 export type RadicacionApi = {
   id: string;
   estado: "RECIBIDA";
@@ -807,19 +816,23 @@ export type GuardarConfiguracionAsistenteApi = {
 export type BloqueoAsistenteApi = {
   id: string;
   usuario: string;
+  usuarioNombre?: string | null;
   motivo: string;
   tipo: string;
   iniciaEn: string;
   expiraEn?: string | null;
   activo: boolean;
   creadoPor?: string | null;
+  creadoPorNombre?: string | null;
   creadoEn: string;
   desbloqueadoEn?: string | null;
   desbloqueadoPor?: string | null;
+  desbloqueadoPorNombre?: string | null;
 };
 
 export type CrearBloqueoAsistenteApi = {
   usuario: string;
+  usuarioNombre?: string;
   motivo: string;
   tipo: string;
   dias?: number;

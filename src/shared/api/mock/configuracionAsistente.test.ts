@@ -229,17 +229,20 @@ describe("bloqueos de voz", () => {
   it("un bloqueo levantado no se borra: queda como levantado", async () => {
     const creado = await servidorMock.bloquearAsistente({
       usuario: "USR-9001",
+      usuarioNombre: "Marcela Ruiz",
       motivo: "Uso indebido",
       tipo: "temporary",
       dias: 30,
       autor: superAdmin,
     });
+    expect(creado.usuarioNombre).toBe("Marcela Ruiz");
     const levantado = await servidorMock.desbloquearAsistente({
       id: creado.id,
       autor: superAdmin,
     });
     expect(situacionDeBloqueo(levantado)).toBe("levantado");
-    expect(levantado.desbloqueadoPor).toBe(superAdmin.nombre);
+    expect(levantado.desbloqueadoPor).toBe(superAdmin.usuarioId);
+    expect(levantado.desbloqueadoPorNombre).toBe(superAdmin.nombre);
     const todos = await servidorMock.bloqueosAsistente({ soloActivos: false });
     expect(todos.some((bloqueo) => bloqueo.id === creado.id)).toBe(true);
   });

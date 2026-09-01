@@ -31,7 +31,7 @@ import type {
   RespuestaDirectorioApi,
   ResumenReportesApi,
   RuedaApi,
-  MedioApi,
+  DescargaSoporteApi,
   SolicitudApi,
   SolicitudDetalleApi,
   SoporteApi,
@@ -63,7 +63,7 @@ import {
   aPlanta,
   aPolitica,
   aRueda,
-  aArchivoPublicado,
+  aDescargaDeSoporte,
   aSolicitud,
   aSolicitudDetallada,
   aTransformacion,
@@ -126,13 +126,11 @@ export const apiComercial = {
       : solicitar<OrganizacionApi>("comercial", "/organizaciones/actual").then(aOrganizacion),
 
   organizaciones: (filtro: FiltroListado = {}) =>
-    modoMock
-      ? servidorMock.organizaciones(filtro)
-      : listar<OrganizacionApi, ReturnType<typeof aOrganizacion>>(
-          "/organizaciones",
-          aOrganizacion,
-          filtro,
-        ),
+    listar<OrganizacionApi, ReturnType<typeof aOrganizacion>>(
+      "/organizaciones",
+      aOrganizacion,
+      filtro,
+    ),
 
   organizacion: (id: string) =>
     modoMock
@@ -387,10 +385,13 @@ export const apiComercial = {
           aSolicitudDetallada,
         ),
 
-  archivoDeSoporte: (soporteId: string) =>
+  descargaDeSoporte: (entrada: { solicitudId: string; soporteId: string }) =>
     modoMockRegistro
-      ? servidorMock.archivoDeSoporte(soporteId)
-      : solicitar<MedioApi>("comercial", `/medios/${soporteId}`).then(aArchivoPublicado),
+      ? servidorMock.descargaDeSoporte(entrada)
+      : solicitar<DescargaSoporteApi>(
+          "comercial",
+          `/actores/solicitudes/${entrada.solicitudId}/soportes/${entrada.soporteId}/descarga`,
+        ).then(aDescargaDeSoporte),
 
   requisitosDeActor: (tipoActor: Entrada<typeof servidorMock.requisitosDeActor>) =>
     modoMockRegistro
@@ -465,29 +466,23 @@ export const apiComercial = {
         }).then((expediente) => aExpediente(expediente)),
 
   cuentas: (filtro: FiltroListado = {}) =>
-    modoMock
-      ? servidorMock.cuentas(filtro)
-      : listar<CuentaApi, ReturnType<typeof aCuenta>>(
-          "/iam/cuentas",
-          (cuenta) => aCuenta(cuenta),
-          filtro,
-        ),
+    listar<CuentaApi, ReturnType<typeof aCuenta>>(
+      "/iam/cuentas",
+      (cuenta) => aCuenta(cuenta),
+      filtro,
+    ),
 
   invitarCuenta: (entrada: Entrada<typeof servidorMock.invitarCuenta>) =>
-    modoMock
-      ? servidorMock.invitarCuenta(entrada)
-      : solicitar<CuentaApi>("comercial", "/iam/cuentas", {
-          metodo: "POST",
-          cuerpo: cuerpoInvitarCuenta(entrada),
-        }).then((cuenta) => aCuenta(cuenta)),
+    solicitar<CuentaApi>("comercial", "/iam/cuentas", {
+      metodo: "POST",
+      cuerpo: cuerpoInvitarCuenta(entrada),
+    }).then((cuenta) => aCuenta(cuenta)),
 
   cambiarCuenta: (entrada: Entrada<typeof servidorMock.cambiarCuenta>) =>
-    modoMock
-      ? servidorMock.cambiarCuenta(entrada)
-      : solicitar<CuentaApi>("comercial", "/iam/cuentas", {
-          metodo: "PATCH",
-          cuerpo: cuerpoModificarCuenta(entrada),
-        }).then((cuenta) => aCuenta(cuenta)),
+    solicitar<CuentaApi>("comercial", "/iam/cuentas", {
+      metodo: "PATCH",
+      cuerpo: cuerpoModificarCuenta(entrada),
+    }).then((cuenta) => aCuenta(cuenta)),
 
   cupos: (filtro: FiltroListado = {}) =>
     modoMock
