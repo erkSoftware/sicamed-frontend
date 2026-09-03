@@ -17,6 +17,7 @@ import "../shared/ui/tokens/publico.css";
 import "../shared/ui/tokens/cinematica.css";
 import "../shared/ui/tokens/origen.css";
 import "../shared/ui/tokens/telemedicina.css";
+import "../shared/ui/tokens/dispensacion.css";
 import "../shared/ui/tokens/aurora.css";
 
 document.documentElement.setAttribute("data-movimiento", "si");

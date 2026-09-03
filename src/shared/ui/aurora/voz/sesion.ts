@@ -1,3 +1,4 @@
+import { alargarBufer, opusResistente } from "./calidad";
 import { leerEvento } from "./eventos";
 import type { EventoProveedor } from "./eventos";
 import type { SesionAsistente } from "../../../api/clienteAsistente";
@@ -33,6 +34,7 @@ export type OpcionesConexion = {
   microfono: MediaStream;
   alPistaRemota: (flujo: MediaStream) => void;
   alEvento: (evento: EventoProveedor, canal: RTCDataChannel) => void;
+  alDebilitarse: (debil: boolean) => void;
   alCaer: () => void;
 };
 
@@ -82,11 +84,20 @@ export const conectar = async (
 
   pc.ontrack = (evento) => {
     const [flujo] = evento.streams;
-    if (flujo) opciones.alPistaRemota(flujo);
+    if (!flujo) return;
+    alargarBufer(pc);
+    opciones.alPistaRemota(flujo);
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    const estado = pc.iceConnectionState;
+    if (estado === "disconnected") opciones.alDebilitarse(true);
+    if (estado === "connected" || estado === "completed") opciones.alDebilitarse(false);
+    if (estado === "failed") opciones.alCaer();
   };
 
   pc.onconnectionstatechange = () => {
-    if (pc.connectionState === "failed" || pc.connectionState === "disconnected") opciones.alCaer();
+    if (pc.connectionState === "failed") opciones.alCaer();
   };
 
   opciones.microfono.getTracks().forEach((pista) => pc.addTrack(pista, opciones.microfono));
@@ -98,7 +109,10 @@ export const conectar = async (
   };
   canal.onopen = () => canal.send(JSON.stringify({ type: "response.create" }));
 
-  await pc.setLocalDescription(await pc.createOffer());
+  const oferta = await pc.createOffer();
+  await pc.setLocalDescription(
+    oferta.sdp ? { type: "offer", sdp: opusResistente(oferta.sdp) } : oferta,
+  );
 
   let respuesta: Response;
   try {
@@ -157,6 +171,7 @@ export const desconectar = (conexion: Conexion | null): void => {
   conexion.microfono.getTracks().forEach((pista) => pista.stop());
   conexion.pc.getSenders().forEach((emisor) => emisor.track?.stop());
   conexion.pc.ontrack = null;
+  conexion.pc.oniceconnectionstatechange = null;
   conexion.pc.onconnectionstatechange = null;
   conexion.pc.close();
 };

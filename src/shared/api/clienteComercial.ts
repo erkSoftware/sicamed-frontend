@@ -2,6 +2,8 @@ import { modoMock, modoMockRegistro, solicitar } from "./transporte";
 import { CABECERA_CAPTCHA } from "../seguridad/turnstile";
 import type { Parametros } from "./transporte";
 import { servidorMock } from "./mock/servidorMock";
+import { servidorLiquidacion } from "./mock/servidorSensible";
+import type { FlujoCargo } from "./mock/datosDispensacion";
 import type { FiltroListado } from "./mock/servidorMock";
 import type {
   ActaDestruccionApi,
@@ -658,4 +660,10 @@ export const apiComercial = {
     modoMock
       ? servidorMock.reportes()
       : solicitar<ResumenReportesApi>("comercial", "/reportes/resumen"),
+
+  cargos: (filtro: { flujo?: FlujoCargo; periodo?: string; estado?: string; pagina?: number } = {}) =>
+    modoMock ? servidorLiquidacion.cargos(filtro) : sinContrato("los cargos del servicio"),
+
+  corteLiquidacion: (filtro: { periodo?: string } = {}) =>
+    modoMock ? servidorLiquidacion.corte(filtro) : sinContrato("el corte de liquidación"),
 };

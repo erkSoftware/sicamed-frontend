@@ -5,7 +5,17 @@ import { envolventeHabla, trocear } from "./demostracion";
 import { ESPERA_ENTRE_INTENTOS, diagnosticar } from "./diagnostico";
 import { cupoDelDia, vedaDelCupo } from "./cupo";
 import { FalloVoz, identificadorDeLlamada, urlDeCanje } from "./sesion";
-import { cuerpoDeCierre } from "../../../api/clienteAsistente";
+import {
+  BITRATE_RESISTENTE,
+  LECTURA_EN_BLANCO,
+  enlaceDebil,
+  leerInformes,
+  opusResistente,
+  tasaDePerdida,
+} from "./calidad";
+import { latidoDefinitivo } from "./latido";
+import { esperaDeReintento } from "./motor";
+import { cuerpoDeApertura, cuerpoDeCierre } from "../../../api/clienteAsistente";
 import { mensajeDeAviso, planDeLlamada } from "./llamada";
 import type { SesionAsistente } from "../../../api/clienteAsistente";
 import { ErrorApi } from "../../../api/problemDetails";
@@ -421,5 +431,98 @@ describe("cuerpoDeCierre", () => {
   it("manda el cierre sin callId antes que mandarlo vacío", () => {
     expect(cuerpoDeCierre("user_ended")).toEqual({ motivo: "user_ended" });
     expect(cuerpoDeCierre("completed", "rtc_1")).toEqual({ motivo: "completed", callId: "rtc_1" });
+  });
+});
+
+const SDP_OPUS = [
+  "v=0",
+  "m=audio 9 UDP/TLS/RTP/SAVPF 111 63",
+  "a=rtpmap:111 opus/48000/2",
+  "a=fmtp:111 minptime=10;useinbandfec=1",
+  "a=rtpmap:63 red/48000/2",
+  "",
+].join("\r\n");
+
+describe("opusResistente", () => {
+  it("pide redundancia y bitrate bajo sobre la carga de opus", () => {
+    const ajustado = opusResistente(SDP_OPUS);
+    expect(ajustado).toContain(`maxaveragebitrate=${BITRATE_RESISTENTE}`);
+    expect(ajustado).toContain("useinbandfec=1");
+    expect(ajustado).toContain("stereo=0");
+    expect(ajustado).toContain("minptime=10");
+    expect(ajustado).toContain("a=rtpmap:63 red/48000/2");
+  });
+
+  it("no toca la carga que no es opus ni duplica parámetros al repetirse", () => {
+    const unaVez = opusResistente(SDP_OPUS);
+    expect(opusResistente(unaVez)).toBe(unaVez);
+    expect(unaVez.match(/maxaveragebitrate/gu)).toHaveLength(1);
+    expect(unaVez).not.toContain("a=fmtp:63");
+  });
+
+  it("escribe la línea cuando el proveedor la omitió, y se queda quieto sin opus", () => {
+    const sinFmtp = SDP_OPUS.replace("a=fmtp:111 minptime=10;useinbandfec=1\r\n", "");
+    expect(opusResistente(sinFmtp)).toContain(`a=fmtp:111 useinbandfec=1;stereo=0;maxaveragebitrate=${BITRATE_RESISTENTE}`);
+
+    const sinOpus = "v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 8\r\na=rtpmap:8 PCMA/8000\r\n";
+    expect(opusResistente(sinOpus)).toBe(sinOpus);
+  });
+});
+
+describe("la calidad del enlace", () => {
+  it("lee la pérdida del audio entrante y el viaje de ida y vuelta", () => {
+    expect(
+      leerInformes([
+        { type: "inbound-rtp", kind: "video", packetsLost: 900, packetsReceived: 10 },
+        { type: "inbound-rtp", kind: "audio", packetsLost: 12, packetsReceived: 400 },
+        { type: "candidate-pair", state: "failed", currentRoundTripTime: 9 },
+        { type: "candidate-pair", state: "succeeded", currentRoundTripTime: 0.12 },
+      ]),
+    ).toEqual({ perdidos: 12, recibidos: 400, idaYVuelta: 0.12 });
+  });
+
+  it("mide la tasa del tramo, no la acumulada desde el principio", () => {
+    const previa = { perdidos: 100, recibidos: 900, idaYVuelta: 0.1 };
+    const actual = { perdidos: 101, recibidos: 1400, idaYVuelta: 0.1 };
+    expect(tasaDePerdida(previa, actual)).toBeCloseTo(1 / 501);
+    expect(enlaceDebil(previa, actual)).toBe(false);
+  });
+
+  it("avisa por pérdida alta o por latencia alta, y calla cuando no hay tráfico", () => {
+    const previa = LECTURA_EN_BLANCO;
+    expect(enlaceDebil(previa, { perdidos: 50, recibidos: 500, idaYVuelta: 0.05 })).toBe(true);
+    expect(enlaceDebil(previa, { perdidos: 0, recibidos: 500, idaYVuelta: 0.6 })).toBe(true);
+    expect(enlaceDebil(previa, LECTURA_EN_BLANCO)).toBe(false);
+  });
+});
+
+describe("esperaDeReintento", () => {
+  it("crece con cada intento y nunca es el mismo milisegundo para todos", () => {
+    expect(esperaDeReintento(1, 0)).toBe(500);
+    expect(esperaDeReintento(1, 1)).toBe(1500);
+    expect(esperaDeReintento(2, 0)).toBe(1000);
+    expect(esperaDeReintento(3, 1)).toBe(6000);
+    expect(esperaDeReintento(2, 0.5)).toBeGreaterThan(esperaDeReintento(1, 0.5));
+  });
+});
+
+describe("latidoDefinitivo", () => {
+  it("solo el 404 mata el latido: la red mala es justo lo que hay que aguantar", () => {
+    expect(latidoDefinitivo(problema(404, "https://sicamed.co/problemas/asistente-llamada-desconocida"))).toBe(true);
+    expect(latidoDefinitivo(problema(0, "https://sicamed.co/problemas/servicio-inalcanzable"))).toBe(false);
+    expect(latidoDefinitivo(problema(503, "https://sicamed.co/problemas/proveedor"))).toBe(false);
+    expect(latidoDefinitivo(new Error("timeout"))).toBe(false);
+  });
+});
+
+describe("cuerpoDeApertura", () => {
+  it("omite la reanudación cuando no hubo caída", () => {
+    expect(cuerpoDeApertura({ ruta: "/app" })).toEqual({ contexto: { ruta: "/app" } });
+    expect(cuerpoDeApertura({}, "")).toEqual({ contexto: {} });
+  });
+
+  it("declara la llamada caída y descarta un identificador que el borde rechazaría", () => {
+    expect(cuerpoDeApertura({}, "lla_8f3c-1")).toEqual({ contexto: {}, reanudaLlamadaId: "lla_8f3c-1" });
+    expect(cuerpoDeApertura({}, "lla 8f3c")).toEqual({ contexto: {} });
   });
 });

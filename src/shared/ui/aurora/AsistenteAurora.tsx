@@ -34,6 +34,7 @@ const ROTULOS: Record<EstadoVoz, string> = {
   inactiva: "Aurora está en silencio",
   permiso: "Autoriza el micrófono en el navegador",
   conectando: "Abriendo la conversación",
+  reconectando: "Restableciendo la conversación",
   escuchando: "Te escucho",
   hablando: "Aurora está hablando",
   fallo: "La conversación no está activa",
@@ -45,6 +46,7 @@ export const AsistenteAurora = () => {
   const voz = useAurora((estado) => estado.voz);
   const vozDisponible = useAurora((estado) => estado.vozDisponible);
   const vozDemostrativa = useAurora((estado) => estado.vozDemostrativa);
+  const conexionDebil = useAurora((estado) => estado.conexionDebil);
   const transcripcion = useAurora((estado) => estado.transcripcion);
   const falloVoz = useAurora((estado) => estado.falloVoz);
   const segundosRestantes = useAurora((estado) => estado.segundosRestantes);
@@ -300,6 +302,17 @@ export const AsistenteAurora = () => {
               {veto ? <p className="aurora-conversacion__subtitulo">{veto}</p> : null}
 
               {subtitulo ? <p className="aurora-conversacion__subtitulo">{subtitulo}</p> : null}
+
+              {activa && conexionDebil ? (
+                <p className="aurora-conversacion__debil" role="status">
+                  <Icono nombre="alerta" tamano={14} />
+                  <span>
+                    {voz === "reconectando"
+                      ? "Se cayó el audio y estoy volviendo a entrar. No cuelgues: el tiempo que no hablaste no se te cobra."
+                      : "La conexión va débil y el audio puede entrecortarse. No hace falta que cuelgues."}
+                  </span>
+                </p>
+              ) : null}
 
               {activa && segundosRestantes !== null ? (
                 <p className="aurora-conversacion__contador">

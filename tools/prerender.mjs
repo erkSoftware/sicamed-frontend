@@ -25,6 +25,7 @@ const RUTAS_BASE = [
   "/transparencia",
   "/accesibilidad",
   "/privacidad",
+  "/paciente",
   "/registro",
 ];
 

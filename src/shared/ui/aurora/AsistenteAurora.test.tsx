@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
@@ -207,6 +207,7 @@ afterEach(() => {
     visible: false,
     mensajes: [],
     vozDisponible: true,
+    conexionDebil: false,
     falloVoz: null,
     reintentoDesde: 0,
   });
@@ -302,6 +303,34 @@ describe("AsistenteAurora", () => {
 
     await waitFor(() => expect(useAurora.getState().voz).toBe("inactiva"));
     flujo.getTracks().forEach((pistaViva) => expect(pistaViva.stop).toHaveBeenCalled());
+  });
+});
+
+describe("cuando la red flaquea", () => {
+  it("avisa de la conexión débil sin dar la conversación por perdida", async () => {
+    montar();
+    await abrirPanel();
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+
+    act(() => useAurora.getState().fijarConexionDebil(true));
+
+    expect(screen.getByText(/conexión va débil/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Terminar/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Hablar con Aurora/ })).not.toBeInTheDocument();
+  });
+
+  it("mientras reconecta lo dice y pide que no se cuelgue", async () => {
+    montar();
+    await abrirPanel();
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+
+    act(() => {
+      useAurora.getState().fijarVoz("reconectando");
+      useAurora.getState().fijarConexionDebil(true);
+    });
+
+    expect(screen.getByText(/Restableciendo la conversación/)).toBeInTheDocument();
+    expect(screen.getByText(/No cuelgues/)).toBeInTheDocument();
   });
 });
 

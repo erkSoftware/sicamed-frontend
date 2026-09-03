@@ -208,10 +208,33 @@ nadie cierra se le cobra al usuario hasta su vencimiento. `planDeLlamada` es una
 función pura y por eso se prueba sin levantar WebRTC. Y los dos rechazos nuevos
 dejaron de leerse como el rol sin permiso: `asistente-usuario-bloqueado` enseña
 el motivo y no ofrece reintentar, y `asistente-limite-diario` dice que el cupo se
-cuenta por día. `GET /asistente/llamadas/estado` está en el cliente comercial sin
-pantalla que lo consuma: el cupo que se enseña hoy es el que ya viene con la
-sesión, y pedirlo otra vez en el panel montado en todas las páginas costaría una
-petición por apertura sin decir nada nuevo.
+cuenta por día. `GET /asistente/llamadas/estado` se pide **antes** de abrir el
+micrófono, no después: una cuenta bloqueada o sin cupo ve el motivo con su fecha
+sin haber gastado un intento, y quien administra los bloqueos puede levantarse el
+suyo desde el propio panel.
+
+**La red mala ya no se cobra ni se sanciona.** Las dos correcciones del backend
+—el latido y `reanudaLlamadaId`— necesitaban las dos que el frontend hiciera algo,
+y ya lo hace. Mientras la llamada vive, `POST /asistente/llamadas/{id}/latido`
+sale cada quince segundos; un latido que falla por red no corta nada —es
+exactamente lo que va a pasar en la red que motiva todo esto—, y solo el `404` y
+el `vive: false` desmontan, este último como fin normal y no como error del
+usuario. `iceConnectionState` dejó de leerse en bloque: `disconnected` es
+transitorio y solo pinta «conexión débil», y únicamente `failed` reconecta,
+abriendo la sesión nueva con `reanudaLlamadaId` para que la caída se cierre en su
+último latido y no cuente como insistencia. El reintento lleva backoff con jitter
+y tope de tres, y un enlace que parpadea tampoco reconecta sin techo dentro de la
+misma conversación: agotado el techo, la llamada caída se cierra con
+`connection_error` en vez de dejarse vencer. Si nos rendimos, el usuario lee por
+qué.
+
+**El audio sale preparado para perder paquetes.** La oferta SDP pide
+`useinbandfec=1`, `stereo=0` y `maxaveragebitrate=20000` sobre la carga de opus
+—reescribir el `fmtp` a mano es un apaño y se comporta como tal, así que hay una
+prueba que falla el día que deje de aplicarse—, el receptor de audio pide
+`playoutDelayHint` donde exista, y `getStats` se lee cada cinco segundos para
+avisar en pantalla cuando la pérdida pasa del 3 % o el viaje de ida y vuelta de
+400 ms. Nada de esto lo puede hacer el backend: el audio no pasa por SICAMED.
 
 **Quién no puede hablar es otra pantalla, con otro permiso.** `/app/aurora/llamadas`
 lista, crea y levanta bloqueos contra `GET|POST /asistente/bloqueos` y

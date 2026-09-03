@@ -43,6 +43,14 @@ export const PERMISOS = [
   "clinico:atencion:leer",
   "clinico:agenda:gestionar",
   "clinico:teleconsulta:atender",
+  "clinico:credencial:emitir",
+  "clinico:prescripcion:emitir",
+  "clinico:prescripcion:anular",
+  "dispensacion:acto:leer",
+  "dispensacion:acto:registrar",
+  "dispensacion:credencial:verificar",
+  "liquidacion:cargo:leer",
+  "liquidacion:corte:generar",
 ] as const;
 
 export type Permiso = (typeof PERMISOS)[number];

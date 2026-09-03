@@ -8,16 +8,25 @@ import { BarrasHorizontales } from "../../../shared/ui/graficos/BarrasHorizontal
 import { LineaTendencia } from "../../../shared/ui/graficos/LineaTendencia";
 import { FlujoProceso } from "../../../shared/ui/graficos/FlujoProceso";
 import { useReportes } from "../hooks/useReportes";
+import { K_POR_DEFECTO, notaDeSupresion, suprimirCeldasPequenas } from "../../../shared/privacidad/kAnonimato";
+import { Icono } from "../../../shared/ui/primitivos/Icono";
 
 export const Reportes = () => {
   const consulta = useReportes();
   const datos = consulta.data;
+  const territorio = suprimirCeldasPequenas(
+    (datos?.departamentos ?? []).map((departamento) => ({
+      etiqueta: departamento.nombre,
+      valor: departamento.proveedores,
+    })),
+    K_POR_DEFECTO,
+  );
 
   return (
     <div className="pagina">
       <EncabezadoPagina
         titulo="Reportes"
-        subtitulo="Cortes agregados del ecosistema. Ninguna cifra de esta pantalla identifica a un paciente ni expone información reservada de carácter comercial."
+        subtitulo="Cortes agregados del ecosistema. Ninguna cifra de esta pantalla identifica a un paciente ni expone información reservada de carácter comercial (Res. 1241 de 2026, Art. 21)."
         acciones={
           <>
             <Boton variante="secundario" icono="descargar">
@@ -29,6 +38,15 @@ export const Reportes = () => {
           </>
         }
       />
+
+      <div className="aviso aviso--info">
+        <Icono nombre="escudo" tamano={18} />
+        <p>
+          Los cortes territoriales pasan por supresión de celdas pequeñas antes de publicarse: toda
+          casilla con menos de {K_POR_DEFECTO} registros se retira y su masa se acumula en un
+          residuo. Sin ese control, un cruce por departamento reidentificaría a personas concretas.
+        </p>
+      </div>
 
       <EstadoConsulta
         cargando={consulta.isLoading}
@@ -77,7 +95,8 @@ export const Reportes = () => {
               sinRelleno
               pie={
                 <p className="pie-region mono">
-                  {datos.departamentos.length} departamentos · desplaza dentro del panel para ver el resto
+                  {territorio.celdas.length} de {datos.departamentos.length} filas publicables ·{" "}
+                  {notaDeSupresion(territorio)}
                 </p>
               }
             >
@@ -89,11 +108,11 @@ export const Reportes = () => {
                 <BarrasHorizontales
                   titulo="Proveedores por departamento"
                   unidad="Proveedores"
-                  datos={[...datos.departamentos]
-                    .sort((a, b) => b.proveedores - a.proveedores)
-                    .map((departamento, indice) => ({
-                      etiqueta: departamento.nombre,
-                      valor: departamento.proveedores,
+                  datos={[...territorio.celdas]
+                    .sort((a, b) => b.valor - a.valor)
+                    .map((celda, indice) => ({
+                      etiqueta: celda.etiqueta,
+                      valor: celda.valor,
                       destacada: indice === 0,
                     }))}
                 />

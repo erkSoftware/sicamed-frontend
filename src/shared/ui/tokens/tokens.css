@@ -133,7 +133,7 @@
 
   --fuente-display: "Bricolage Grotesque", "Public Sans", system-ui, sans-serif;
   --fuente: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --fuente-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --fuente-mono: "Azeret Mono", ui-monospace, Menlo, monospace;
 
   --texto-xs: 0.6875rem;
   --texto-sm: 0.8125rem;

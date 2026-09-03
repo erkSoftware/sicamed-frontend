@@ -424,6 +424,38 @@ export const CONEXIONES: readonly Conexion[] = [
     norma: "Dec. 1138/2025 Art. 10 · Res. 1478/2006",
   },
   {
+    id: "CNX-0007",
+    sigla: "SICAMED",
+    nombre: "SICAMED central del MinCIT",
+    entidad: "Ministerio de Comercio, Industria y Turismo",
+    proposito:
+      "Reportar al sistema central la información del registro, la vitrina y la analítica agregada que exija el anexo técnico.",
+    direccion: "REPORTE",
+    estado: "NO_CONECTADA",
+    ultimaLectura: fechaRelativa(-120),
+    conciliados: 0,
+    discrepancias: 0,
+    mecanismo:
+      "Sin interfaz publicada. El anexo técnico del Art. 13 no ha salido: el adaptador está aislado tras el ACL para que su forma final no toque el dominio.",
+    norma: "Res. 1241/2026 Art. 13 ¶ · Art. 22",
+  },
+  {
+    id: "CNX-0008",
+    sigla: "POS",
+    nombre: "Punto de venta de las farmacias",
+    entidad: "Sistemas propios de cada establecimiento",
+    proposito:
+      "Recibir del POS la salida de inventario dispensado y devolverle la constancia del acto verificado, para que la farmacia no cambie de sistema.",
+    direccion: "BIDIRECCIONAL",
+    estado: "DEGRADADA",
+    ultimaLectura: fechaRelativa(0),
+    conciliados: 318,
+    discrepancias: 24,
+    mecanismo:
+      "Dos modos de adopción: servicio REST contra el POS existente, o la pantalla del punto de dispensación para quien no tenga integración.",
+    norma: "Res. 1478/2006 Art. 5 núm. 4 · Dec. 2200/2005",
+  },
+  {
     id: "CNX-0006",
     sigla: "RPBPN",
     nombre: "Registro de Productores de Bienes Nacionales",

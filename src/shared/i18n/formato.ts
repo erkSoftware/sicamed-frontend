@@ -73,4 +73,11 @@ export const normalizar = (texto: string): string =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+export const moneda = (valor: number, locale: string = LOCALE): string =>
+  new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(valor);
+
 export const magnitud = (valor: number, unidad: string): string => `${compacto(valor)} ${unidad}`;

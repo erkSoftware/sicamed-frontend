@@ -5,10 +5,10 @@ export type ItemNavegacion = {
   ruta: string;
   etiqueta: string;
   permiso: Permiso;
-  grupo: "OPERACIÓN" | "GESTIÓN" | "CUMPLIMIENTO" | "PLATAFORMA" | "SALUD";
+  grupo: "OPERACIÓN" | "GESTIÓN" | "CUMPLIMIENTO" | "PLATAFORMA" | "SALUD" | "DISPENSACIÓN";
   modulo: IdModulo;
   icono: string;
-  zona: "comercial" | "clinica";
+  zona: "comercial" | "clinica" | "dispensacion";
   descripcion: string;
 };
 
@@ -26,6 +26,7 @@ export const NAVEGACION: readonly ItemNavegacion[] = [
   { ruta: "/app/destruccion", etiqueta: "Destrucción y disposición", permiso: "produccion:destruccion:leer", grupo: "CUMPLIMIENTO", modulo: "inventario", icono: "alerta", zona: "comercial", descripcion: "Actas de disposición final con testigo identificado" },
   { ruta: "/app/vitrina", etiqueta: "Vitrina", permiso: "vitrina:oferta:leer", grupo: "OPERACIÓN", modulo: "mercado", icono: "vitrina", zona: "comercial", descripcion: "Oferta divulgada de manera informativa" },
   { ruta: "/app/cierre", etiqueta: "Cierre de la operación", permiso: "vitrina:oferta:leer", grupo: "OPERACIÓN", modulo: "mercado", icono: "cadena", zona: "comercial", descripcion: "Contactos habilitados y resultado declarado" },
+  { ruta: "/app/liquidacion", etiqueta: "Liquidación del servicio", permiso: "liquidacion:cargo:leer", grupo: "GESTIÓN", modulo: "mercado", icono: "reportes", zona: "comercial", descripcion: "Cargos devengados por verificación y por credencial, en flujos separados" },
   { ruta: "/app/ruedas-negocio", etiqueta: "Ruedas de negocio", permiso: "ruedas:convocatoria:leer", grupo: "GESTIÓN", modulo: "mercado", icono: "ruedas", zona: "comercial", descripcion: "Convocatorias de articulación entre actores" },
   { ruta: "/app/licencias", etiqueta: "Licencias", permiso: "cumplimiento:atestacion:leer", grupo: "CUMPLIMIENTO", modulo: "cumplimiento", icono: "licencias", zona: "comercial", descripcion: "Atestaciones vigentes y su origen probatorio" },
   { ruta: "/app/expedientes", etiqueta: "Expedientes de registro", permiso: "cumplimiento:expediente:leer", grupo: "CUMPLIMIENTO", modulo: "cumplimiento", icono: "documento", zona: "comercial", descripcion: "Verificación documental por pasos y roles" },
@@ -38,6 +39,10 @@ export const NAVEGACION: readonly ItemNavegacion[] = [
   { ruta: "/app/aurora/llamadas", etiqueta: "Llamadas de Aurora", permiso: "asistente:llamadas:gestionar", grupo: "PLATAFORMA", modulo: "plataforma", icono: "escudo", zona: "comercial", descripcion: "Quién no puede abrir el micrófono y hasta cuándo" },
   { ruta: "/app/aurora/hoja", etiqueta: "Hoja de Aurora", permiso: "reportes:tablero:leer", grupo: "PLATAFORMA", modulo: "plataforma", icono: "capas", zona: "comercial", descripcion: "Turnaround de seis vistas del modelo" },
   { ruta: "/app/usuarios", etiqueta: "Cuentas y roles", permiso: "admin:usuario:gestionar", grupo: "PLATAFORMA", modulo: "plataforma", icono: "usuario", zona: "comercial", descripcion: "Quién accede, con qué rol y bajo qué organización" },
+  { ruta: "/app/dispensacion", etiqueta: "Punto de dispensación", permiso: "dispensacion:credencial:verificar", grupo: "DISPENSACIÓN", modulo: "dispensacion", icono: "candado", zona: "dispensacion", descripcion: "Entrega presencial con verificación de identidad en mostrador" },
+  { ruta: "/app/dispensacion/registro", etiqueta: "Registro de entregas", permiso: "dispensacion:acto:leer", grupo: "DISPENSACIÓN", modulo: "dispensacion", icono: "trazabilidad", zona: "dispensacion", descripcion: "Actos de dispensación sellados en el ledger" },
+  { ruta: "/app/salud/credenciales", etiqueta: "Credenciales de paciente", permiso: "clinico:credencial:emitir", grupo: "SALUD", modulo: "salud", icono: "escudo", zona: "clinica", descripcion: "Emisión, suspensión y estado del identificador digital" },
+  { ruta: "/app/salud/prescripciones", etiqueta: "Prescripciones", permiso: "clinico:prescripcion:emitir", grupo: "SALUD", modulo: "salud", icono: "documento", zona: "clinica", descripcion: "Emisión con los catorce campos del Decreto 2200 de 2005" },
   { ruta: "/app/salud/pacientes", etiqueta: "Pacientes", permiso: "clinico:atencion:leer", grupo: "SALUD", modulo: "salud", icono: "pacientes", zona: "clinica", descripcion: "Zona clínica, frontera dura con la zona comercial" },
   { ruta: "/app/salud/agenda", etiqueta: "Agenda", permiso: "clinico:agenda:gestionar", grupo: "SALUD", modulo: "salud", icono: "agenda", zona: "clinica", descripcion: "Disponibilidad y citas de teleconsulta" },
   { ruta: "/app/salud/teleconsulta", etiqueta: "Teleconsulta", permiso: "clinico:teleconsulta:atender", grupo: "SALUD", modulo: "salud", icono: "teleconsulta", zona: "clinica", descripcion: "Atención remota conforme a Res. 2654 de 2019" },
