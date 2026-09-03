@@ -8,12 +8,7 @@ import { Tabla } from "../../../shared/ui/primitivos/Tabla";
 import { Icono } from "../../../shared/ui/primitivos/Icono";
 import { fecha, fechaHora } from "../../../shared/i18n/formato";
 import { usePaciente } from "../hooks/usePacientes";
-
-const TONO_PRESCRIPCION = {
-  VIGENTE: "exito",
-  DISPENSADA: "info",
-  VENCIDA: "neutro",
-} as const;
+import { ETIQUETA_PRESCRIPCION, TONO_PRESCRIPCION } from "../../prescripciones/estados";
 
 const TONO_CITA = {
   PROGRAMADA: "info",
@@ -110,14 +105,22 @@ export const DetallePaciente = () => {
                 descripcion="Prescripciones del paciente"
                 columnas={[
                   { clave: "fecha", encabezado: "Fecha", render: (p) => fecha(p.fecha) },
-                  { clave: "presentacion", encabezado: "Presentación", render: (p) => p.presentacion },
+                  { clave: "codigo", encabezado: "Fórmula", render: (p) => <span className="mono">{p.codigo}</span> },
+                  { clave: "denominacion", encabezado: "Denominación común", render: (p) => p.denominacionComun },
                   { clave: "concentracion", encabezado: "Concentración", render: (p) => p.concentracion },
                   { clave: "posologia", encabezado: "Posología", render: (p) => p.posologia },
-                  { clave: "duracion", encabezado: "Duración", numerica: true, render: (p) => `${p.duracionDias} días` },
+                  {
+                    clave: "saldo",
+                    encabezado: "Entregado",
+                    numerica: true,
+                    render: (p) => `${p.entregadas} de ${p.cantidadTotal}`,
+                  },
                   {
                     clave: "estado",
                     encabezado: "Estado",
-                    render: (p) => <Insignia tono={TONO_PRESCRIPCION[p.estado]}>{p.estado}</Insignia>,
+                    render: (p) => (
+                      <Insignia tono={TONO_PRESCRIPCION[p.estado]}>{ETIQUETA_PRESCRIPCION[p.estado]}</Insignia>
+                    ),
                   },
                 ]}
                 filas={datos.prescripciones}

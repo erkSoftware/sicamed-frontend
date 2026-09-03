@@ -118,7 +118,7 @@ export const montarEscena = (lienzo: HTMLCanvasElement, opciones: OpcionesEscena
   renderizador.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderizador.setClearColor(0x000000, 0);
   renderizador.shadowMap.enabled = true;
-  renderizador.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderizador.shadowMap.type = THREE.PCFShadowMap;
   renderizador.toneMapping = THREE.ACESFilmicToneMapping;
   renderizador.toneMappingExposure = 1.05;
 

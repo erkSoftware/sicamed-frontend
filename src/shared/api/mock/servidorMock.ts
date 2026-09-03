@@ -1,6 +1,16 @@
-import { ErrorApi } from "../problemDetails";
-import type { ErrorDeCampo } from "../problemDetails";
+import {
+  contiene,
+  demorar,
+  paginar,
+  rechazar,
+  rechazarNoEncontrado,
+} from "./protocolo";
+import type { Autor, FiltroListado, Pagina } from "./protocolo";
 import { normalizar } from "../../i18n/formato";
+
+export { paginar };
+export type { Autor, FiltroListado, Pagina };
+
 import {
   almacen,
   ahora,
@@ -29,7 +39,8 @@ import { situacionDeBloqueo } from "./llamadasAsistente";
 import type { BorradorConfiguracionAsistente } from "./configuracionAsistente";
 import type { DocumentoAdjunto } from "./tipos";
 import { DEPARTAMENTOS, ETAPAS_PROCESO, TOTALES_NACIONALES } from "./catalogos";
-import { CITAS, INDICADORES_CLINICOS, NOTAS, PACIENTES, PRESCRIPCIONES } from "./datosClinicos";
+import { CITAS, INDICADORES_CLINICOS, NOTAS, PACIENTES } from "./datosClinicos";
+import { almacenSensible } from "./almacenSensible";
 import type {
   Atestacion,
   CausalDestruccion,
@@ -50,44 +61,6 @@ import type {
   TipoLote,
 } from "./tipos";
 
-export type Pagina<T> = {
-  datos: readonly T[];
-  total: number;
-  pagina: number;
-  porPagina: number;
-};
-
-const LATENCIA_MINIMA = 120;
-const LATENCIA_MAXIMA = 420;
-
-const demorar = <T,>(valor: T): Promise<T> =>
-  new Promise((resolver) =>
-    setTimeout(
-      () => resolver(valor),
-      LATENCIA_MINIMA + Math.random() * (LATENCIA_MAXIMA - LATENCIA_MINIMA),
-    ),
-  );
-
-export const paginar = <T,>(coleccion: readonly T[], pagina = 1, porPagina = 10): Pagina<T> => ({
-  datos: coleccion.slice((pagina - 1) * porPagina, pagina * porPagina),
-  total: coleccion.length,
-  pagina,
-  porPagina,
-});
-
-const contiene = (texto: string, consulta: string): boolean =>
-  normalizar(texto).includes(normalizar(consulta));
-
-const rechazar = (problema: {
-  type: string;
-  title: string;
-  detail: string;
-  status: number;
-  norma?: string;
-  accion?: { etiqueta: string; ruta: string };
-  errores?: readonly ErrorDeCampo[];
-}): Promise<never> => Promise.reject(new ErrorApi(problema));
-
 const rechazarSinOrganizacion = (): Promise<never> =>
   rechazar({
     type: "https://sicamed.co/problemas/organizacion-no-asociada",
@@ -96,30 +69,6 @@ const rechazarSinOrganizacion = (): Promise<never> =>
       "Esta cuenta existe pero aún no cuelga de ninguna organización del padrón. Ocurre mientras el expediente de registro sigue en trámite: cuando se apruebe, la ficha aparecerá aquí con sus datos.",
     status: 404,
   });
-
-const rechazarNoEncontrado = (entidad: string, id: string): Promise<never> =>
-  rechazar({
-    type: "https://sicamed.co/problemas/recurso-no-encontrado",
-    title: `${entidad} no encontrada`,
-    detail: `No existe un registro de ${entidad.toLowerCase()} con el identificador ${id}, o no tienes permiso para consultarlo.`,
-    status: 404,
-  });
-
-export type FiltroListado = {
-  busqueda?: string;
-  estado?: string;
-  departamento?: string;
-  tipo?: string;
-  pagina?: number;
-  porPagina?: number;
-};
-
-export type Autor = {
-  usuarioId: string;
-  nombre: string;
-  organizacionId: string;
-  rol: RolPlataforma;
-};
 
 const dias = (fecha: string): number =>
   Math.round((new Date(fecha).getTime() - Date.now()) / 86_400_000);
@@ -2497,7 +2446,9 @@ export const servidorMockClinico = {
     return demorar({
       paciente: encontrado,
       citas: CITAS.filter((cita) => cita.pacienteId === id),
-      prescripciones: PRESCRIPCIONES.filter((prescripcion) => prescripcion.pacienteId === id),
+      prescripciones: almacenSensible.prescripciones.filter(
+        (prescripcion) => prescripcion.pacienteId === id,
+      ),
       notas: NOTAS.filter((nota) => nota.pacienteId === id),
     });
   },

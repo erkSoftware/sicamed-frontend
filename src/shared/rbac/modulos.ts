@@ -8,7 +8,8 @@ export type IdModulo =
   | "mercado"
   | "cumplimiento"
   | "plataforma"
-  | "salud";
+  | "salud"
+  | "dispensacion";
 
 export type Modulo = {
   id: IdModulo;
@@ -16,7 +17,7 @@ export type Modulo = {
   rotulo: string;
   descripcion: string;
   icono: NombreIcono;
-  zona: "comercial" | "clinica";
+  zona: "comercial" | "clinica" | "dispensacion";
 };
 
 export const MODULOS: readonly Modulo[] = [
@@ -75,6 +76,14 @@ export const MODULOS: readonly Modulo[] = [
     descripcion: "Conexiones externas y políticas de verificación",
     icono: "mundo",
     zona: "comercial",
+  },
+  {
+    id: "dispensacion",
+    etiqueta: "Dispensación",
+    rotulo: "Punto de dispensación",
+    descripcion: "Verificación de credencial y entrega presencial en farmacia",
+    icono: "candado",
+    zona: "dispensacion",
   },
   {
     id: "salud",

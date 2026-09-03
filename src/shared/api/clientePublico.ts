@@ -8,6 +8,8 @@ import {
   type PaginaVitrina,
 } from "./mock/servidorMock";
 import { OFERTAS_PUBLICAS } from "./mock/datos";
+import { servidorCredencialPublica } from "./mock/servidorSensible";
+import { sinContrato } from "./rest/peticiones";
 import type { Oferta } from "./mock/tipos";
 import type {
   EstadisticasVitrinaApi,
@@ -73,4 +75,9 @@ export const apiPublica = {
     modoMock
       ? demorar(OFERTAS_PUBLICAS.find((oferta) => oferta.id === id) ?? null)
       : solicitar<OfertaPublicaApi>("publico", `/ofertas/${id}`).then(aOfertaPublica),
+
+  credencial: (codigo: string) =>
+    modoMock
+      ? servidorCredencialPublica.consultar(codigo)
+      : sinContrato("la consulta pública de la credencial"),
 };

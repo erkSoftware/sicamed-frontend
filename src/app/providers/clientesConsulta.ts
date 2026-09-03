@@ -42,7 +42,23 @@ export const clienteConsultaClinico = new QueryClient({
   },
 });
 
+export const clienteConsultaDispensacion = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 0,
+      staleTime: 0,
+      retry: 0,
+      refetchOnWindowFocus: false,
+      refetchOnMount: "always",
+    },
+    mutations: {
+      retry: false,
+    },
+  },
+});
+
 export const limpiarAmbasZonas = (): void => {
   clienteConsultaClinico.clear();
+  clienteConsultaDispensacion.clear();
   clienteConsultaComercial.clear();
 };

@@ -10,11 +10,13 @@ import type {
   SesionAsistente,
 } from "../../../api/clienteAsistente";
 import { useAurora } from "../almacen";
+import { vigilarCalidad } from "./calidad";
 import { arrancarDemostracion } from "./demostracion";
 import type { Demostracion } from "./demostracion";
 import { diagnosticar } from "./diagnostico";
 import { clasificarEvento } from "./eventos";
 import type { EventoProveedor } from "./eventos";
+import { empezarLatido } from "./latido";
 import { crearMedidor } from "./nivel";
 import type { Medidor } from "./nivel";
 import {
@@ -46,6 +48,17 @@ export type OpcionesConversacion = {
 
 const VOLUMEN_ATENUADO = 0.18;
 
+export const REINTENTOS_DE_RECONEXION = 3;
+
+export const esperaDeReintento = (intento: number, azar = Math.random()): number =>
+  Math.round(500 * 2 ** intento * (0.5 + azar));
+
+const esperar = (milisegundos: number): Promise<void> =>
+  new Promise((seguir) => {
+    window.setTimeout(seguir, milisegundos);
+  });
+
+let entorno: OpcionesConversacion | null = null;
 let conexion: Conexion | null = null;
 let demostracion: Demostracion | null = null;
 let contextoAudio: AudioContext | null = null;
@@ -59,6 +72,17 @@ let permisosVigentes: readonly Permiso[] = [];
 let hablando = false;
 let llamadaAbierta = "";
 let llamadaDelProveedor = "";
+let llamadaCaida = "";
+let proveedorCaido = "";
+let pararLatido: (() => void) | null = null;
+let pararVigilancia: (() => void) | null = null;
+let turno = 0;
+let enMarcha: Promise<void> | null = null;
+let reconectando = false;
+let recuperaciones = 0;
+let soltando = false;
+let rutaDebil = false;
+let medidaDebil = false;
 let avisoProgramado: number | undefined;
 let finProgramado: number | undefined;
 let cuentaAtras: number | undefined;
@@ -126,6 +150,15 @@ export const ejecutarHerramienta = (
   return { ok: false, motivo: "esa herramienta se ejecuta en el servidor y aún no tiene ruta publicada" };
 };
 
+const cerrarContexto = (audio: AudioContext | null) => {
+  if (!audio || audio.state === "closed") return;
+  void Promise.resolve(audio.close()).catch(() => undefined);
+};
+
+const refrescarEnlace = () => {
+  useAurora.getState().fijarConexionDebil(rutaDebil || medidaDebil);
+};
+
 const atenuar = (atenuado: boolean) => {
   if (elementoAudio) elementoAudio.volume = atenuado ? VOLUMEN_ATENUADO : 1;
 };
@@ -142,9 +175,16 @@ const cancelarTemporizadores = () => {
 const cerrarRegistro = (motivo: MotivoCierre) => {
   const llamada = llamadaAbierta;
   const enElProveedor = llamadaDelProveedor;
+  const anterior = llamadaCaida;
+  const suyaAnterior = proveedorCaido;
   llamadaAbierta = "";
   llamadaDelProveedor = "";
+  llamadaCaida = "";
+  proveedorCaido = "";
   if (llamada) void cerrarLlamadaAsistente(llamada, motivo, enElProveedor);
+  if (anterior && anterior !== llamada) {
+    void cerrarLlamadaAsistente(anterior, "connection_error", suyaAnterior);
+  }
 };
 
 const programarLimite = (sesion: SesionAsistente, canal: RTCDataChannel) => {
@@ -179,8 +219,13 @@ const programarLimite = (sesion: SesionAsistente, canal: RTCDataChannel) => {
   }, duracion * 1000);
 };
 
-const soltarRecursos = (motivo: MotivoCierre | null = null) => {
+const soltarRecursos = (motivo: MotivoCierre | null = null, conservandoEntorno = false) => {
+  soltando = true;
   cancelarTemporizadores();
+  pararLatido?.();
+  pararLatido = null;
+  pararVigilancia?.();
+  pararVigilancia = null;
   if (motivo) cerrarRegistro(motivo);
   demostracion?.cerrar();
   demostracion = null;
@@ -197,16 +242,27 @@ const soltarRecursos = (motivo: MotivoCierre | null = null) => {
     elementoAudio.srcObject = null;
     elementoAudio.volume = 1;
   }
-  elementoAudio = null;
-  void contextoAudio?.close();
+  cerrarContexto(contextoAudio);
   contextoAudio = null;
   herramientas = [];
-  navegar = null;
-  permisosVigentes = [];
   hablando = false;
   llamadaAbierta = "";
   llamadaDelProveedor = "";
-  useAurora.getState().fijarRestante(null);
+  if (!conservandoEntorno) {
+    turno += 1;
+    elementoAudio = null;
+    entorno = null;
+    navegar = null;
+    permisosVigentes = [];
+    llamadaCaida = "";
+    proveedorCaido = "";
+  }
+  rutaDebil = false;
+  medidaDebil = false;
+  const estado = useAurora.getState();
+  estado.fijarRestante(null);
+  estado.fijarConexionDebil(false);
+  soltando = false;
 };
 
 const alEvento = (evento: EventoProveedor, canal: RTCDataChannel) => {
@@ -251,14 +307,77 @@ const alEvento = (evento: EventoProveedor, canal: RTCDataChannel) => {
   }
 };
 
-const alCaer = () => {
-  soltarRecursos("connection_error");
-  useAurora.getState().fallarVoz({
-    titulo: "La conversación se cerró",
+const alMorirLaLlamada = () => {
+  const estado = useAurora.getState();
+  soltarRecursos();
+  estado.cerrarTurnoDeVoz();
+  estado.fallarVoz({
+    titulo: "El servidor dio la conversación por terminada",
     detalle:
-      "La sesión de voz dura unos minutos y no se renueva sola. Vuelve a abrirla cuando quieras seguir.",
+      "SICAMED dejó de recibir señales de vida de esta llamada y la cerró. No se te cobra el " +
+      "tiempo que no hablaste: vuelve a abrir el micrófono cuando quieras seguir.",
     reintentable: true,
   });
+};
+
+const reconectar = async (caida: string, enElProveedor: string): Promise<void> => {
+  const actual = entorno;
+  if (reconectando || !actual) return;
+
+  const mio = turno;
+  reconectando = true;
+  recuperaciones += 1;
+  llamadaCaida = caida;
+  proveedorCaido = enElProveedor;
+  soltarRecursos(null, true);
+
+  useAurora.getState().fijarVoz("reconectando");
+  rutaDebil = true;
+  refrescarEnlace();
+
+  const permitidos = recuperaciones > REINTENTOS_DE_RECONEXION ? 0 : REINTENTOS_DE_RECONEXION;
+
+  for (let intento = 1; intento <= permitidos; intento += 1) {
+    await esperar(esperaDeReintento(intento));
+    if (mio !== turno || entorno !== actual) {
+      reconectando = false;
+      return;
+    }
+
+    try {
+      await lanzar(actual, caida, mio);
+      llamadaCaida = "";
+      proveedorCaido = "";
+      reconectando = false;
+      rutaDebil = false;
+      refrescarEnlace();
+      return;
+    } catch {
+      const abortada = llamadaAbierta;
+      const suya = llamadaDelProveedor;
+      soltarRecursos(null, true);
+      if (abortada && abortada !== caida) {
+        void cerrarLlamadaAsistente(abortada, "connection_error", suya);
+      }
+    }
+  }
+
+  reconectando = false;
+  const estado = useAurora.getState();
+  soltarRecursos("connection_error");
+  estado.cerrarTurnoDeVoz();
+  estado.fallarVoz({
+    titulo: "No se pudo restablecer la conversación",
+    detalle:
+      "La conexión de audio se cayó y los reintentos no la recuperaron. La llamada quedó cerrada " +
+      "en el servidor, así que no te consume más cupo: revisa tu red antes de volver a abrirla.",
+    reintentable: true,
+  });
+};
+
+const alCaer = () => {
+  if (soltando || reconectando || !entorno) return;
+  void reconectar(llamadaAbierta, llamadaDelProveedor);
 };
 
 export const nivelDeVoz = (): number => {
@@ -267,15 +386,21 @@ export const nivelDeVoz = (): number => {
   return medidorLocal?.nivel() ?? 0;
 };
 
-export const conversando = (): boolean => conexion !== null || demostracion !== null;
+export const conversando = (): boolean =>
+  conexion !== null || demostracion !== null || reconectando;
 
 export const despedirConversacion = (): void => {
   const llamada = llamadaAbierta;
   const enElProveedor = llamadaDelProveedor;
+  const anterior = llamadaCaida;
+  const suyaAnterior = proveedorCaido;
   llamadaAbierta = "";
   llamadaDelProveedor = "";
+  llamadaCaida = "";
+  proveedorCaido = "";
   cancelarTemporizadores();
   if (llamada) despedirLlamadaAsistente(llamada, "user_ended", enElProveedor);
+  if (anterior) despedirLlamadaAsistente(anterior, "connection_error", suyaAnterior);
   soltarRecursos();
 };
 
@@ -299,59 +424,140 @@ export const interrumpir = (): void => {
   estado.fijarVoz("escuchando");
 };
 
-export const iniciarConversacion = async (opciones: OpcionesConversacion): Promise<void> => {
-  const estado = useAurora.getState();
-  if (estado.voz !== "inactiva" && estado.voz !== "fallo") return;
-  if (!estado.vozDisponible) return;
+const arrancar = async (
+  opciones: OpcionesConversacion,
+  reanuda: string,
+  mio: number,
+): Promise<void> => {
+  let microfono: MediaStream | null = null;
+  let audio: AudioContext | null = null;
+  let sesion: SesionAsistente | null = null;
+  let enlace: Conexion | null = null;
+  let publicada = false;
 
-  estado.fijarVoz("permiso");
+  const abandonada = (): boolean => {
+    if (mio === turno) return false;
+
+    desconectar(enlace);
+    microfono?.getTracks().forEach((pista) => pista.stop());
+    cerrarContexto(audio);
+
+    const mia = sesion?.llamadaId ?? "";
+    if (mia && (!publicada || llamadaAbierta === mia)) {
+      if (llamadaAbierta === mia) {
+        llamadaAbierta = "";
+        llamadaDelProveedor = "";
+      }
+      void cerrarLlamadaAsistente(mia, "user_ended", enlace?.callId ?? "");
+    }
+    return true;
+  };
+
+  microfono = await pedirMicrofono();
+  if (abandonada()) return;
+
+  const estado = useAurora.getState();
+  estado.fijarVoz(reanuda === "" ? "conectando" : "reconectando");
+
+  sesion = await abrirSesionAsistente(opciones.contexto ?? {}, reanuda);
+  if (abandonada()) return;
+
+  audio = new AudioContext();
+  if (audio.state === "suspended") await audio.resume();
+  if (abandonada()) return;
+
+  microfonoVivo = microfono;
+  contextoAudio = audio;
+  herramientas = sesion.herramientas;
+  llamadaAbierta = sesion.llamadaId ?? "";
+  publicada = true;
+  estado.fijarDemostrativa(Boolean(sesion.demostracion));
+  estado.fijarCupo(sesion.restanteDiarioSegundos ?? null);
+
+  if (sesion.demostracion) {
+    demostracion = arrancarDemostracion({
+      contexto: audio,
+      microfono,
+      alFase: (fase) => useAurora.getState().fijarVoz(fase),
+      alFragmento: (fragmento) => useAurora.getState().transcribir(fragmento),
+      alCerrarTurno: (texto) => useAurora.getState().cerrarTurnoDeVoz(texto),
+    });
+    estado.fijarVoz("hablando");
+    return;
+  }
+
+  elementoAudio = opciones.audio;
+  medidorLocal = crearMedidor(audio, microfono);
+
+  enlace = await conectar(sesion, {
+    microfono,
+    alPistaRemota: (flujo) => {
+      if (!elementoAudio) return;
+      elementoAudio.srcObject = flujo;
+      void elementoAudio.play().catch(() => undefined);
+      if (contextoAudio) medidorRemoto = crearMedidor(contextoAudio, flujo);
+    },
+    alEvento,
+    alDebilitarse: (debil) => {
+      rutaDebil = debil;
+      refrescarEnlace();
+    },
+    alCaer,
+  });
+  if (abandonada()) return;
+
+  conexion = enlace;
+  llamadaDelProveedor = enlace.callId;
+  programarLimite(sesion, enlace.canal);
+  pararLatido = empezarLatido(llamadaAbierta, alMorirLaLlamada);
+  pararVigilancia = vigilarCalidad(enlace.pc, (debil) => {
+    medidaDebil = debil;
+    refrescarEnlace();
+  });
+  estado.fijarVoz("escuchando");
+};
+
+const lanzar = async (
+  opciones: OpcionesConversacion,
+  reanuda: string,
+  mio: number,
+): Promise<void> => {
+  const tarea = arrancar(opciones, reanuda, mio);
+  enMarcha = tarea;
+  try {
+    await tarea;
+  } finally {
+    if (enMarcha === tarea) enMarcha = null;
+  }
+};
+
+export const iniciarConversacion = async (opciones: OpcionesConversacion): Promise<void> => {
+  const inicial = useAurora.getState();
+  if (!inicial.vozDisponible) return;
+
+  if (inicial.voz !== "inactiva" && inicial.voz !== "fallo") {
+    if (conversando() || enMarcha) return;
+    soltarRecursos();
+  }
+
+  turno += 1;
+  const mio = turno;
+  useAurora.getState().reiniciar();
+  useAurora.getState().fijarVoz("permiso");
+
+  const anterior = enMarcha;
+  if (anterior) await anterior.catch(() => undefined);
+  if (mio !== turno) return;
+
+  entorno = opciones;
   navegar = opciones.navegar;
   permisosVigentes = opciones.permisos;
+  recuperaciones = 0;
 
   try {
-    microfonoVivo = await pedirMicrofono();
-    estado.fijarVoz("conectando");
-
-    const sesion = await abrirSesionAsistente(opciones.contexto ?? {});
-    herramientas = sesion.herramientas;
-    llamadaAbierta = sesion.llamadaId ?? "";
-    estado.fijarDemostrativa(Boolean(sesion.demostracion));
-    estado.fijarCupo(sesion.restanteDiarioSegundos ?? null);
-
-    contextoAudio = new AudioContext();
-    if (contextoAudio.state === "suspended") await contextoAudio.resume();
-
-    if (sesion.demostracion) {
-      demostracion = arrancarDemostracion({
-        contexto: contextoAudio,
-        microfono: microfonoVivo,
-        alFase: (fase) => useAurora.getState().fijarVoz(fase),
-        alFragmento: (fragmento) => useAurora.getState().transcribir(fragmento),
-        alCerrarTurno: (texto) => useAurora.getState().cerrarTurnoDeVoz(texto),
-      });
-      estado.fijarVoz("hablando");
-      return;
-    }
-
-    elementoAudio = opciones.audio;
-    medidorLocal = crearMedidor(contextoAudio, microfonoVivo);
-
-    conexion = await conectar(sesion, {
-      microfono: microfonoVivo,
-      alPistaRemota: (flujo) => {
-        if (!elementoAudio) return;
-        elementoAudio.srcObject = flujo;
-        void elementoAudio.play().catch(() => undefined);
-        if (contextoAudio) medidorRemoto = crearMedidor(contextoAudio, flujo);
-      },
-      alEvento,
-      alCaer,
-    });
-
-    llamadaDelProveedor = conexion.callId;
-    programarLimite(sesion, conexion.canal);
-    estado.fijarVoz("escuchando");
+    await lanzar(opciones, "", mio);
   } catch (motivo) {
+    if (mio !== turno) return;
     soltarRecursos(llamadaAbierta ? "system_error" : null);
     const { vedar, fallo } = diagnosticar(motivo);
     const actual = useAurora.getState();

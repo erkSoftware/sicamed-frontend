@@ -31,12 +31,30 @@ export type ContextoAsistente = {
 
 export type MotivoCierre = "user_ended" | "completed" | "connection_error" | "system_error";
 
+export type LatidoLlamada = {
+  vive: boolean;
+  expiraEn?: string;
+  restanteSegundos?: number;
+};
+
+export const cuerpoDeApertura = (
+  contexto: ContextoAsistente,
+  reanudaLlamadaId = "",
+): { contexto: ContextoAsistente; reanudaLlamadaId?: string } =>
+  /^[A-Za-z0-9_-]+$/u.test(reanudaLlamadaId) ? { contexto, reanudaLlamadaId } : { contexto };
+
 export const abrirSesionAsistente = async (
   contexto: ContextoAsistente = {},
+  reanudaLlamadaId = "",
 ): Promise<SesionAsistente> =>
   solicitar<SesionAsistente>("comercial", "/asistente/sesiones", {
     metodo: "POST",
-    cuerpo: { contexto },
+    cuerpo: cuerpoDeApertura(contexto, reanudaLlamadaId),
+  });
+
+export const latirLlamadaAsistente = async (llamadaId: string): Promise<LatidoLlamada> =>
+  solicitar<LatidoLlamada>("comercial", `/asistente/llamadas/${llamadaId}/latido`, {
+    metodo: "POST",
   });
 
 export const cuerpoDeCierre = (

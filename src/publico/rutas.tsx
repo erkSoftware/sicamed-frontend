@@ -11,6 +11,7 @@ import { Accesibilidad } from "./paginas/Accesibilidad";
 import { Privacidad } from "./paginas/Privacidad";
 import { Registro } from "./paginas/Registro";
 import { VerificacionCorreo } from "./registro/VerificacionCorreo";
+import { CredencialPublica } from "./paginas/CredencialPublica";
 
 export const RUTAS_PUBLICAS_ESTATICAS: readonly string[] = [
   "/",
@@ -21,6 +22,7 @@ export const RUTAS_PUBLICAS_ESTATICAS: readonly string[] = [
   "/accesibilidad",
   "/privacidad",
   "/registro",
+  "/paciente",
 ];
 
 export const seccionPublica = () => (
@@ -42,6 +44,7 @@ export const seccionPublica = () => (
     <Route path="transparencia" element={<Transparencia />} />
     <Route path="accesibilidad" element={<Accesibilidad />} />
     <Route path="privacidad" element={<Privacidad />} />
+    <Route path="paciente" element={<CredencialPublica />} />
     <Route path="registro" element={<Registro />} />
     <Route path="registro/verificacion" element={<VerificacionCorreo />} />
   </Route>

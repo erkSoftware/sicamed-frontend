@@ -540,3 +540,91 @@ común: si algo de esto cambia, la lista de arriba cambia con ello.
 - El límite de tasa de la zona pública en local es `ratelimit-limit: 60`, no los
   600 del ejemplo del §5. Solo para que nadie calibre el backoff contra el
   número del documento.
+
+
+---
+
+## Zona de dispensación, credencial y liquidación — nuevo, 2 de septiembre de 2026
+
+El portal ya tiene las pantallas y las reglas en modo simulado. Para encenderlas contra el backend
+hacen falta los servicios que siguen. El detalle del reparto de datos y su justificación normativa
+está en [AMB-17](../decisiones/AMB-17-ZONA-DE-DISPENSACION.md).
+
+**La regla que no se puede romper:** el punto de dispensación recibe el seudónimo de la credencial,
+nunca el nombre, el documento ni el diagnóstico. Si un endpoint de esta zona devuelve identidad, el
+frontend rompe su propia prueba de frontera y no se despliega.
+
+### Zona clínica — nuevos endpoints
+
+| Método | Ruta | Devuelve |
+|---|---|---|
+| `GET` | `/clinico/credenciales` | Página de credenciales con `seudonimo`, `estado`, `nivelVerificacion`, `vence`, `entregasEnVentana` |
+| `GET` | `/clinico/credenciales/{id}` | Credencial, fórmulas del paciente y entregas asociadas |
+| `POST` | `/clinico/credenciales` | Emite. Rechaza con `409` si el paciente ya tiene una activa |
+| `PATCH` | `/clinico/credenciales/{id}/estado` | Suspende o revoca. Motivo obligatorio de diez caracteres |
+| `POST` | `/clinico/credenciales/{id}/rotacion` | Rota el código de presentación |
+| `GET` | `/clinico/prescripciones` | Página de fórmulas |
+| `POST` | `/clinico/prescripciones` | Emite. Valida los catorce campos del Dec. 2200/2005 Art. 17 |
+| `POST` | `/clinico/prescripciones/{id}/anulacion` | Anula. Rechaza `409` si ya fue dispensada por completo |
+
+### Zona de dispensación — nuevos endpoints
+
+| Método | Ruta | Devuelve |
+|---|---|---|
+| `GET` | `/dispensacion/puntos` | Puntos con licencia y vigencia |
+| `POST` | `/dispensacion/verificaciones` | Seudónimo, nivel, vigencia y **proyección** de las fórmulas dispensables, sin identidad |
+| `POST` | `/dispensacion/actos` | Registra la entrega, descuenta saldo, sella el evento y devuelve el cargo |
+| `GET` | `/dispensacion/actos` | Página de actos registrados |
+
+### Zona comercial — nuevos endpoints
+
+| Método | Ruta | Devuelve |
+|---|---|---|
+| `GET` | `/liquidacion/cargos` | Página de cargos, filtrable por flujo, periodo y estado |
+| `GET` | `/liquidacion/corte` | Totales por flujo, periodos disponibles y **cargos sin evento de origen** |
+
+`cargos sin evento de origen` debe ser siempre cero. Es la métrica que hace auditable el corte: todo
+cargo B2B apunta al evento del ledger que lo originó.
+
+### Zona pública — nuevo endpoint
+
+| Método | Ruta | Devuelve |
+|---|---|---|
+| `GET` | `/publico/credenciales/{codigo}` | Estado de la credencial por su código rotatorio. **Sin nombre y sin documento** |
+
+Este endpoint necesita límite de intentos por IP: es el único de la zona pública que consulta por un
+código adivinable. El mensaje de error no debe confirmar si un código existió antes.
+
+### Eventos nuevos en el ledger de trazabilidad
+
+`CREDENCIAL_VERIFICADA` · `DISPENSACION_REGISTRADA` · `RECOMPRA_BLOQUEADA` · `VERIFICACION_FALLIDA`
+
+Los cuatro se sellan contra el seudónimo en `entidadId`. Ninguno lleva identidad en la descripción.
+
+### Errores nuevos del catálogo
+
+```
+credencial-ya-activa · credencial-no-encontrada · credencial-no-activa
+paciente-sin-credencial · prescripcion-incompleta · prescripcion-ya-dispensada
+prescripcion-no-dispensable · prescripcion-vencida · ventana-de-recompra
+saldo-insuficiente · punto-sin-licencia-vigente · motivo-insuficiente
+```
+
+`prescripcion-incompleta` debe traer `errores[]` con un campo por numeral faltante y `norma` con la
+cita del Decreto 2200. Es lo que la pantalla de emisión usa para marcar los catorce numerales.
+
+### Interoperabilidad
+
+Dos conexiones nuevas quedan declaradas en el portal, ambas sin interfaz real todavía:
+
+- **SICAMED central del MinCIT** (`REPORTE`, `NO_CONECTADA`) — el anexo técnico del Art. 13 no ha
+  salido. El adaptador vive tras el ACL para que su forma final no toque el dominio (`R-01`).
+- **POS de farmacia** (`BIDIRECCIONAL`, `DEGRADADA`) — con los dos modos de adopción: servicio REST
+  contra el POS existente, o la pantalla del punto de dispensación para quien no tenga integración.
+  Ninguna farmacia queda obligada a cambiar de sistema.
+
+### Analítica
+
+Los cortes territoriales del módulo de reportes pasan por supresión de celdas pequeñas con k = 5
+antes de publicarse. **El backend necesita el mismo control en el origen**: si el servicio devuelve
+las celdas crudas, la supresión del cliente es cosmética y el Art. 21 sigue incumplido.

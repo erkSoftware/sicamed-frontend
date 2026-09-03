@@ -8355,3 +8355,105 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
 .sitio > main {
   padding-top: clamp(var(--e5), 3vw, var(--e7));
 }
+
+.sitio > main:has(> .heroe:first-child) {
+  padding-top: 0;
+}
+
+@media (max-height: 760px) {
+  .heroe {
+    padding-block: var(--e5);
+  }
+}
+
+.cabecera-sitio .marca__lema {
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .cabecera-sitio .marca__lema {
+    display: none;
+  }
+}
+
+@media (min-width: 700px) and (max-height: 820px) {
+  .acceso__panel {
+    padding-block: var(--e4);
+  }
+
+  .acceso__marca {
+    margin-bottom: var(--e3);
+  }
+
+  .acceso__titulo {
+    margin-top: var(--e2);
+  }
+
+  .acceso__entrada {
+    margin-top: var(--e2);
+  }
+
+  .acceso__formulario {
+    margin-top: var(--e4);
+    gap: var(--e2);
+  }
+
+  .acceso__pie {
+    margin-top: var(--e4);
+    padding-top: var(--e3);
+  }
+
+  .acceso__escenario {
+    padding-block: var(--e6);
+  }
+}
+
+@media (min-width: 700px) and (max-height: 700px) {
+  .acceso__panel {
+    justify-content: flex-start;
+    padding-block: var(--e4);
+  }
+
+  .acceso__titulo {
+    margin-top: var(--e2);
+    font-size: 1.45rem;
+  }
+
+  .acceso__formulario .campo__control {
+    height: 42px;
+  }
+
+  .acceso__formulario .boton {
+    margin-top: 0;
+  }
+
+  .acceso__escenario {
+    gap: var(--e4);
+    padding-block: var(--e5);
+  }
+}
+
+@media (max-width: 620px) {
+  .acceso__panel {
+    padding-top: var(--e5);
+  }
+
+  .acceso__marca {
+    margin-bottom: var(--e4);
+  }
+
+  .acceso__formulario {
+    margin-top: var(--e4);
+  }
+
+  .acceso__formulario .campo__control {
+    font-size: 1rem;
+  }
+}
+
+.pista-deslizar {
+  left: auto;
+  right: calc(var(--e5) + env(safe-area-inset-right));
+  bottom: calc(var(--e3) + env(safe-area-inset-bottom));
+  transform: none;
+}

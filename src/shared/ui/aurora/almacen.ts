@@ -13,6 +13,7 @@ export type EstadoVoz =
   | "inactiva"
   | "permiso"
   | "conectando"
+  | "reconectando"
   | "escuchando"
   | "hablando"
   | "fallo";
@@ -33,6 +34,7 @@ type EstadoAurora = {
   voz: EstadoVoz;
   vozDisponible: boolean;
   vozDemostrativa: boolean;
+  conexionDebil: boolean;
   transcripcion: string;
   falloVoz: FalloVozVisible | null;
   reintentoDesde: number;
@@ -50,6 +52,7 @@ type EstadoAurora = {
   fijarVoz: (voz: EstadoVoz) => void;
   vedarVoz: () => void;
   fijarDemostrativa: (demostrativa: boolean) => void;
+  fijarConexionDebil: (debil: boolean) => void;
   fijarRestante: (segundos: number | null) => void;
   fijarCupo: (segundos: number | null) => void;
   transcribir: (fragmento: string) => void;
@@ -123,6 +126,7 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
   voz: "inactiva",
   vozDisponible: true,
   vozDemostrativa: false,
+  conexionDebil: false,
   transcripcion: "",
   falloVoz: null,
   reintentoDesde: 0,
@@ -165,14 +169,20 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
     const estado = get();
     if (voz === "hablando") estado.fijarAccion("hablar");
     if (voz === "escuchando") estado.fijarAccion("escuchar");
-    if (voz === "conectando") estado.fijarAccion("pensar");
+    if (voz === "conectando" || voz === "reconectando") estado.fijarAccion("pensar");
     if (voz === "inactiva" || voz === "fallo") estado.fijarAccion(ACCION_INICIAL);
-    set({ voz, ...(voz === "fallo" ? {} : { falloVoz: null, reintentoDesde: 0 }) });
+    set({
+      voz,
+      ...(voz === "fallo" ? {} : { falloVoz: null, reintentoDesde: 0 }),
+      ...(voz === "inactiva" || voz === "fallo" ? { conexionDebil: false } : {}),
+    });
   },
 
   vedarVoz: () => set({ vozDisponible: false }),
 
   fijarDemostrativa: (demostrativa) => set({ vozDemostrativa: demostrativa }),
+
+  fijarConexionDebil: (debil) => set({ conexionDebil: debil }),
 
   fijarRestante: (segundos) => set({ segundosRestantes: segundos }),
 
@@ -205,6 +215,7 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
     set({
       mensajes: [],
       accion: ACCION_INICIAL,
+      conexionDebil: false,
       transcripcion: "",
       falloVoz: null,
       reintentoDesde: 0,

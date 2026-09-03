@@ -31,6 +31,10 @@ export const PERMISOS_ORGANIZACION: readonly Permiso[] = [
   "reportes:tablero:leer",
   "interoperabilidad:conexion:leer",
   "ambiente:lectura:leer",
+  "dispensacion:acto:leer",
+  "dispensacion:acto:registrar",
+  "dispensacion:credencial:verificar",
+  "liquidacion:cargo:leer",
 ];
 
 export const PERMISOS_CAMPO: readonly Permiso[] = [
@@ -47,6 +51,9 @@ export const PERMISOS_CAMPO: readonly Permiso[] = [
   "inventario:lote:leer",
   "trazabilidad:evento:leer",
   "ambiente:lectura:leer",
+  "dispensacion:acto:leer",
+  "dispensacion:acto:registrar",
+  "dispensacion:credencial:verificar",
 ];
 
 export const PERMISOS_PLATAFORMA: readonly Permiso[] = [
@@ -75,6 +82,9 @@ export const PERMISOS_PLATAFORMA: readonly Permiso[] = [
   "asistente:configuracion:gestionar",
   "asistente:llamadas:gestionar",
   "institucional:consultar",
+  "dispensacion:acto:leer",
+  "liquidacion:cargo:leer",
+  "liquidacion:corte:generar",
 ];
 
 export const PERMISOS_INSTITUCIONAL: readonly Permiso[] = [
@@ -98,6 +108,7 @@ export const PERMISOS_INSTITUCIONAL: readonly Permiso[] = [
   "institucional:consultar",
   "ruedas:convocatoria:leer",
   "asistente:llamadas:gestionar",
+  "dispensacion:acto:leer",
 ];
 
 const AJENOS_A_LA_OBSERVACION: readonly Permiso[] = [
@@ -129,6 +140,9 @@ export const PERMISOS_CLINICOS: readonly Permiso[] = [
   "clinico:atencion:leer",
   "clinico:agenda:gestionar",
   "clinico:teleconsulta:atender",
+  "clinico:credencial:emitir",
+  "clinico:prescripcion:emitir",
+  "clinico:prescripcion:anular",
 ];
 
 export const PERMISOS_COMPRADOR: readonly Permiso[] = [

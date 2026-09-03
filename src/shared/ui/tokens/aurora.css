@@ -228,6 +228,15 @@
   color: var(--texto-suave);
 }
 
+.aurora-conversacion__debil {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0;
+  font-size: var(--texto-xs);
+  color: var(--alerta-texto);
+}
+
 .aurora-panel__aviso {
   margin: 0;
   padding: var(--e3) var(--e4);

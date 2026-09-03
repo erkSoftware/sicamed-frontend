@@ -21,7 +21,17 @@ const TIPOS = [
   { valor: "LOTE_TRASLADADO", etiqueta: "Lote trasladado" },
   { valor: "INTERES_MANIFESTADO", etiqueta: "Interés manifestado" },
   { valor: "CONTACTO_HABILITADO", etiqueta: "Contacto habilitado" },
+  { valor: "CREDENCIAL_VERIFICADA", etiqueta: "Credencial verificada" },
+  { valor: "DISPENSACION_REGISTRADA", etiqueta: "Dispensación registrada" },
+  { valor: "RECOMPRA_BLOQUEADA", etiqueta: "Recompra bloqueada" },
+  { valor: "VERIFICACION_FALLIDA", etiqueta: "Verificación fallida" },
 ];
+
+const EVENTOS_DE_RECHAZO = new Set([
+  "PUBLICACION_RECHAZADA",
+  "RECOMPRA_BLOQUEADA",
+  "VERIFICACION_FALLIDA",
+]);
 
 const COLUMNAS: readonly Columna<EventoTrazabilidad>[] = [
   {
@@ -47,7 +57,7 @@ const COLUMNAS: readonly Columna<EventoTrazabilidad>[] = [
     clave: "tipo",
     encabezado: "Tipo",
     render: (evento) => (
-      <Insignia tono={evento.tipo === "PUBLICACION_RECHAZADA" ? "peligro" : "neutro"}>
+      <Insignia tono={EVENTOS_DE_RECHAZO.has(evento.tipo) ? "peligro" : "neutro"}>
         {evento.tipo.replaceAll("_", " ")}
       </Insignia>
     ),

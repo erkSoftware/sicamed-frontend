@@ -26,6 +26,9 @@ import { Cupos } from "../../features/cupos";
 import { Transformacion } from "../../features/transformacion";
 import { Destruccion } from "../../features/destruccion";
 import { Usuarios } from "../../features/usuarios";
+import { PuntoDeDispensacion, RegistroDeEntregas } from "../../features/dispensacion";
+import { Liquidacion } from "../../features/liquidacion";
+import { ZonaDispensacion } from "./rutasDispensacion";
 import {
   ConfiguracionAurora,
   HojaAurora,
@@ -183,6 +186,34 @@ export const Enrutador = () => (
         element={
           <GuardaDeRuta permiso="produccion:destruccion:leer">
             <Destruccion />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="liquidacion"
+        element={
+          <GuardaDeRuta permiso="liquidacion:cargo:leer">
+            <Liquidacion />
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="dispensacion"
+        element={
+          <GuardaDeRuta permiso="dispensacion:credencial:verificar">
+            <ZonaDispensacion>
+              <PuntoDeDispensacion />
+            </ZonaDispensacion>
+          </GuardaDeRuta>
+        }
+      />
+      <Route
+        path="dispensacion/registro"
+        element={
+          <GuardaDeRuta permiso="dispensacion:acto:leer">
+            <ZonaDispensacion>
+              <RegistroDeEntregas />
+            </ZonaDispensacion>
           </GuardaDeRuta>
         }
       />
