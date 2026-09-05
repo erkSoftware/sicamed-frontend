@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { normalizar } from "../../../i18n/formato";
 import { usePantallaDeAurora } from "./usePantallaDeAurora";
 import { senalarElemento } from "./senalar";
@@ -122,6 +123,7 @@ const accionDeFila = <T>(
   anclaje: string,
   entrada: EntradaDeTabla<T>,
   aurora: TablaDeAurora<T>,
+  anotarSeleccion: (etiqueta: string) => void,
 ): AccionDePantalla => {
   const rotular = aurora.etiquetaFila ?? entrada.claveFila;
   return {
@@ -147,6 +149,7 @@ const accionDeFila = <T>(
 
       senalarElemento(dentroDelAnclaje(anclaje, `tr[data-fila="${entrada.claveFila(fila)}"]`));
       aurora.onSeleccionar?.(fila);
+      anotarSeleccion(rotular(fila));
       return { ok: true, detalle: `Seleccioné ${rotular(fila)}` };
     },
   };
@@ -163,12 +166,17 @@ const filtrosVivos = (entrada: EntradaDeTabla<unknown>): readonly FiltroVivo[] =
 
 export const useTablaDeAurora = <T>(entrada: EntradaDeTabla<T>): void => {
   const aurora = entrada.aurora;
+  const [seleccion, fijarSeleccion] = useState("");
+  const rotularFila = aurora?.etiquetaFila ?? entrada.claveFila;
+  const sigueVisible =
+    seleccion !== "" && entrada.filas.some((fila) => rotularFila(fila) === seleccion);
 
   const estado: EstadoDePantalla | null = aurora
     ? {
         pantalla: aurora.pantalla,
         filtros: filtrosVivos(entrada as EntradaDeTabla<unknown>),
         total: entrada.total ?? entrada.filas.length,
+        ...(sigueVisible ? { seleccion } : {}),
       }
     : null;
 
@@ -177,7 +185,7 @@ export const useTablaDeAurora = <T>(entrada: EntradaDeTabla<T>): void => {
         accionDeBusqueda(entrada.busqueda),
         ...entrada.filtros.map(accionDeFiltro),
         ...entrada.columnas.map((columna) => accionDeColumna(entrada.anclaje, columna)),
-        accionDeFila(entrada.anclaje, entrada, aurora),
+        accionDeFila(entrada.anclaje, entrada, aurora, fijarSeleccion),
       ]
     : [];
 

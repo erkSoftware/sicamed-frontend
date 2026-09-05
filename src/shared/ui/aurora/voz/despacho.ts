@@ -129,7 +129,8 @@ const enPantalla = async (
   argumentos: Readonly<Record<string, unknown>>,
 ): Promise<ResultadoHerramienta> => {
   const ruta = entorno.ruta();
-  const objetivo = objetivoFijo ?? objetivoDeArgumentos(argumentos);
+  const nombrada = objetivoFijo ?? objetivoDeArgumentos(argumentos);
+  const objetivo = verbo === "seleccionar-fila" ? "" : nombrada;
   const accion = buscarAccion(ruta, verbo, objetivo);
 
   if (!accion) {
@@ -140,7 +141,7 @@ const enPantalla = async (
       motivo:
         disponibles.length === 0
           ? `esta pantalla no deja ${ETIQUETA_DE_VERBO[verbo]}`
-          : `aquí no encuentro «${objetivo}»`,
+          : `aquí no encuentro «${nombrada}»`,
       ...(disponibles.length > 0 ? { disponibles } : {}),
     };
   }
@@ -149,7 +150,7 @@ const enPantalla = async (
     return { ok: false, motivo: NEGADA_POR_ROL };
   }
 
-  const valor = valorDeArgumentos(argumentos);
+  const valor = valorDeArgumentos(argumentos) || (objetivo === "" ? nombrada : "");
 
   if (accion.escribe && !(await firmarAccion(accion, valor))) {
     anotar({
@@ -162,7 +163,11 @@ const enPantalla = async (
     return { ok: false, motivo: "el usuario no autorizó esa escritura" };
   }
 
-  const resultado = await ejecutarAccionDePantalla(accion, { objetivo, valor, argumentos });
+  const resultado = await ejecutarAccionDePantalla(accion, {
+    objetivo: nombrada,
+    valor,
+    argumentos,
+  });
   anotar({
     herramienta: nombre,
     etiqueta: `${ETIQUETA_DE_VERBO[verbo]} «${accion.etiqueta}»`,

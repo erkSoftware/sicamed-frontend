@@ -234,6 +234,42 @@ describe("despachar", () => {
     expect(senalada).toHaveBeenCalledTimes(1);
   });
 
+  it("escoge la fila tanto si el modelo la manda en «fila» como en «valor»", async () => {
+    const escogida = vi.fn((peticion: { valor: string }) => ({
+      ok: true,
+      detalle: `Seleccioné ${peticion.valor}`,
+    }));
+    publicarPantalla({
+      ruta: "/app/inventario",
+      estado: { pantalla: "Inventario" },
+      acciones: [
+        {
+          verbo: "seleccionar-fila",
+          objetivo: "fila",
+          etiqueta: "lotes",
+          valores: ["LT-0091"],
+          ejecutar: escogida,
+        },
+      ],
+    });
+
+    const herramienta: HerramientaAsistente = {
+      nombre: "select_row",
+      clase: "ui",
+      descripcion: "Escoge una fila del listado",
+      confirmacionPrevia: false,
+    };
+
+    expect(await despachar(entorno([herramienta]), "select_row", "", '{"fila":"LT-0091"}')).toEqual({
+      ok: true,
+      resumen: "Seleccioné LT-0091",
+    });
+    expect(
+      await despachar(entorno([herramienta]), "select_row", "", '{"valor":"LT-0091"}'),
+    ).toEqual({ ok: true, resumen: "Seleccioné LT-0091" });
+    expect(escogida).toHaveBeenCalledTimes(2);
+  });
+
   it("dice qué hay en la pantalla cuando no encuentra el objetivo", async () => {
     publicarPantalla({
       ruta: "/app/inventario",
