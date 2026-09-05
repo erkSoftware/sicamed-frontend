@@ -183,6 +183,7 @@ const conversar = async () => {
     audio: audioFalso(),
     navegar: () => undefined,
     permisos: [],
+    ruta: () => "/app",
   });
 };
 

@@ -5,6 +5,10 @@ import { EsferaAurora } from "./EsferaAurora";
 import { HaloVoz } from "./HaloVoz";
 import { GuiaDeSeccion } from "./GuiaDeSeccion";
 import { PresentacionAurora, marcarPresentada, yaSePresento } from "./PresentacionAurora";
+import { BitacoraAurora } from "./BitacoraAurora";
+import { HojaDeFirma } from "./HojaDeFirma";
+import { hayFirmaPendiente } from "./voz/confirmacion";
+import { etiquetaDeRuta } from "./pantalla/contextoVivo";
 import { useAurora } from "./almacen";
 import type { EstadoVoz } from "./almacen";
 import {
@@ -51,6 +55,7 @@ export const AsistenteAurora = () => {
   const falloVoz = useAurora((estado) => estado.falloVoz);
   const segundosRestantes = useAurora((estado) => estado.segundosRestantes);
   const cupoRestante = useAurora((estado) => estado.cupoRestante);
+  const resumenEntidad = useAurora((estado) => estado.resumenEntidad);
   const mensajes = useAurora((estado) => estado.mensajes);
   const alternarVisible = useAurora((estado) => estado.alternarVisible);
   const mostrar = useAurora((estado) => estado.mostrar);
@@ -100,7 +105,11 @@ export const AsistenteAurora = () => {
       audio: audio.current,
       navegar: (ruta) => entorno.current.navegar(ruta),
       permisos: entorno.current.permisos,
-      contexto: { ruta: entorno.current.ruta },
+      ruta: () => entorno.current.ruta,
+      contexto: {
+        ruta: entorno.current.ruta,
+        pantalla: etiquetaDeRuta(entorno.current.ruta),
+      },
     });
   }, []);
 
@@ -165,7 +174,7 @@ export const AsistenteAurora = () => {
   useEffect(() => {
     if (!visible) return undefined;
     const alTeclear = (evento: KeyboardEvent) => {
-      if (evento.key !== "Escape") return;
+      if (evento.key !== "Escape" || hayFirmaPendiente()) return;
       terminarConversacion();
       ocultar();
     };
@@ -333,6 +342,13 @@ export const AsistenteAurora = () => {
                 </p>
               ) : null}
 
+              {activa && resumenEntidad ? (
+                <p className="aurora-conversacion__resumen">
+                  <span className="aurora-conversacion__rotulo">Al iniciar la llamada</span>
+                  {resumenEntidad}
+                </p>
+              ) : null}
+
               {aviso ? (
                 <div className="aurora-conversacion__fallo" role="alert">
                   <p>
@@ -341,6 +357,8 @@ export const AsistenteAurora = () => {
                   {desbloqueo}
                 </div>
               ) : null}
+
+              <BitacoraAurora />
 
               <div className="aurora-conversacion__mandos">
                 {puedeAbrir ? (
@@ -388,6 +406,8 @@ export const AsistenteAurora = () => {
         }}
         onCierreVisto={() => setCierre(null)}
       />
+
+      <HojaDeFirma />
 
       <PresentacionAurora
         abierta={presentando}

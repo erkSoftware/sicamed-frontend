@@ -43,13 +43,38 @@ const canalFalso = () => ({
   onopen: null as unknown,
 });
 
+let ultimoCanal: ReturnType<typeof canalFalso> | null = null;
+
+const abrirCanal = () => {
+  ultimoCanal = canalFalso();
+  return ultimoCanal;
+};
+
+const canalVivo = () => {
+  if (!ultimoCanal) throw new Error("no se abrió el canal de datos");
+  return ultimoCanal;
+};
+
+const avisarCanal = (evento: { data: string }) => {
+  (canalVivo().onmessage as ((mensaje: { data: string }) => void) | null)?.(evento);
+};
+
+const abrirCanalDeDatos = () => {
+  (canalVivo().onopen as (() => void) | null)?.();
+};
+
+const enviados = () =>
+  canalVivo().send.mock.calls.map(
+    (registro) => JSON.parse(String(registro[0])) as Record<string, unknown>,
+  );
+
 const conexionFalsa = () => ({
   ontrack: null as unknown,
   onconnectionstatechange: null as unknown,
   connectionState: "connected",
   localDescription: { type: "offer", sdp: "v=0 oferta" },
   addTrack: vi.fn(),
-  createDataChannel: vi.fn(canalFalso),
+  createDataChannel: vi.fn(abrirCanal),
   createOffer: vi.fn(async () => ({ type: "offer", sdp: "v=0 oferta" })),
   setLocalDescription: vi.fn(async () => undefined),
   setRemoteDescription: vi.fn(async () => undefined),
@@ -57,15 +82,52 @@ const conexionFalsa = () => ({
   close: vi.fn(),
 });
 
+const CONSULTA = {
+  nombre: "consultar_lotes_por_vencer",
+  clase: "consulta",
+  descripcion: "Consulta qué lotes vencen",
+  confirmacionPrevia: false,
+  parametros: {
+    type: "object",
+    properties: { dias: { type: "integer", minimum: 1, maximum: 365 } },
+    required: ["dias"],
+    additionalProperties: false,
+  },
+};
+
+const NEGOCIO = {
+  nombre: "registrar_acta",
+  clase: "negocio",
+  descripcion: "Levanta un acta de transformación",
+  confirmacionPrevia: true,
+  parametros: {
+    type: "object",
+    properties: { lote: { type: "string", description: "Código del lote." } },
+    required: ["lote"],
+    additionalProperties: false,
+  },
+};
+
+let herramientasDeSesion: readonly unknown[] = [];
+
 const SESION = {
   id: "sess_prueba",
   clientSecret: "ek_prueba",
   expiraEn: new Date(Date.now() + 600_000).toISOString(),
   modelo: "gpt-realtime",
   urlWebrtc: "https://api.openai.com/v1/realtime/calls",
-  herramientas: [],
   llamadaId: "lla_prueba",
+  resumenEntidad: "Cupo de plantas: 1.200 disponibles de 5.000.",
 };
+
+const llamadaDeHerramienta = (nombre: string, argumentos: string) => ({
+  data: JSON.stringify({
+    type: "response.function_call_arguments.done",
+    name: nombre,
+    call_id: "call_9xKq2",
+    arguments: argumentos,
+  }),
+});
 
 const ESTADO_LIBRE = {
   puedeLlamar: true,
@@ -127,9 +189,21 @@ const respuestaDeRed = (url: string) => {
         ok: true,
         status: 201,
         headers: new Headers(),
-        json: async () => SESION,
+        json: async () => ({ ...SESION, herramientas: herramientasDeSesion }),
       }
     );
+  }
+  if (url.includes("/asistente/herramientas/")) {
+    return {
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      json: async () => ({
+        ok: true,
+        resumen: "Cuatro lotes vencen en los próximos 30 días.",
+        datos: { total: 4, lotes: [{ codigo: "LT-0091" }] },
+      }),
+    };
   }
   if (url.endsWith("/cierre")) {
     return { ok: true, status: 204, headers: new Headers() };
@@ -188,6 +262,8 @@ const abrirPanel = async () => {
 
 beforeEach(() => {
   marcarPresentada();
+  ultimoCanal = null;
+  herramientasDeSesion = [];
   estadoDeLlamadas = ESTADO_LIBRE;
   respuestaDeSesion = null;
   respuestaDeDesbloqueo = null;
@@ -226,13 +302,138 @@ describe("AsistenteAurora", () => {
     expect(screen.queryByText(/Aurora está en silencio/)).not.toBeInTheDocument();
   });
 
+  it("le manda al proveedor la nota de pantalla en cuanto abre el canal", async () => {
+    montar();
+    await abrirPanel();
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+
+    act(() => {
+      abrirCanalDeDatos();
+    });
+
+    const nota = enviados().find((mensaje) => mensaje.type === "conversation.item.create");
+    expect(nota).toMatchObject({
+      item: { type: "message", role: "system" },
+    });
+    expect(JSON.stringify(nota)).toContain("Pantalla:");
+  });
+
+  it("pinta el resumen de la entidad como foto del inicio y no lo reenvía", async () => {
+    montar();
+    await abrirPanel();
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+
+    expect(await screen.findByText(/Al iniciar la llamada/)).toBeInTheDocument();
+    expect(screen.getByText(/1\.200 disponibles de 5\.000/)).toBeInTheDocument();
+    expect(JSON.stringify(enviados())).not.toContain("1.200 disponibles");
+  });
+
+  it("ejecuta una consulta, devuelve solo el resumen y la anota en la bitácora", async () => {
+    herramientasDeSesion = [CONSULTA];
+    montar();
+    await abrirPanel();
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+
+    act(() => {
+      avisarCanal(llamadaDeHerramienta("consultar_lotes_por_vencer", '{"dias":30}'));
+    });
+
+    await waitFor(() =>
+      expect(llamadasA("/asistente/herramientas/consultar_lotes_por_vencer")).toHaveLength(1),
+    );
+    const cuerpo = JSON.parse(
+      String(llamadaA("/asistente/herramientas/consultar_lotes_por_vencer").opciones?.body),
+    );
+    expect(cuerpo).toEqual({
+      llamadaId: "lla_prueba",
+      argumentos: { dias: 30 },
+      callId: "call_9xKq2",
+    });
+
+    await waitFor(() =>
+      expect(
+        enviados().some(
+          (mensaje) =>
+            (mensaje.item as { type?: string } | undefined)?.type === "function_call_output",
+        ),
+      ).toBe(true),
+    );
+    const salida = enviados().find(
+      (mensaje) => (mensaje.item as { type?: string } | undefined)?.type === "function_call_output",
+    );
+    const devuelto = String((salida?.item as { output?: string }).output);
+    expect(JSON.parse(devuelto)).toEqual({
+      ok: true,
+      resumen: "Cuatro lotes vencen en los próximos 30 días.",
+    });
+    expect(devuelto).not.toContain("LT-0091");
+
+    expect(await screen.findByText("Lo que hice")).toBeInTheDocument();
+    expect(screen.getByText(/Cuatro lotes vencen/)).toBeInTheDocument();
+  });
+
+  it("no manda a escribir nada sin firma, y avisa al modelo de que no se autorizó", async () => {
+    herramientasDeSesion = [NEGOCIO];
+    montar();
+    await abrirPanel();
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+
+    act(() => {
+      avisarCanal(llamadaDeHerramienta("registrar_acta", '{"lote":"LT-0091"}'));
+    });
+
+    expect(await screen.findByText(/Aurora va a escribir en SICAMED/)).toBeInTheDocument();
+    expect(screen.getByText("Código del lote")).toBeInTheDocument();
+    expect(screen.getByText("LT-0091")).toBeInTheDocument();
+    expect(llamadasA("/asistente/herramientas/registrar_acta")).toHaveLength(0);
+
+    await userEvent.click(screen.getByRole("button", { name: /No autorizo/ }));
+
+    await waitFor(() =>
+      expect(
+        enviados().some(
+          (mensaje) =>
+            (mensaje.item as { type?: string } | undefined)?.type === "function_call_output",
+        ),
+      ).toBe(true),
+    );
+    const salida = enviados().find(
+      (mensaje) => (mensaje.item as { type?: string } | undefined)?.type === "function_call_output",
+    );
+    expect(JSON.parse(String((salida?.item as { output?: string }).output))).toEqual({
+      ok: false,
+      motivo: "el usuario no confirmó",
+    });
+    expect(llamadasA("/asistente/herramientas/registrar_acta")).toHaveLength(0);
+  });
+
+  it("no ejecuta la herramienta que el catálogo no concedió", async () => {
+    montar();
+    await abrirPanel();
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+
+    act(() => {
+      avisarCanal(llamadaDeHerramienta("registrar_acta", '{"lote":"LT-0091"}'));
+    });
+
+    await waitFor(() =>
+      expect(
+        enviados().some(
+          (mensaje) =>
+            (mensaje.item as { type?: string } | undefined)?.type === "function_call_output",
+        ),
+      ).toBe(true),
+    );
+    expect(llamadasA("/asistente/herramientas/")).toHaveLength(0);
+  });
+
   it("pide el micrófono y entra en conversación con solo abrir el panel", async () => {
     montar();
     await abrirPanel();
 
     await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
     expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledWith({
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false },
     });
     expect(await screen.findByText(/Te escucho/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Terminar/ })).toBeInTheDocument();

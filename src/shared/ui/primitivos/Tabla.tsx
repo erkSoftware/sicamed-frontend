@@ -67,6 +67,7 @@ export const Tabla = <T,>({
               <th
                 key={columna.clave}
                 scope="col"
+                data-columna={columna.clave}
                 className={columna.numerica ? "tabla__numero" : undefined}
                 style={columna.ancho ? { width: columna.ancho } : undefined}
               >
@@ -77,9 +78,9 @@ export const Tabla = <T,>({
         </thead>
         <tbody>
           {filas.map((fila) => (
-            <tr key={claveFila(fila)}>
+            <tr key={claveFila(fila)} data-fila={claveFila(fila)}>
               {columnas.map((columna) => (
-                <td key={columna.clave} className={columna.numerica ? "tabla__numero" : undefined}>
+                <td key={columna.clave} data-columna={columna.clave} className={columna.numerica ? "tabla__numero" : undefined}>
                   {columna.render(fila)}
                 </td>
               ))}

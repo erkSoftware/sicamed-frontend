@@ -36,6 +36,7 @@ export type OpcionesConexion = {
   alEvento: (evento: EventoProveedor, canal: RTCDataChannel) => void;
   alDebilitarse: (debil: boolean) => void;
   alCaer: () => void;
+  alAbrirse?: (canal: RTCDataChannel) => void;
 };
 
 export const claseDeFalloDeMedios = (motivo: unknown): ClaseFallo => {
@@ -69,7 +70,7 @@ export const pedirMicrofono = async (): Promise<MediaStream> => {
   }
   try {
     return await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false },
     });
   } catch (motivo) {
     throw new FalloVoz(claseDeFalloDeMedios(motivo));
@@ -107,7 +108,10 @@ export const conectar = async (
     const dato = leerEvento(evento.data);
     if (dato) opciones.alEvento(dato, canal);
   };
-  canal.onopen = () => canal.send(JSON.stringify({ type: "response.create" }));
+  canal.onopen = () => {
+    opciones.alAbrirse?.(canal);
+    canal.send(JSON.stringify({ type: "response.create" }));
+  };
 
   const oferta = await pc.createOffer();
   await pc.setLocalDescription(
@@ -156,6 +160,20 @@ export const responderHerramienta = (
     }),
   );
   canal.send(JSON.stringify({ type: "response.create" }));
+};
+
+export const enviarContexto = (canal: RTCDataChannel, texto: string): void => {
+  if (canal.readyState !== "open" || texto.trim() === "") return;
+  canal.send(
+    JSON.stringify({
+      type: "conversation.item.create",
+      item: {
+        type: "message",
+        role: "system",
+        content: [{ type: "input_text", text: texto }],
+      },
+    }),
+  );
 };
 
 export const cortarRespuesta = (canal: RTCDataChannel): void => {

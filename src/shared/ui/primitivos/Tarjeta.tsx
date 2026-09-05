@@ -2,6 +2,7 @@ import clsx from "clsx";
 import type { ReactNode } from "react";
 
 type Props = {
+  id?: string;
   titulo?: string;
   descripcion?: string;
   acciones?: ReactNode;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export const Tarjeta = ({
+  id,
   titulo,
   descripcion,
   acciones,
@@ -20,7 +22,7 @@ export const Tarjeta = ({
   sinRelleno,
   className,
 }: Props) => (
-  <section className={clsx("tarjeta", className)}>
+  <section id={id} className={clsx("tarjeta", className)}>
     {titulo ? (
       <header className="tarjeta__encabezado">
         <div>

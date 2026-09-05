@@ -839,8 +839,7 @@
   background:
     radial-gradient(circle at 30% 30%, var(--lima-400) 0%, transparent 52%),
     radial-gradient(circle at 74% 38%, var(--verde-300) 0%, transparent 50%),
-    radial-gradient(circle at 52% 78%, var(--verde-600) 0%, transparent 56%),
-    var(--verde-500);
+    radial-gradient(circle at 52% 78%, var(--verde-600) 0%, transparent 56%), var(--verde-500);
   filter: blur(10px) saturate(1.2);
   animation:
     aurora-esfera-giro 9s linear infinite,
@@ -891,4 +890,204 @@
     radial-gradient(circle at 70% 74%, var(--piedra-500, #6f7a72) 0%, transparent 56%),
     var(--piedra-400, #9aa49d);
   animation-play-state: paused;
+}
+
+.aurora-conversacion__resumen {
+  display: grid;
+  gap: var(--e1);
+  margin: 0;
+  padding: var(--e2) var(--e3);
+  border-left: 2px solid var(--verde-500);
+  background: var(--superficie-alt);
+  font-size: var(--texto-xs);
+  line-height: 1.5;
+  color: var(--texto-suave);
+  white-space: pre-line;
+}
+
+.aurora-conversacion__rotulo {
+  font-size: var(--texto-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.aurora-bitacora {
+  display: grid;
+  gap: var(--e2);
+  padding-top: var(--e2);
+  border-top: 1px solid var(--borde);
+}
+
+.aurora-bitacora__titulo {
+  margin: 0;
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+.aurora-bitacora__lista {
+  display: grid;
+  gap: var(--e2);
+  max-height: 13.5em;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aurora-bitacora__asiento {
+  display: flex;
+  gap: var(--e2);
+  align-items: flex-start;
+  font-size: var(--texto-xs);
+  line-height: 1.45;
+  color: var(--texto);
+}
+
+.aurora-bitacora__asiento[data-estado="hecho"] {
+  color: var(--verde-700);
+}
+
+.aurora-bitacora__asiento[data-estado="rechazado"] {
+  color: var(--texto-suave);
+}
+
+.aurora-bitacora__asiento[data-estado="fallido"] {
+  color: var(--peligro-texto);
+}
+
+.aurora-bitacora__texto {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.aurora-bitacora__etiqueta {
+  margin: 0;
+  color: var(--texto);
+}
+
+.aurora-bitacora__detalle {
+  margin: 0;
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.aurora-bitacora__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0;
+  color: var(--texto-tenue);
+  font-variant-numeric: tabular-nums;
+}
+
+.aurora-bitacora__enlace {
+  color: var(--verde-700);
+}
+
+.aurora-firma__cuerpo {
+  display: grid;
+  gap: var(--e3);
+}
+
+.aurora-firma__descripcion {
+  margin: 0;
+  font-size: var(--texto-sm);
+  line-height: 1.5;
+  color: var(--texto);
+}
+
+.aurora-firma__entidad {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0;
+  font-size: var(--texto-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+.aurora-firma__valores {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-sm);
+  overflow: hidden;
+}
+
+.aurora-firma__valor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: var(--e3);
+  padding: var(--e2) var(--e3);
+  border-bottom: 1px solid var(--borde);
+}
+
+.aurora-firma__valor:last-child {
+  border-bottom: none;
+}
+
+.aurora-firma__valor dt {
+  margin: 0;
+  font-size: var(--texto-xs);
+  color: var(--texto-suave);
+}
+
+.aurora-firma__valor dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--e2);
+  margin: 0;
+  font-size: var(--texto-sm);
+  overflow-wrap: anywhere;
+}
+
+.aurora-firma__antes {
+  color: var(--texto-tenue);
+  text-decoration: line-through;
+}
+
+.aurora-firma__despues {
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.aurora-firma__sin-datos,
+.aurora-firma__nota {
+  margin: 0;
+  font-size: var(--texto-xs);
+  line-height: 1.5;
+  color: var(--texto-suave);
+}
+
+.aurora-senalado {
+  position: relative;
+  outline: 2px solid var(--verde-500);
+  outline-offset: 1px;
+  border-radius: var(--radio-sm);
+  animation: aurora-senal 1.4s ease-in-out 2;
+}
+
+@keyframes aurora-senal {
+  0%,
+  100% {
+    outline-color: var(--verde-500);
+  }
+  50% {
+    outline-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-senalado {
+    animation: none;
+  }
 }

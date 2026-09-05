@@ -40,6 +40,7 @@ type EstadoAurora = {
   reintentoDesde: number;
   segundosRestantes: number | null;
   cupoRestante: number | null;
+  resumenEntidad: string;
   alternarVisible: () => void;
   mostrar: () => void;
   ocultar: () => void;
@@ -55,6 +56,7 @@ type EstadoAurora = {
   fijarConexionDebil: (debil: boolean) => void;
   fijarRestante: (segundos: number | null) => void;
   fijarCupo: (segundos: number | null) => void;
+  fijarResumenDeEntidad: (resumen: string) => void;
   transcribir: (fragmento: string) => void;
   cerrarTurnoDeVoz: (texto?: string) => void;
   fallarVoz: (fallo: FalloVozVisible) => void;
@@ -132,6 +134,7 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
   reintentoDesde: 0,
   segundosRestantes: null,
   cupoRestante: null,
+  resumenEntidad: "",
 
   alternarVisible: () => set({ visible: !get().visible }),
   mostrar: () => set({ visible: true }),
@@ -188,6 +191,8 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
 
   fijarCupo: (segundos) => set({ cupoRestante: segundos }),
 
+  fijarResumenDeEntidad: (resumen) => set({ resumenEntidad: resumen }),
+
   transcribir: (fragmento) => set({ transcripcion: get().transcripcion + fragmento }),
 
   cerrarTurnoDeVoz: (texto) => {
@@ -221,6 +226,7 @@ export const useAurora = create<EstadoAurora>((set, get) => ({
       reintentoDesde: 0,
       segundosRestantes: null,
       cupoRestante: null,
+      resumenEntidad: "",
     });
   },
 }));

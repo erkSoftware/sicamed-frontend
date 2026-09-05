@@ -2,11 +2,31 @@ import { construirUrl, solicitar } from "./transporte";
 
 export type ClaseHerramienta = "ui" | "consulta" | "negocio";
 
+export type PropiedadDeEsquema = {
+  type?: string;
+  description?: string;
+  enum?: readonly (string | number)[];
+  minimum?: number;
+  maximum?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  items?: PropiedadDeEsquema;
+};
+
+export type EsquemaHerramienta = {
+  type?: string;
+  properties?: Readonly<Record<string, PropiedadDeEsquema>>;
+  required?: readonly string[];
+  additionalProperties?: boolean;
+};
+
 export type HerramientaAsistente = {
   nombre: string;
   clase: ClaseHerramienta;
   descripcion: string;
   confirmacionPrevia: boolean;
+  parametros?: EsquemaHerramienta;
 };
 
 export type SesionAsistente = {
@@ -21,6 +41,7 @@ export type SesionAsistente = {
   avisoEnSegundos?: number;
   mensajeAviso?: string;
   restanteDiarioSegundos?: number;
+  resumenEntidad?: string;
   demostracion?: boolean;
 };
 
@@ -50,6 +71,40 @@ export const abrirSesionAsistente = async (
   solicitar<SesionAsistente>("comercial", "/asistente/sesiones", {
     metodo: "POST",
     cuerpo: cuerpoDeApertura(contexto, reanudaLlamadaId),
+  });
+
+export type RespuestaHerramienta = {
+  ok: boolean;
+  resumen?: string;
+  datos?: unknown;
+};
+
+export type CuerpoDeHerramienta = {
+  llamadaId: string;
+  argumentos?: Readonly<Record<string, unknown>>;
+  callId?: string;
+  tokenConfirmacion?: string;
+};
+
+export const NOMBRE_DE_HERRAMIENTA = /^[A-Za-z0-9_-]{1,64}$/u;
+
+export const cuerpoDeHerramienta = (
+  llamadaId: string,
+  argumentos: Readonly<Record<string, unknown>>,
+  callId = "",
+): CuerpoDeHerramienta => ({
+  llamadaId,
+  ...(Object.keys(argumentos).length > 0 ? { argumentos } : {}),
+  ...(/^[A-Za-z0-9_-]+$/u.test(callId) ? { callId } : {}),
+});
+
+export const ejecutarHerramientaAsistente = async (
+  nombre: string,
+  cuerpo: CuerpoDeHerramienta,
+): Promise<RespuestaHerramienta> =>
+  solicitar<RespuestaHerramienta>("comercial", `/asistente/herramientas/${nombre}`, {
+    metodo: "POST",
+    cuerpo,
   });
 
 export const latirLlamadaAsistente = async (llamadaId: string): Promise<LatidoLlamada> =>
