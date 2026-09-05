@@ -9,6 +9,7 @@ import { Boton } from "../../../shared/ui/primitivos/Boton";
 import { Insignia } from "../../../shared/ui/primitivos/Insignia";
 import { CampoSelect, CampoTexto } from "../../../shared/ui/primitivos/Campo";
 import { SiTienePermiso } from "../../../shared/rbac/SiTienePermiso";
+import { useFormularioDeAurora } from "../../../shared/ui/aurora/pantalla/useFormularioDeAurora";
 import { usePermiso } from "../../../shared/rbac/usePermiso";
 import { useAutor } from "../../../shared/auth/useAutor";
 import { DEPARTAMENTOS } from "../../../shared/api/mock/catalogos";
@@ -29,6 +30,14 @@ const TONO_ESTADO = {
   RETENIDO: "peligro",
   DESTRUIDO: "peligro",
 } as const;
+
+const TIPOS_DE_LOTE = [
+  { valor: "FLOR_SECA", etiqueta: "Flor seca" },
+  { valor: "BIOMASA", etiqueta: "Biomasa" },
+  { valor: "EXTRACTO", etiqueta: "Extracto" },
+  { valor: "ACEITE", etiqueta: "Aceite" },
+  { valor: "FORMULA_MAGISTRAL", etiqueta: "Fórmula magistral" },
+];
 
 const UNIDAD_POR_TIPO: Record<TipoLote, string> = {
   FLOR_SECA: "kg",
@@ -164,6 +173,54 @@ export const Inventario = () => {
     );
   };
 
+  const fijarValor = (clave: keyof FormLote) => (valor: string) =>
+    setValores((previos) => ({ ...previos, [clave]: valor }));
+
+  useFormularioDeAurora({
+    pantalla: "Inventario",
+    etiqueta: "Crear lote",
+    objetivo: "lote",
+    abierto: creando,
+    permiso: "inventario:lote:escribir",
+    abrir: () => setCreando(true),
+    cerrar: cerrarCreacion,
+    enviar: enviarLote,
+    campos: [
+      {
+        clave: "cultivoId",
+        etiqueta: "Predio de origen",
+        sinonimos: ["predio", "cultivo", "origen"],
+        valor: valores.cultivoId,
+        error: errores.cultivoId,
+        opciones: (cultivos.data?.datos ?? []).map((cultivo) => ({
+          valor: cultivo.id,
+          etiqueta: `${cultivo.nombre} · ${cultivo.variedad}`,
+        })),
+        fijar: fijarValor("cultivoId"),
+      },
+      { clave: "tipo", etiqueta: "Tipo de lote", valor: valores.tipo, opciones: TIPOS_DE_LOTE, fijar: fijarValor("tipo") },
+      { clave: "cantidad", etiqueta: "Cantidad", valor: valores.cantidad, error: errores.cantidad, fijar: fijarValor("cantidad") },
+      { clave: "thc", etiqueta: "THC", valor: valores.thc, fijar: fijarValor("thc") },
+      { clave: "cbd", etiqueta: "CBD", valor: valores.cbd, fijar: fijarValor("cbd") },
+      { clave: "bodega", etiqueta: "Bodega", valor: valores.bodega, error: errores.bodega, fijar: fijarValor("bodega") },
+      {
+        clave: "departamento",
+        etiqueta: "Departamento",
+        valor: valores.departamento,
+        error: errores.departamento,
+        opciones: DEPARTAMENTOS.map((d) => ({ valor: d.nombre, etiqueta: d.nombre })),
+        fijar: fijarValor("departamento"),
+      },
+      {
+        clave: "vencimiento",
+        etiqueta: "Vencimiento",
+        valor: valores.vencimiento,
+        error: errores.vencimiento,
+        fijar: fijarValor("vencimiento"),
+      },
+    ],
+  });
+
   const columnas: readonly Columna<Lote>[] = [
     {
       clave: "codigo",
@@ -284,13 +341,7 @@ export const Inventario = () => {
             clave: "tipo",
             etiqueta: "Tipo de lote",
             valor: tipo,
-            opciones: [
-              { valor: "FLOR_SECA", etiqueta: "Flor seca" },
-              { valor: "BIOMASA", etiqueta: "Biomasa" },
-              { valor: "EXTRACTO", etiqueta: "Extracto" },
-              { valor: "ACEITE", etiqueta: "Aceite" },
-              { valor: "FORMULA_MAGISTRAL", etiqueta: "Fórmula magistral" },
-            ],
+            opciones: TIPOS_DE_LOTE,
             onCambiar: (valor) => {
               setTipo(valor);
               setPagina(1);
@@ -309,6 +360,10 @@ export const Inventario = () => {
         ]}
         onPagina={setPagina}
         etiquetaPlural="lotes"
+        aurora={{
+          pantalla: "Inventario",
+          etiquetaFila: (lote) => lote.codigo,
+        }}
         vacio={
           <EstadoVacio
             icono="inventario"
@@ -332,6 +387,7 @@ export const Inventario = () => {
       >
         <CampoSelect
           etiqueta="Predio de origen"
+          data-campo="cultivoId"
           requerido
           vacio="Selecciona el predio"
           value={valores.cultivoId}
@@ -347,22 +403,18 @@ export const Inventario = () => {
         <div className="rejilla rejilla--2">
           <CampoSelect
             etiqueta="Tipo de lote"
+          data-campo="tipo"
             requerido
             value={valores.tipo}
             ayuda={`Unidad: ${UNIDAD_POR_TIPO[valores.tipo]}`}
-            opciones={[
-              { valor: "FLOR_SECA", etiqueta: "Flor seca" },
-              { valor: "BIOMASA", etiqueta: "Biomasa" },
-              { valor: "EXTRACTO", etiqueta: "Extracto" },
-              { valor: "ACEITE", etiqueta: "Aceite" },
-              { valor: "FORMULA_MAGISTRAL", etiqueta: "Fórmula magistral" },
-            ]}
+            opciones={TIPOS_DE_LOTE}
             onChange={(evento) =>
               setValores((previos) => ({ ...previos, tipo: evento.target.value as TipoLote }))
             }
           />
           <CampoTexto
             etiqueta={`Cantidad (${UNIDAD_POR_TIPO[valores.tipo]})`}
+          data-campo="cantidad"
             requerido
             type="number"
             step="0.1"
@@ -377,6 +429,7 @@ export const Inventario = () => {
         <div className="rejilla rejilla--2">
           <CampoTexto
             etiqueta="THC (%)"
+          data-campo="thc"
             type="number"
             step="0.01"
             min="0"
@@ -385,6 +438,7 @@ export const Inventario = () => {
           />
           <CampoTexto
             etiqueta="CBD (%)"
+          data-campo="cbd"
             type="number"
             step="0.01"
             min="0"
@@ -395,6 +449,7 @@ export const Inventario = () => {
         <div className="rejilla rejilla--2">
           <CampoTexto
             etiqueta="Bodega"
+          data-campo="bodega"
             requerido
             value={valores.bodega}
             error={errores.bodega}
@@ -404,6 +459,7 @@ export const Inventario = () => {
           />
           <CampoSelect
             etiqueta="Departamento"
+          data-campo="departamento"
             requerido
             vacio="Selecciona un departamento"
             value={valores.departamento}
@@ -416,6 +472,7 @@ export const Inventario = () => {
         </div>
         <CampoTexto
           etiqueta="Vencimiento"
+          data-campo="vencimiento"
           requerido
           type="date"
           value={valores.vencimiento}

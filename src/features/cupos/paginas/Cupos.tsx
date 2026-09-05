@@ -216,6 +216,10 @@ export const Cupos = () => {
         ]}
         onPagina={setPagina}
         etiquetaPlural="cupos"
+        aurora={{
+          pantalla: "Cupos asignados",
+          etiquetaFila: (cupo) => `${cupo.organizacion} · ${cupo.actoAsignacion}`,
+        }}
         vacio={
           <EstadoVacio
             icono="escudo"

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { EncabezadoPagina } from "../../../shared/ui/patrones/EncabezadoPagina";
 import { TablaConFiltros } from "../../../shared/ui/patrones/TablaConFiltros";
 import { EstadoVacio } from "../../../shared/ui/patrones/EstadoVacio";
@@ -78,7 +79,8 @@ const COLUMNAS: readonly Columna<EventoTrazabilidad>[] = [
 ];
 
 export const Trazabilidad = () => {
-  const [busqueda, setBusqueda] = useState("");
+  const [parametros] = useSearchParams();
+  const [busqueda, setBusqueda] = useState(parametros.get("buscar") ?? "");
   const [tipo, setTipo] = useState("");
   const [pagina, setPagina] = useState(1);
   const consulta = useEventos({ busqueda, tipo, pagina, porPagina: 12 });
@@ -130,6 +132,10 @@ export const Trazabilidad = () => {
         ]}
         onPagina={setPagina}
         etiquetaPlural="eventos"
+        aurora={{
+          pantalla: "Trazabilidad",
+          etiquetaFila: (evento) => `${evento.descripcion} · ${evento.entidadId}`,
+        }}
         vacio={
           <EstadoVacio
             icono="trazabilidad"

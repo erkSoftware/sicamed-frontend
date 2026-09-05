@@ -23,26 +23,25 @@ import {
   conectar,
   cortarRespuesta,
   desconectar,
+  enviarContexto,
   pedirMicrofono,
   responderHerramienta,
 } from "./sesion";
 import type { Conexion } from "./sesion";
 import { mensajeDeAviso, planDeLlamada } from "./llamada";
-import { resultadoDeNavegacion } from "../destinos";
+import { despachar } from "./despacho";
+import type { EntornoDeDespacho } from "./despacho";
+import { rechazarFirma } from "./confirmacion";
+import { vaciarBitacora } from "./bitacora";
+import { escucharPantalla } from "../pantalla/bus";
+import { instantaneaViva } from "../pantalla/contextoVivo";
 import type { Permiso } from "../../../auth/tipos";
-
-export type ResultadoHerramienta = {
-  ok: boolean;
-  motivo?: string;
-  destino?: string;
-  ruta?: string;
-  disponibles?: readonly string[];
-};
 
 export type OpcionesConversacion = {
   audio: HTMLAudioElement;
   navegar: (ruta: string) => void;
   permisos: readonly Permiso[];
+  ruta: () => string;
   contexto?: ContextoAsistente;
 };
 
@@ -86,68 +85,48 @@ let medidaDebil = false;
 let avisoProgramado: number | undefined;
 let finProgramado: number | undefined;
 let cuentaAtras: number | undefined;
+let dejarDeEscucharPantalla: (() => void) | null = null;
+let huellaEnviada = "";
+let contextoPendiente = true;
 
-const argumento = (argumentos: Record<string, unknown>, claves: readonly string[]): string => {
-  for (const clave of claves) {
-    const valor = argumentos[clave];
-    if (typeof valor === "string" && valor.trim() !== "") return valor;
-  }
-  return "";
+const rutaVigente = (): string => entorno?.ruta() ?? "";
+
+const alFinDeConversacion = () => {
+  const estado = useAurora.getState();
+  soltarRecursos();
+  estado.cerrarTurnoDeVoz();
+  estado.fallarVoz({
+    titulo: "La conversación ya estaba cerrada",
+    detalle:
+      "SICAMED no reconoce esta llamada: se cerró antes de que la herramienta llegara. Abre el " +
+      "micrófono otra vez para seguir.",
+    reintentable: true,
+  });
 };
 
-const irA = (argumentos: Record<string, unknown>): ResultadoHerramienta => {
-  if (!navegar) return { ok: false, motivo: "la pantalla no puede navegar ahora" };
-  const destino = argumento(argumentos, ["destino", "destination", "ruta", "route", "modulo", "module", "pantalla", "screen"]);
-  const resultado = resultadoDeNavegacion(destino, permisosVigentes);
-  if (resultado.ok && resultado.ruta) navegar(resultado.ruta);
-  return resultado;
+const entornoDeDespacho: EntornoDeDespacho = {
+  herramientas: () => herramientas,
+  permisos: () => permisosVigentes,
+  ruta: rutaVigente,
+  llamadaId: () => llamadaAbierta,
+  navegar: (destino) => navegar?.(destino),
+  alFinDeConversacion,
 };
 
-const ACCIONES_UI: Record<string, (argumentos: Record<string, unknown>) => ResultadoHerramienta> = {
-  open_lot_form: () => {
-    if (!navegar) return { ok: false, motivo: "la pantalla no puede navegar ahora" };
-    navegar("/app/inventario?crear=lote");
-    return { ok: true };
-  },
-  navigate_to: irA,
-  open_screen: irA,
-  ir_a: irA,
+export const contextoDelTurno = (): string => {
+  const ruta = rutaVigente();
+  if (ruta === "") return "";
+  const instantanea = instantaneaViva(ruta, permisosVigentes);
+  if (instantanea.huella === huellaEnviada) return "";
+  huellaEnviada = instantanea.huella;
+  return instantanea.texto;
 };
 
-const confirmar = (herramienta: HerramientaAsistente): boolean =>
-  typeof window === "undefined"
-    ? false
-    : window.confirm(`Aurora quiere ejecutar «${herramienta.descripcion}». ¿Lo autorizas?`);
-
-export const leerArgumentos = (crudos: string | undefined): Record<string, unknown> => {
-  if (!crudos) return {};
-  try {
-    const valor: unknown = JSON.parse(crudos);
-    return typeof valor === "object" && valor !== null ? (valor as Record<string, unknown>) : {};
-  } catch {
-    return {};
-  }
-};
-
-export const ejecutarHerramienta = (
-  nombre: string,
-  crudos?: string,
-): ResultadoHerramienta => {
-  const herramienta = herramientas.find((opcion) => opcion.nombre === nombre);
-  if (!herramienta) return { ok: false, motivo: "herramienta no concedida" };
-
-  if (herramienta.clase === "ui") {
-    const accion = ACCIONES_UI[nombre];
-    return accion
-      ? accion(leerArgumentos(crudos))
-      : { ok: false, motivo: "esta versión no resuelve esa acción" };
-  }
-
-  if (herramienta.confirmacionPrevia && !confirmar(herramienta)) {
-    return { ok: false, motivo: "el usuario no confirmó" };
-  }
-
-  return { ok: false, motivo: "esa herramienta se ejecuta en el servidor y aún no tiene ruta publicada" };
+const empujarContexto = (canal: RTCDataChannel) => {
+  if (!contextoPendiente) return;
+  const texto = contextoDelTurno();
+  contextoPendiente = false;
+  if (texto !== "") enviarContexto(canal, texto);
 };
 
 const cerrarContexto = (audio: AudioContext | null) => {
@@ -222,6 +201,11 @@ const programarLimite = (sesion: SesionAsistente, canal: RTCDataChannel) => {
 const soltarRecursos = (motivo: MotivoCierre | null = null, conservandoEntorno = false) => {
   soltando = true;
   cancelarTemporizadores();
+  rechazarFirma();
+  dejarDeEscucharPantalla?.();
+  dejarDeEscucharPantalla = null;
+  huellaEnviada = "";
+  contextoPendiente = true;
   pararLatido?.();
   pararLatido = null;
   pararVigilancia?.();
@@ -265,15 +249,22 @@ const soltarRecursos = (motivo: MotivoCierre | null = null, conservandoEntorno =
   soltando = false;
 };
 
+const atenderHerramienta = async (evento: EventoProveedor, canal: RTCDataChannel) => {
+  const llamada = evento.call_id ?? "";
+  const resultado = await despachar(
+    entornoDeDespacho,
+    evento.name ?? "",
+    llamada,
+    evento.arguments,
+  );
+  responderHerramienta(canal, llamada, resultado);
+};
+
 const alEvento = (evento: EventoProveedor, canal: RTCDataChannel) => {
   const estado = useAurora.getState();
   switch (clasificarEvento(evento.type)) {
     case "herramienta":
-      responderHerramienta(
-        canal,
-        evento.call_id ?? "",
-        ejecutarHerramienta(evento.name ?? "", evento.arguments),
-      );
+      void atenderHerramienta(evento, canal);
       return;
     case "transcripcion":
       if (evento.delta) estado.transcribir(evento.delta);
@@ -281,6 +272,7 @@ const alEvento = (evento: EventoProveedor, canal: RTCDataChannel) => {
     case "habla-inicia":
       hablando = false;
       atenuar(true);
+      empujarContexto(canal);
       estado.fijarVoz("escuchando");
       return;
     case "habla-termina":
@@ -293,6 +285,8 @@ const alEvento = (evento: EventoProveedor, canal: RTCDataChannel) => {
       return;
     case "respuesta-termina":
       hablando = false;
+      contextoPendiente = true;
+      empujarContexto(canal);
       estado.cerrarTurnoDeVoz();
       estado.fijarVoz("escuchando");
       return;
@@ -473,6 +467,7 @@ const arrancar = async (
   publicada = true;
   estado.fijarDemostrativa(Boolean(sesion.demostracion));
   estado.fijarCupo(sesion.restanteDiarioSegundos ?? null);
+  estado.fijarResumenDeEntidad((sesion.resumenEntidad ?? "").trim());
 
   if (sesion.demostracion) {
     demostracion = arrancarDemostracion({
@@ -503,11 +498,15 @@ const arrancar = async (
       refrescarEnlace();
     },
     alCaer,
+    alAbrirse: empujarContexto,
   });
   if (abandonada()) return;
 
   conexion = enlace;
   llamadaDelProveedor = enlace.callId;
+  dejarDeEscucharPantalla = escucharPantalla(() => {
+    contextoPendiente = true;
+  });
   programarLimite(sesion, enlace.canal);
   pararLatido = empezarLatido(llamadaAbierta, alMorirLaLlamada);
   pararVigilancia = vigilarCalidad(enlace.pc, (debil) => {
@@ -542,6 +541,7 @@ export const iniciarConversacion = async (opciones: OpcionesConversacion): Promi
 
   turno += 1;
   const mio = turno;
+  vaciarBitacora();
   useAurora.getState().reiniciar();
   useAurora.getState().fijarVoz("permiso");
 
