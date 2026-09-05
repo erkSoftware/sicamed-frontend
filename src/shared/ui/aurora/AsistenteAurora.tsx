@@ -66,6 +66,7 @@ export const AsistenteAurora = () => {
   const reintentoDesde = useAurora((estado) => estado.reintentoDesde);
   const [cierre, setCierre] = useState<string | null>(null);
   const [cupo, setCupo] = useState<EstadoLlamadasAsistente | null>(null);
+  const [consultandoCupo, setConsultandoCupo] = useState(false);
   const [espera, setEspera] = useState(0);
   const [levantando, setLevantando] = useState(false);
   const [falloDelLevantamiento, setFalloDelLevantamiento] = useState("");
@@ -82,7 +83,6 @@ export const AsistenteAurora = () => {
   const compacta = useConsultaMedios("(max-width: 640px)");
 
   const activa = voz !== "inactiva" && voz !== "fallo";
-  const rotulo = puedeHablar ? ROTULOS[voz] : "Aurora no abre voz con tu perfil";
   const veto = puedeHablar
     ? null
     : "Tu rol no tiene habilitada la conversación por voz. Pídeselo a quien administra los permisos.";
@@ -93,6 +93,16 @@ export const AsistenteAurora = () => {
   const aviso = falloVoz ?? veda;
   const puedeAbrir =
     !activa && puedeHablar && vozDisponible && !veda && falloVoz?.reintentable !== false;
+  const esperandoCupo =
+    visible && puedeHablar && vozDisponible && !activa && !aviso && consultandoCupo;
+  const enlazando =
+    visible &&
+    (voz === "permiso" || voz === "conectando" || voz === "reconectando" || esperandoCupo);
+  const rotulo = !puedeHablar
+    ? "Aurora no abre voz con tu perfil"
+    : esperandoCupo && voz === "inactiva"
+      ? "Preparando la conversación"
+      : ROTULOS[voz];
   const ultimaFrase = [...mensajes].reverse().find((mensaje) => mensaje.autor === "aurora");
   const subtitulo = transcripcion.trim() || (activa ? (ultimaFrase?.texto ?? "") : "");
 
@@ -156,6 +166,32 @@ export const AsistenteAurora = () => {
     </div>
   ) : null;
 
+  const mandos = (
+    <div className="aurora-conversacion__mandos">
+      {puedeAbrir ? (
+        <Boton tamano="sm" icono="microfono" onClick={hablar} disabled={espera > 0}>
+          {espera > 0
+            ? `Reintentar en ${espera} s`
+            : falloVoz?.reintentable
+              ? "Reintentar"
+              : "Hablar con Aurora"}
+        </Boton>
+      ) : null}
+
+      {voz === "hablando" ? (
+        <Boton variante="secundario" tamano="sm" icono="pausa" onClick={interrumpir}>
+          Interrumpir
+        </Boton>
+      ) : null}
+
+      {activa ? (
+        <Boton variante="fantasma" tamano="sm" icono="silencio" onClick={colgar}>
+          Terminar
+        </Boton>
+      ) : null}
+    </div>
+  );
+
   const vozPrevia = useRef(voz);
 
   useEffect(() => {
@@ -214,17 +250,22 @@ export const AsistenteAurora = () => {
     if (!visible || !puedeHablar) {
       arrancada.current = false;
       setCupo(null);
+      setConsultandoCupo(false);
       setFalloDelLevantamiento("");
       return undefined;
     }
     if (activa) return undefined;
     let vigente = true;
+    setConsultandoCupo(true);
     apiComercial
       .estadoLlamadasAsistente()
       .then((estado) => {
         if (vigente) setCupo(estado);
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        if (vigente) setConsultandoCupo(false);
+      });
     return () => {
       vigente = false;
     };
@@ -252,7 +293,12 @@ export const AsistenteAurora = () => {
   }, [reintentoDesde]);
 
   return (
-    <div className="aurora-asistente" data-abierto={visible ? "si" : "no"} data-voz={voz}>
+    <div
+      className="aurora-asistente"
+      data-abierto={visible ? "si" : "no"}
+      data-voz={voz}
+      data-enlazando={enlazando ? "si" : "no"}
+    >
       <HaloVoz nivel={nivelDeVoz} activa={voz === "hablando" || voz === "escuchando"} />
 
       {visible ? (
@@ -285,10 +331,37 @@ export const AsistenteAurora = () => {
           )}
 
           {compacta ? (
-            <>
-              <p className="solo-lectores" role="status">
+            <div className="aurora-cinta">
+              <p className="aurora-cinta__estado" role="status">
+                <span className="aurora-conversacion__pulso" aria-hidden="true" />
                 {rotulo}
+                {vozDemostrativa && activa ? " · demostración local" : ""}
               </p>
+
+              {enlazando ? <span className="aurora-cinta__hilo" aria-hidden="true" /> : null}
+
+              {veto ? <p className="aurora-cinta__frase">{veto}</p> : null}
+
+              {subtitulo ? <p className="aurora-cinta__frase">{subtitulo}</p> : null}
+
+              {activa && conexionDebil ? (
+                <p className="aurora-cinta__contador" role="status">
+                  <Icono nombre="alerta" tamano={13} />
+                  <span>
+                    {voz === "reconectando"
+                      ? "Se cayó el audio y estoy volviendo a entrar. No cuelgues."
+                      : "La conexión va débil y el audio puede entrecortarse."}
+                  </span>
+                </p>
+              ) : null}
+
+              {activa && segundosRestantes !== null ? (
+                <p className="aurora-cinta__contador">
+                  <Icono nombre="reloj" tamano={13} />
+                  <span>Queda {reloj(segundosRestantes)} de esta llamada</span>
+                </p>
+              ) : null}
+
               {aviso ? (
                 <div className="aurora-panel__aviso" role="alert">
                   <p>
@@ -297,7 +370,9 @@ export const AsistenteAurora = () => {
                   {desbloqueo}
                 </div>
               ) : null}
-            </>
+
+              {mandos}
+            </div>
           ) : null}
 
           {compacta ? null : (
@@ -360,29 +435,7 @@ export const AsistenteAurora = () => {
 
               <BitacoraAurora />
 
-              <div className="aurora-conversacion__mandos">
-                {puedeAbrir ? (
-                  <Boton tamano="sm" icono="microfono" onClick={hablar} disabled={espera > 0}>
-                    {espera > 0
-                      ? `Reintentar en ${espera} s`
-                      : falloVoz?.reintentable
-                        ? "Reintentar"
-                        : "Hablar con Aurora"}
-                  </Boton>
-                ) : null}
-
-                {voz === "hablando" ? (
-                  <Boton variante="secundario" tamano="sm" icono="pausa" onClick={interrumpir}>
-                    Interrumpir
-                  </Boton>
-                ) : null}
-
-                {activa ? (
-                  <Boton variante="fantasma" tamano="sm" icono="silencio" onClick={colgar}>
-                    Terminar
-                  </Boton>
-                ) : null}
-              </div>
+              {mandos}
             </div>
           )}
 

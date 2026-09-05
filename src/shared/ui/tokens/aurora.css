@@ -1091,3 +1091,183 @@
     animation: none;
   }
 }
+
+.aurora-asistente {
+  max-height: calc(100dvh - var(--alto-barra) - var(--e5));
+}
+
+.aurora-panel,
+.aurora-figura,
+.aurora-conversacion {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+.aurora-conversacion {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.aurora-bitacora__lista {
+  max-height: 22vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 641px) and (max-height: 820px) {
+  .aurora-asistente {
+    bottom: var(--e4);
+    right: var(--e4);
+  }
+
+  .aurora-figura {
+    width: min(190px, 20vw);
+    height: min(38vh, 280px);
+  }
+
+  .aurora-conversacion {
+    max-height: 44vh;
+    padding: var(--e2) var(--e3);
+  }
+
+  .aurora-bitacora__lista {
+    max-height: 16vh;
+  }
+}
+
+.aurora-cinta {
+  display: grid;
+  gap: var(--e2);
+  padding: var(--e3) var(--e4) var(--e4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-sm);
+  background: var(--superficie);
+  box-shadow: var(--sombra-md);
+  pointer-events: auto;
+  text-align: left;
+  transform-origin: bottom right;
+  animation: aurora-cinta-entra 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.aurora-cinta__estado {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+.aurora-cinta__hilo {
+  display: block;
+  height: 2px;
+  border-radius: var(--radio-completo);
+  background: var(--borde-suave);
+  overflow: hidden;
+  position: relative;
+}
+
+.aurora-cinta__hilo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 42%;
+  border-radius: inherit;
+  background: var(--marca);
+  animation: aurora-hilo 1200ms cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.aurora-cinta__frase {
+  margin: 0;
+  font-size: var(--texto-sm);
+  line-height: 1.5;
+  color: var(--texto);
+  max-height: 7.5em;
+  overflow-y: auto;
+}
+
+.aurora-cinta__contador {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0;
+  font-size: var(--texto-xs);
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-suave);
+}
+
+.aurora-cinta__contador svg {
+  flex: none;
+}
+
+.aurora-figura--esfera {
+  position: relative;
+  padding: var(--e2);
+}
+
+.aurora-figura--esfera::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 82px;
+  height: 82px;
+  margin: -41px 0 0 -41px;
+  border-radius: 50%;
+  border: 2px solid var(--borde-suave);
+  border-top-color: var(--marca);
+  opacity: 0;
+  animation: aurora-anillo 900ms linear infinite;
+}
+
+.aurora-asistente[data-enlazando="si"] .aurora-figura--esfera::after {
+  opacity: 1;
+}
+
+.aurora-asistente[data-enlazando="si"] .aurora-lanzador {
+  border-color: var(--marca);
+}
+
+@keyframes aurora-cinta-entra {
+  from {
+    transform: translateY(14px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes aurora-hilo {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(238%);
+  }
+}
+
+@keyframes aurora-anillo {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-cinta {
+    animation: none;
+  }
+
+  .aurora-cinta__hilo::after {
+    animation: none;
+    width: 100%;
+    opacity: 0.55;
+  }
+
+  .aurora-figura--esfera::after {
+    animation: none;
+  }
+}

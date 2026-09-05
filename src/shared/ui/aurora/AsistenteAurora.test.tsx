@@ -260,6 +260,21 @@ const abrirPanel = async () => {
   await userEvent.click(screen.getByRole("button", { name: /Abrir a Aurora/ }));
 };
 
+const enMovil = () => {
+  vi.stubGlobal("matchMedia", (consulta: string) => ({
+    matches: consulta.includes("max-width: 640px"),
+    media: consulta,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }));
+};
+
+const asistente = () => document.querySelector(".aurora-asistente");
+
 beforeEach(() => {
   marcarPresentada();
   ultimoCanal = null;
@@ -717,5 +732,26 @@ describe("los rechazos no se reintentan solos", () => {
 
     await userEvent.click(boton);
     expect(llamadasA("/asistente/sesiones")).toHaveLength(1);
+  });
+
+  it("en móvil enseña en pantalla que la conversación se está abriendo", async () => {
+    enMovil();
+    montar();
+    await abrirPanel();
+
+    await waitFor(() => expect(useAurora.getState().voz).toBe("escuchando"));
+
+    expect(screen.getByRole("status")).toHaveClass("aurora-cinta__estado");
+    expect(screen.getByText(/Te escucho/)).toBeInTheDocument();
+    expect(asistente()).toHaveAttribute("data-enlazando", "no");
+    expect(document.querySelector(".aurora-cinta__hilo")).not.toBeInTheDocument();
+
+    act(() => {
+      useAurora.getState().fijarVoz("conectando");
+    });
+
+    expect(screen.getByText(/Abriendo la conversación/)).toBeInTheDocument();
+    expect(asistente()).toHaveAttribute("data-enlazando", "si");
+    expect(document.querySelector(".aurora-cinta__hilo")).toBeInTheDocument();
   });
 });
