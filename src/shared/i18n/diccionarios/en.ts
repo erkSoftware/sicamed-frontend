@@ -166,6 +166,8 @@ export const en: Record<keyof typeof es, string> = {
   "origen.invitacion.ver": "Watch the experience",
   "origen.invitacion.omitir": "Skip",
   "origen.salto": "Skip the experience",
+  "origen.sonido.activar": "Turn sound on",
+  "origen.sonido.silenciar": "Mute",
   "origen.tierra": "It all begins in Colombia.",
   "origen.cultivo": "Land. Knowledge. Cultivation.",
   "origen.industria": "A new industry grows out of the crop.",

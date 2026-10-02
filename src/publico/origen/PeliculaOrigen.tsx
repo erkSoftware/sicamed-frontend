@@ -1,14 +1,23 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { CONTORNOS } from "../../shared/api/mock/contornos";
 import { DEPARTAMENTOS } from "../../shared/api/mock/catalogos";
-import { useTraduccion } from "../../shared/i18n/ProveedorIdioma";
+import {
+  IDIOMA_POR_DEFECTO,
+  idiomaGuardado,
+  traducir,
+  type ClaveTraduccion,
+  type CodigoIdioma,
+} from "../../shared/i18n/idioma";
 import type { Camara } from "../../shared/geo/proyecciones";
 import {
   leerPaletaGlobo,
   pintarGlobo,
   type MarcaGlobo,
 } from "../../shared/ui/graficos/pintarGlobo";
+import { Icono } from "../../shared/ui/primitivos/Icono";
+import type { EstadoSonoro } from "../../shared/ui/sonido/escenaSonora";
 import { anotar } from "../intro/diagnostico";
+import { crearBandaOrigen, type BandaOrigen } from "./bandaSonora";
 import {
   CANAL_ORIGEN,
   limpiarHashOrigen,
@@ -57,7 +66,8 @@ const RAZONES = ["oferta", "consulta", "territorio", "mundo"] as const;
 const MERCADOS = ["oferta", "compradores", "mercados"] as const;
 
 export const PeliculaOrigen = () => {
-  const { t } = useTraduccion();
+  const [idioma, setIdioma] = useState<CodigoIdioma>(IDIOMA_POR_DEFECTO);
+  const t = (clave: ClaveTraduccion) => traducir(idioma, clave);
   const [corriendo, setCorriendo] = useState(false);
   const [pase, setPase] = useState(0);
   const [fase, setFase] = useState<FaseOrigen>("invitacion");
@@ -66,6 +76,8 @@ export const PeliculaOrigen = () => {
   const capas = useRef(new Map<Escena, HTMLDivElement | null>());
   const entregado = useRef(false);
   const desplazar = useRef(0);
+  const banda = useRef<BandaOrigen | null>(null);
+  const [sonido, setSonido] = useState<EstadoSonoro>("preparando");
 
   const iniciar = () => {
     anotar("origen-iniciar");
@@ -74,6 +86,11 @@ export const PeliculaOrigen = () => {
     document.documentElement.setAttribute("data-pelicula", "corriendo");
     document.documentElement.setAttribute("data-origen", "corriendo");
     window.scrollTo({ top: 0, behavior: "instant" });
+    const elegido = idiomaGuardado();
+    banda.current?.cortar();
+    banda.current = crearBandaOrigen({ idioma: elegido, alCambiar: setSonido });
+    setIdioma(elegido);
+    setSonido(banda.current.estado());
     setFase("invitacion");
     setPase((anterior) => anterior + 1);
     setCorriendo(true);
@@ -82,6 +99,7 @@ export const PeliculaOrigen = () => {
   const cerrar = () => {
     anotar("origen-cerrar");
     entregado.current = true;
+    banda.current?.cortar();
     document.documentElement.removeAttribute("data-pelicula");
     document.documentElement.setAttribute("data-origen", "listo");
     marcarPeliculaVista();
@@ -89,6 +107,7 @@ export const PeliculaOrigen = () => {
   };
 
   const adelantar = () => {
+    banda.current?.despertar();
     desplazar.current = Math.max(desplazar.current, FIN_INVITACION);
     anotar("origen-adelantar", { a: FIN_INVITACION });
   };
@@ -170,6 +189,7 @@ export const PeliculaOrigen = () => {
 
       if (tiempo >= DURACION_TOTAL) {
         anotar("origen-fin", { cuadros });
+        banda.current?.terminar();
         entregar();
         marcarPeliculaVista();
         setCorriendo(false);
@@ -181,6 +201,7 @@ export const PeliculaOrigen = () => {
         previa = momento.fase;
         anotar("origen-fase", { fase: momento.fase, ms: Math.round(tiempo) });
         setFase(momento.fase);
+        banda.current?.fase(momento.fase);
         if (momento.fase === "salida") entregar();
       }
 
@@ -279,6 +300,7 @@ export const PeliculaOrigen = () => {
   useEffect(() => {
     const raiz = document.documentElement;
     return () => {
+      banda.current?.cortar();
       raiz.removeAttribute("data-pelicula");
       raiz.setAttribute("data-origen", "listo");
     };
@@ -296,6 +318,7 @@ export const PeliculaOrigen = () => {
   if (!corriendo) return null;
 
   const rotulo = rotuloDe(fase);
+  const suena = sonido === "sonando";
 
   const guardar = (escena: Escena) => (nodo: HTMLDivElement | null) => {
     capas.current.set(escena, nodo);
@@ -399,9 +422,23 @@ export const PeliculaOrigen = () => {
         </div>
       </div>
 
-      <button type="button" className="cine__salto" onClick={cerrar}>
-        {t("origen.salto")}
-      </button>
+      <div className="cine__mandos">
+        {sonido === "sin-audio" ? null : (
+          <button
+            type="button"
+            className="cine__salto cine__sonido"
+            data-llamado={sonido === "bloqueado" ? "si" : "no"}
+            aria-pressed={suena}
+            onClick={() => banda.current?.alternar()}
+          >
+            <Icono nombre={suena ? "sonido" : "silencio"} tamano={14} />
+            {t(suena ? "origen.sonido.silenciar" : "origen.sonido.activar")}
+          </button>
+        )}
+        <button type="button" className="cine__salto" onClick={cerrar}>
+          {t("origen.salto")}
+        </button>
+      </div>
     </div>
   );
 };

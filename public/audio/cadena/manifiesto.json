@@ -1,0 +1,38 @@
+{
+  "cierre": {
+    "huella": "8e7a18f375ad282f",
+    "texto": "Toda la ruta quedó registrada, y nadie puede reescribirla."
+  },
+  "eleccion": {
+    "huella": "674ed87074d6eac4",
+    "texto": "¿Quién recibe el lote? Elige laboratorio, IPS o exportación."
+  },
+  "escaneo": {
+    "huella": "bac53804b5da70ac",
+    "texto": "En la bodega se lee el precinto y se compara con el origen."
+  },
+  "exportacion": {
+    "huella": "65114d568ef665ee",
+    "texto": "Sale del país con su certificado de origen."
+  },
+  "finca": {
+    "huella": "4163b24f2bfaa636",
+    "texto": "Cada bulto se identifica en la finca, con su origen declarado."
+  },
+  "ips": {
+    "huella": "faa41a74f2e5246f",
+    "texto": "La IPS lo asocia a la fórmula del paciente."
+  },
+  "laboratorio": {
+    "huella": "3a92a939a9c5bae9",
+    "texto": "El laboratorio lo transforma en un producto terminado."
+  },
+  "registro": {
+    "huella": "3113d655379fa7a9",
+    "texto": "SICAMED sella el lote y lo encadena al evento anterior."
+  },
+  "viaje": {
+    "huella": "ab6bc9b28762f62a",
+    "texto": "La remesa sale hacia el centro de acopio."
+  }
+}

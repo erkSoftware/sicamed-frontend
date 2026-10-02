@@ -1,0 +1,39 @@
+{
+  "modelo": "gpt-4o-mini-tts",
+  "voz": "marin",
+  "instrucciones": "Speak clear, neutral international English with a light, warm Latin American touch. You are the narrator of a documentary about the origin of a Colombian product: warm, bright and proud, close but professional. Fluid, brisk pacing, no long pauses between sentences and no silence at the start or end. Do not overact or sound like an advertisement. Pronounce SICAMED as one word: see-kah-med. Pronounce Colombia the Spanish way: koh-LOHM-bee-ah.",
+  "lineas": [
+    {
+      "clave": "tierra",
+      "texto": "It all begins in Colombian soil."
+    },
+    {
+      "clave": "cultivo",
+      "texto": "Mountains, farming know-how, and hands that grow with care."
+    },
+    {
+      "clave": "industria",
+      "texto": "From the crop, a new industry is born."
+    },
+    {
+      "clave": "producto",
+      "texto": "And from the plant, a product made in Colombia."
+    },
+    {
+      "clave": "mundo",
+      "texto": "From Colombia to the world, for buyers at home and abroad."
+    },
+    {
+      "clave": "vitrina",
+      "texto": "One marketplace for products, operators and territories."
+    },
+    {
+      "clave": "razones",
+      "texto": "Visible supply, open consultation, and international reach."
+    },
+    {
+      "clave": "cierre",
+      "texto": "Colombia produces. SICAMED connects."
+    }
+  ]
+}

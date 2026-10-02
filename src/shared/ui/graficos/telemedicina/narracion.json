@@ -1,0 +1,35 @@
+{
+  "modelo": "gpt-4o-mini-tts",
+  "voz": "marin",
+  "instrucciones": "Habla en español latinoamericano con un acento colombiano suave y natural. Eres la narradora de un documental institucional: voz cálida, serena y segura, cercana pero profesional. Ritmo fluido y ágil, sin pausas largas entre frases ni silencios al inicio o al final. Sin exagerar la emoción ni sonar publicitaria.",
+  "lineas": [
+    {
+      "clave": "colombia",
+      "texto": "Cannabis medicinal en Colombia."
+    },
+    {
+      "clave": "region",
+      "texto": "El recorrido empieza donde estás."
+    },
+    {
+      "clave": "cultivo",
+      "texto": "Del cultivo nace la materia prima."
+    },
+    {
+      "clave": "laboratorio",
+      "texto": "Ciencia y precisión en cada componente."
+    },
+    {
+      "clave": "ips",
+      "texto": "Del laboratorio a la atención médica."
+    },
+    {
+      "clave": "paciente",
+      "texto": "Una cadena trazable hasta el paciente."
+    },
+    {
+      "clave": "cierre",
+      "texto": "Cannabis medicinal: trazabilidad de principio a fin."
+    }
+  ]
+}

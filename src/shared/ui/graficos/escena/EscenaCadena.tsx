@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRevelado } from "../../movimiento/useRevelado";
+import { useEscenaSonora } from "../../sonido/useEscenaSonora";
 import type { CSSProperties } from "react";
 import { Bulto, Caja, Camion, Contenedor, Frasco, Mata, Persona } from "./piezas";
 import {
@@ -19,6 +20,15 @@ import {
   ritmo,
 } from "./guion";
 import type { ClaveSello, Fase, Rama } from "./guion";
+import {
+  CLAVES_CADENA,
+  LOCUCIONES_QUE_ESPERAN,
+  efectoDeCadena,
+  locucionDeCadena,
+  rutaCadena,
+  toque,
+  type ClaveCadena,
+} from "./sonido";
 
 const MATAS = [
   { x: 44, y: 402, e: 0.9 },
@@ -106,6 +116,7 @@ type Modo = "interactivo" | "automatico";
 type Props = {
   modo?: Modo;
   onFinal?: () => void;
+  sonora?: boolean;
 };
 
 const VELOCIDAD: Record<Modo, number> = { interactivo: 1, automatico: 0.3 };
@@ -114,7 +125,7 @@ const ESPERA_FINCA = 700;
 const ESPERA_SALIDAS = 1000;
 const RETENCION_CIERRE = 900;
 
-export const EscenaCadena = ({ modo = "interactivo", onFinal }: Props) => {
+export const EscenaCadena = ({ modo = "interactivo", onFinal, sonora = false }: Props) => {
   const [fase, setFase] = useState<Fase>("finca-reposo");
   const [cargados, setCargados] = useState(CARGA_INICIAL[modo]);
   const [llevando, setLlevando] = useState(false);
@@ -128,6 +139,26 @@ export const EscenaCadena = ({ modo = "interactivo", onFinal }: Props) => {
   useEffect(() => {
     setSobrio(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
+
+  const { escena, estado: estadoSonoro } = useEscenaSonora<ClaveCadena>(
+    { ruta: rutaCadena, precarga: CLAVES_CADENA },
+    sonora,
+  );
+
+  useEffect(() => {
+    const sonido = escena.current;
+    if (!sonido) return;
+    const pintar = efectoDeCadena(fase);
+    const clave = locucionDeCadena(fase, rama);
+    if (pintar) sonido.efecto(pintar);
+    if (clave)
+      sonido.decir(clave, { unaVez: true, paciente: LOCUCIONES_QUE_ESPERAN.has(clave) });
+  }, [escena, estadoSonoro, fase, rama]);
+
+  const tocar = () => {
+    escena.current?.despertar();
+    escena.current?.efecto(toque);
+  };
 
   const agregar = (clave: ClaveSello) =>
     setSellos((previos) => (previos.includes(clave) ? previos : [...previos, clave]));
@@ -244,16 +275,21 @@ export const EscenaCadena = ({ modo = "interactivo", onFinal }: Props) => {
 
   const cargar = () => {
     if (fase !== "finca-reposo" || pendientes <= 0) return;
+    tocar();
     setFase("finca-hacia-bulto");
   };
 
   const elegir = (clave: Rama) => {
     if (fase !== "salidas-reposo") return;
+    tocar();
+    escena.current?.callar();
     setRama(clave);
     setFase("rama-transito");
   };
 
   const reiniciar = () => {
+    tocar();
+    escena.current?.olvidarDichas();
     setRama(null);
     setSellos([]);
     setCargados(CARGA_INICIAL[modo]);

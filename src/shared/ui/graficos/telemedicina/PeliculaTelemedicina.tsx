@@ -2,12 +2,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Boton } from "../../primitivos/Boton";
 import { Icono } from "../../primitivos/Icono";
 import { consultarUbicacion } from "../../../ubicacion/porIp";
+import { InterruptorSonido } from "../../sonido/InterruptorSonido";
+import { useEscenaSonora } from "../../sonido/useEscenaSonora";
 import type { UbicacionAproximada } from "../../../ubicacion/porIp";
 import { MapaTrazabilidad } from "./MapaTrazabilidad";
 import { EscenaCultivo, EscenaIps, EscenaLaboratorio, EscenaPaciente } from "./escenas";
 import { formaDe } from "./mapa";
 import { DURACION_TOTAL, ESLABONES, ROTULOS, faseEn, inicioDe } from "./guion";
 import type { FaseRecorrido } from "./guion";
+import {
+  CLAVES_TELEMEDICINA,
+  efectoDeRecorrido,
+  locucionDeRecorrido,
+  rutaTelemedicina,
+  type ClaveTelemedicina,
+} from "./sonido";
+
+const VOLUMEN_AMBIENTE_RECORRIDO = 0.05;
+const ESPERA_LOCUCION = 1800;
 
 const LAMINAS: Partial<Record<FaseRecorrido, () => JSX.Element>> = {
   cultivo: EscenaCultivo,
@@ -25,6 +37,32 @@ export const PeliculaTelemedicina = () => {
   const barra = useRef<HTMLSpanElement>(null);
   const cuadro = useRef(0);
   const faseViva = useRef<FaseRecorrido>("reposo");
+  const corriendoVivo = useRef(false);
+  const salto = useRef(false);
+  const { escena, estado: estadoSonoro } = useEscenaSonora<ClaveTelemedicina>({
+    ruta: rutaTelemedicina,
+    precarga: CLAVES_TELEMEDICINA,
+    volumenAmbiente: VOLUMEN_AMBIENTE_RECORRIDO,
+    esperaMaxima: ESPERA_LOCUCION,
+  });
+
+  useEffect(() => {
+    const sonora = escena.current;
+    if (!sonora) return;
+    const pintar = efectoDeRecorrido(fase);
+    const clave = locucionDeRecorrido(fase);
+    if (pintar) sonora.efecto(pintar);
+    if (clave) sonora.decir(clave, { interrumpir: salto.current, paciente: clave === "cierre" });
+    salto.current = false;
+  }, [escena, fase]);
+
+  useEffect(() => {
+    const sonora = escena.current;
+    if (!sonora || estadoSonoro !== "sonando" || !corriendoVivo.current) return;
+    sonora.ambiente(true);
+    const clave = locucionDeRecorrido(faseViva.current);
+    if (clave && !sonora.hablando()) sonora.decir(clave);
+  }, [escena, estadoSonoro]);
 
   useEffect(() => {
     const control = new AbortController();
@@ -37,7 +75,9 @@ export const PeliculaTelemedicina = () => {
   const detener = useCallback(() => {
     if (cuadro.current) cancelAnimationFrame(cuadro.current);
     cuadro.current = 0;
-  }, []);
+    corriendoVivo.current = false;
+    escena.current?.ambiente(false);
+  }, [escena]);
 
   useEffect(() => detener, [detener]);
 
@@ -51,6 +91,9 @@ export const PeliculaTelemedicina = () => {
     (desde: number) => {
       detener();
       setCorriendo(true);
+      corriendoVivo.current = true;
+      escena.current?.despertar();
+      escena.current?.ambiente(true);
       const origen = performance.now() - desde;
       const paso = (ahora: number) => {
         const transcurrido = ahora - origen;
@@ -58,6 +101,8 @@ export const PeliculaTelemedicina = () => {
         if (barra.current) barra.current.style.transform = `scaleX(${avance})`;
         if (transcurrido >= DURACION_TOTAL) {
           cuadro.current = 0;
+          corriendoVivo.current = false;
+          escena.current?.ambiente(false);
           if (barra.current) barra.current.style.transform = "scaleX(0)";
           marcar("reposo");
           setCorriendo(false);
@@ -68,14 +113,18 @@ export const PeliculaTelemedicina = () => {
       };
       cuadro.current = requestAnimationFrame(paso);
     },
-    [detener, marcar],
+    [detener, escena, marcar],
   );
 
-  const saltar = (destino: FaseRecorrido) => correr(inicioDe(destino));
+  const saltar = (destino: FaseRecorrido) => {
+    salto.current = true;
+    correr(inicioDe(destino));
+  };
 
   const explorar = () => {
     if (corriendo) {
       detener();
+      escena.current?.callar();
       setCorriendo(false);
       return;
     }
@@ -137,6 +186,10 @@ export const PeliculaTelemedicina = () => {
         >
           {corriendo ? "Pausar el recorrido" : "Explorar el recorrido"}
         </Boton>
+
+        {estadoSonoro === "sin-audio" ? null : (
+          <InterruptorSonido objeto="del recorrido" className="sonido__interruptor--oscuro" />
+        )}
 
         <ul className="telemed__eslabones">
           {ESLABONES.map((eslabon) => (

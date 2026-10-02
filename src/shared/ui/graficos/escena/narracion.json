@@ -1,0 +1,43 @@
+{
+  "modelo": "gpt-4o-mini-tts",
+  "voz": "marin",
+  "instrucciones": "Habla en español latinoamericano con un acento colombiano suave y natural. Eres la narradora de un documental institucional: voz cálida, serena y segura, cercana pero profesional. Ritmo fluido y ágil, sin pausas largas entre frases ni silencios al inicio o al final. Sin exagerar la emoción ni sonar publicitaria.",
+  "lineas": [
+    {
+      "clave": "finca",
+      "texto": "Cada bulto se identifica en la finca, con su origen declarado."
+    },
+    {
+      "clave": "viaje",
+      "texto": "La remesa sale hacia el centro de acopio."
+    },
+    {
+      "clave": "escaneo",
+      "texto": "En la bodega se lee el precinto y se compara con el origen."
+    },
+    {
+      "clave": "registro",
+      "texto": "SICAMED sella el lote y lo encadena al evento anterior."
+    },
+    {
+      "clave": "eleccion",
+      "texto": "¿Quién recibe el lote? Elige laboratorio, IPS o exportación."
+    },
+    {
+      "clave": "laboratorio",
+      "texto": "El laboratorio lo transforma en un producto terminado."
+    },
+    {
+      "clave": "ips",
+      "texto": "La IPS lo asocia a la fórmula del paciente."
+    },
+    {
+      "clave": "exportacion",
+      "texto": "Sale del país con su certificado de origen."
+    },
+    {
+      "clave": "cierre",
+      "texto": "Toda la ruta quedó registrada, y nadie puede reescribirla."
+    }
+  ]
+}
