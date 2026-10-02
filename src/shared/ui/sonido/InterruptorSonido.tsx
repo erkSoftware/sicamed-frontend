@@ -1,17 +1,24 @@
+import clsx from "clsx";
 import { Icono } from "../primitivos/Icono";
 import { useSonido } from "./almacen";
 
-export const InterruptorSonido = () => {
+type Props = {
+  objeto?: string;
+  className?: string;
+};
+
+export const InterruptorSonido = ({ objeto = "de los filtros", className }: Props) => {
   const activo = useSonido((estado) => estado.activo);
   const alternar = useSonido((estado) => estado.alternar);
+  const etiqueta = activo ? `Silenciar el sonido ${objeto}` : `Activar el sonido ${objeto}`;
 
   return (
     <button
       type="button"
-      className="sonido__interruptor"
+      className={clsx("sonido__interruptor", className)}
       aria-pressed={activo}
-      aria-label={activo ? "Silenciar el sonido de los filtros" : "Activar el sonido de los filtros"}
-      title={activo ? "Silenciar el sonido de los filtros" : "Activar el sonido de los filtros"}
+      aria-label={etiqueta}
+      title={etiqueta}
       onClick={alternar}
     >
       <Icono nombre={activo ? "sonido" : "silencio"} tamano={15} />

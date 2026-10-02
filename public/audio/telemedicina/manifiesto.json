@@ -1,0 +1,30 @@
+{
+  "cierre": {
+    "huella": "0fed58fcbf7642cf",
+    "texto": "Cannabis medicinal: trazabilidad de principio a fin."
+  },
+  "colombia": {
+    "huella": "bbfd40b32a5d0ff6",
+    "texto": "Cannabis medicinal en Colombia."
+  },
+  "cultivo": {
+    "huella": "ab05b030f59727ea",
+    "texto": "Del cultivo nace la materia prima."
+  },
+  "ips": {
+    "huella": "944bddf86db93110",
+    "texto": "Del laboratorio a la atención médica."
+  },
+  "laboratorio": {
+    "huella": "6357420af4aabd54",
+    "texto": "Ciencia y precisión en cada componente."
+  },
+  "paciente": {
+    "huella": "98e313e49d02569c",
+    "texto": "Una cadena trazable hasta el paciente."
+  },
+  "region": {
+    "huella": "572e8ceb197297d4",
+    "texto": "El recorrido empieza donde estás."
+  }
+}

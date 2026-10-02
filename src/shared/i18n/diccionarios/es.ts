@@ -164,6 +164,8 @@ export const es = {
   "origen.invitacion.ver": "Ver experiencia",
   "origen.invitacion.omitir": "Omitir",
   "origen.salto": "Saltar la experiencia",
+  "origen.sonido.activar": "Activar sonido",
+  "origen.sonido.silenciar": "Silenciar",
   "origen.tierra": "Todo comienza en Colombia.",
   "origen.cultivo": "Territorio. Conocimiento. Cultivo.",
   "origen.industria": "Del cultivo nace una nueva industria.",

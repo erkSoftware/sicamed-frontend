@@ -176,6 +176,8 @@ export const impacto = (audio: BaseAudioContext, salida: AudioNode, opciones: Br
   golpe.stop(en + 0.3);
 };
 
+export type PintarEfecto = (audio: AudioContext, salida: AudioNode, en: number) => void;
+
 export type Ambiente = {
   atenuar: (nivel: number) => void;
   apagar: (segundos: number) => void;

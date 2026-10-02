@@ -14,6 +14,7 @@ import { PeliculaTelemedicina } from "../../shared/ui/graficos/telemedicina/Peli
 import { Boton } from "../../shared/ui/primitivos/Boton";
 import { CampoClave, CampoTexto } from "../../shared/ui/primitivos/Campo";
 import { Icono } from "../../shared/ui/primitivos/Icono";
+import { InterruptorSonido } from "../../shared/ui/sonido/InterruptorSonido";
 import { iniciales } from "../../shared/i18n/formato";
 
 type EstadoUbicacion = { destino?: string };
@@ -309,14 +310,17 @@ export const Acceso = () => {
         ) : (
           <>
             <div>
-              <p className="acceso__rotulo-claro">SICAMED en operación</p>
+              <div className="acceso__encabezado-escena">
+                <p className="acceso__rotulo-claro">SICAMED en operación</p>
+                <InterruptorSonido objeto="de la historia" className="sonido__interruptor--oscuro" />
+              </div>
               <p className="acceso__titular">
                 De la finca al laboratorio, a la IPS o al puerto: cada paso deja un evento que nadie
                 puede reescribir.
               </p>
             </div>
 
-            <EscenaCadena />
+            <EscenaCadena sonora />
 
             <p className="acceso__nota-clara">
               Recorre la cadena y elige quién recibe el lote. Es el mismo histórico que verás

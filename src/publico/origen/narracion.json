@@ -1,0 +1,39 @@
+{
+  "modelo": "gpt-4o-mini-tts",
+  "voz": "marin",
+  "instrucciones": "Habla en español latinoamericano con un acento colombiano suave y natural. Eres la narradora de un documental sobre el origen de un producto colombiano: voz cálida, luminosa y orgullosa, cercana pero profesional. Ritmo fluido y ágil, sin pausas largas entre frases ni silencios al inicio o al final. Sin exagerar la emoción ni sonar publicitaria. SICAMED se pronuncia como una sola palabra: si-ka-med.",
+  "lineas": [
+    {
+      "clave": "tierra",
+      "texto": "Todo comienza en la tierra colombiana."
+    },
+    {
+      "clave": "cultivo",
+      "texto": "Montañas, saber campesino y manos que cultivan con cuidado."
+    },
+    {
+      "clave": "industria",
+      "texto": "Del cultivo nace una nueva industria."
+    },
+    {
+      "clave": "producto",
+      "texto": "Y de la planta, un producto hecho en Colombia."
+    },
+    {
+      "clave": "mundo",
+      "texto": "De Colombia al mundo, para compradores de aquí y de afuera."
+    },
+    {
+      "clave": "vitrina",
+      "texto": "Una vitrina con productos, actores y territorios en un solo lugar."
+    },
+    {
+      "clave": "razones",
+      "texto": "Oferta visible, consulta abierta y proyección internacional."
+    },
+    {
+      "clave": "cierre",
+      "texto": "Colombia produce. SICAMED conecta."
+    }
+  ]
+}

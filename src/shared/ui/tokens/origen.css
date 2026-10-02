@@ -979,11 +979,21 @@ html[data-pelicula="corriendo"] .sitio {
   background: rgba(237, 247, 240, 0.12);
 }
 
-.cine__salto {
+.cine__mandos {
   position: absolute;
   inset-block-end: var(--e5);
   inset-inline-end: var(--e5);
   z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--e3);
+}
+
+.cine__salto {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
   padding: var(--e2) var(--e4);
   border: 1px solid rgba(226, 244, 232, 0.42);
   background: rgba(3, 16, 10, 0.68);
@@ -994,6 +1004,23 @@ html[data-pelicula="corriendo"] .sitio {
 .cine__salto:hover {
   border-color: #edf7f0;
   background: rgba(3, 16, 10, 0.92);
+}
+
+.cine__sonido[data-llamado="si"] {
+  border-color: #7ed6a0;
+  animation: cine-llamado 1.6s ease-in-out 6;
+}
+
+@keyframes cine-llamado {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cine__sonido[data-llamado="si"] {
+    animation: none;
+  }
 }
 
 @media (max-width: 860px) {

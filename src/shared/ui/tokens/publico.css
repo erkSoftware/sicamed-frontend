@@ -4096,6 +4096,29 @@ html:not([data-intro="corriendo"]) .heroe__letra > span {
   color: var(--lima-400);
 }
 
+.acceso__encabezado-escena {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+}
+
+.sonido__interruptor.sonido__interruptor--oscuro {
+  color: rgba(214, 245, 227, 0.78);
+  background: rgba(1, 10, 7, 0.5);
+  border-color: rgba(126, 217, 87, 0.32);
+}
+
+.sonido__interruptor.sonido__interruptor--oscuro:hover {
+  color: #eaf6ef;
+  border-color: var(--marca-viva);
+}
+
+.sonido__interruptor.sonido__interruptor--oscuro[aria-pressed="true"] {
+  color: var(--marca-viva);
+  border-color: rgba(126, 217, 87, 0.55);
+}
+
 .acceso__nota-clara {
   max-width: 46ch;
   font-size: var(--texto-sm);

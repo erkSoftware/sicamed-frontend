@@ -30,6 +30,16 @@ export const definicionIdioma = (codigo: CodigoIdioma): DefinicionIdioma =>
 export const esCodigoIdioma = (valor: string | null | undefined): valor is CodigoIdioma =>
   IDIOMAS.some((idioma) => idioma.codigo === valor);
 
+export const idiomaGuardado = (): CodigoIdioma => {
+  if (typeof window === "undefined") return IDIOMA_POR_DEFECTO;
+  try {
+    const guardado = window.localStorage.getItem(CLAVE_ALMACENAMIENTO_IDIOMA);
+    return esCodigoIdioma(guardado) ? guardado : IDIOMA_POR_DEFECTO;
+  } catch {
+    return IDIOMA_POR_DEFECTO;
+  }
+};
+
 export type ValoresTraduccion = Record<string, string | number>;
 
 const interpolar = (

@@ -3,11 +3,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { DEPARTAMENTOS } from "../../shared/api/mock/catalogos";
+import { recortarSilencio } from "../../shared/ui/sonido/locutor";
 import {
   CLAVES_LINEA,
   inauguraLocucion,
   locucionDelTramo,
-  recortarSilencio,
   rutaDepartamento,
   rutaLinea,
 } from "./bandaSonora";

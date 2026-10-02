@@ -11,7 +11,7 @@ import {
   CLAVE_ALMACENAMIENTO_IDIOMA,
   IDIOMA_POR_DEFECTO,
   definicionIdioma,
-  esCodigoIdioma,
+  idiomaGuardado,
   traducir,
   type ClaveTraduccion,
   type CodigoIdioma,
@@ -26,16 +26,6 @@ type ContextoIdioma = {
 };
 
 const Contexto = createContext<ContextoIdioma | null>(null);
-
-const idiomaGuardado = (): CodigoIdioma => {
-  if (typeof window === "undefined") return IDIOMA_POR_DEFECTO;
-  try {
-    const guardado = window.localStorage.getItem(CLAVE_ALMACENAMIENTO_IDIOMA);
-    return esCodigoIdioma(guardado) ? guardado : IDIOMA_POR_DEFECTO;
-  } catch {
-    return IDIOMA_POR_DEFECTO;
-  }
-};
 
 export const ProveedorIdioma = ({ children }: PropsWithChildren) => {
   const [idioma, setIdioma] = useState<CodigoIdioma>(idiomaGuardado);

@@ -8,6 +8,7 @@ import {
   subida,
   type Ambiente,
 } from "../../shared/ui/sonido/efectos";
+import { crearLocutor, type Locutor } from "../../shared/ui/sonido/locutor";
 import { anotar } from "./diagnostico";
 import type { FaseIntro } from "./guion";
 
@@ -48,23 +49,6 @@ const FASES_QUE_INAUGURAN: ReadonlySet<FaseIntro> = new Set([
 export const locucionDelTramo = (fase: FaseIntro): Locucion => LOCUCION_DEL_TRAMO[fase];
 
 export const inauguraLocucion = (fase: FaseIntro): boolean => FASES_QUE_INAUGURAN.has(fase);
-
-const UMBRAL_SILENCIO = 0.012;
-const MARGEN_RECORTE = 0.04;
-
-export type Recorte = { desde: number; duracion: number };
-
-export const recortarSilencio = (muestras: Float32Array, frecuencia: number): Recorte => {
-  let primera = 0;
-  while (primera < muestras.length && Math.abs(muestras[primera] ?? 0) < UMBRAL_SILENCIO)
-    primera += 1;
-  let ultima = muestras.length - 1;
-  while (ultima > primera && Math.abs(muestras[ultima] ?? 0) < UMBRAL_SILENCIO) ultima -= 1;
-  if (primera >= muestras.length) return { desde: 0, duracion: muestras.length / frecuencia };
-  const desde = Math.max(0, primera / frecuencia - MARGEN_RECORTE);
-  const hasta = Math.min(muestras.length / frecuencia, ultima / frecuencia + MARGEN_RECORTE);
-  return { desde, duracion: hasta - desde };
-};
 
 const VOLUMEN_VOZ = 1;
 const VOLUMEN_EFECTOS = 0.55;
@@ -121,10 +105,6 @@ type Opciones = {
   alCambiar: (estado: EstadoBanda) => void;
 };
 
-type Pista = { buffer: AudioBuffer; recorte: Recorte };
-
-type Pendiente = { locucion: Locucion; pedidaEn: number };
-
 const esperar = (ms: number) => new Promise<void>((resolver) => window.setTimeout(resolver, ms));
 
 export const crearBandaSonora = ({ departamento, activo, alCambiar }: Opciones): BandaSonora => {
@@ -133,12 +113,8 @@ export const crearBandaSonora = ({ departamento, activo, alCambiar }: Opciones):
   let faseActual: FaseIntro = "aparicion";
   let concluida = false;
   let despidiendo = false;
-  let reproduciendo: AudioBufferSourceNode | null = null;
-  let cargando = false;
   let fondo: Ambiente | null = null;
-  const cola: Pendiente[] = [];
   const dichas = new Set<Locucion>();
-  const pistas = new Map<Locucion, Promise<Pista | null>>();
 
   const maestro = audio ? audio.createGain() : null;
   const voces = audio ? audio.createGain() : null;
@@ -158,27 +134,6 @@ export const crearBandaSonora = ({ departamento, activo, alCambiar }: Opciones):
     alCambiar(estado);
   };
 
-  const rutaDe = (locucion: Locucion): string =>
-    locucion === "departamento" ? rutaDepartamento(departamento) : rutaLinea(locucion);
-
-  const cargar = (locucion: Locucion): Promise<Pista | null> => {
-    const guardada = pistas.get(locucion);
-    if (guardada) return guardada;
-    const promesa = (async () => {
-      if (!audio) return null;
-      try {
-        const respuesta = await fetch(rutaDe(locucion));
-        if (!respuesta.ok) return null;
-        const buffer = await audio.decodeAudioData(await respuesta.arrayBuffer());
-        return { buffer, recorte: recortarSilencio(buffer.getChannelData(0), buffer.sampleRate) };
-      } catch {
-        return null;
-      }
-    })();
-    pistas.set(locucion, promesa);
-    return promesa;
-  };
-
   const encenderFondo = () => {
     if (!audio || !maestro || fondo || concluida) return;
     fondo = ambiente(audio, maestro, VOLUMEN_AMBIENTE);
@@ -189,59 +144,27 @@ export const crearBandaSonora = ({ departamento, activo, alCambiar }: Opciones):
     fondo = null;
   };
 
-  const avanzar = async (): Promise<void> => {
-    if (!audio || !voces || reproduciendo || cargando || concluida || estado !== "sonando") return;
-    const siguiente = cola.shift();
-    if (!siguiente) {
-      if (despidiendo) despedirFondo();
-      return;
-    }
-    if (
-      performance.now() - siguiente.pedidaEn > ESPERA_MAXIMA_EN_COLA &&
-      siguiente.locucion !== "cierre"
-    ) {
-      anotar("voz-descartada", { locucion: siguiente.locucion });
-      return avanzar();
-    }
-    cargando = true;
-    const pista = await cargar(siguiente.locucion);
-    cargando = false;
-    if (concluida) return;
-    if (!pista || estado !== "sonando") return avanzar();
-    const fuente = audio.createBufferSource();
-    fuente.buffer = pista.buffer;
-    fuente.connect(voces);
-    fuente.onended = () => {
-      if (reproduciendo !== fuente) return;
-      reproduciendo = null;
-      fondo?.atenuar(1);
-      void avanzar();
-    };
-    reproduciendo = fuente;
-    fondo?.atenuar(AMBIENTE_BAJO_LA_VOZ);
-    fuente.start(audio.currentTime, pista.recorte.desde, pista.recorte.duracion);
-    anotar("voz", {
-      locucion: siguiente.locucion,
-      segundos: Math.round(pista.recorte.duracion * 10) / 10,
-    });
-  };
+  const locutor: Locutor<Locucion> | null =
+    audio && voces
+      ? crearLocutor<Locucion>({
+          audio,
+          salida: voces,
+          esperaMaxima: ESPERA_MAXIMA_EN_COLA,
+          ruta: (locucion) =>
+            locucion === "departamento" ? rutaDepartamento(departamento) : rutaLinea(locucion),
+          alHablar: (hablando) => {
+            fondo?.atenuar(hablando ? AMBIENTE_BAJO_LA_VOZ : 1);
+            if (!hablando && despidiendo && !locutor?.hablando()) despedirFondo();
+          },
+          alDecir: (locucion, segundos) =>
+            anotar("voz", { locucion, segundos: Math.round(segundos * 10) / 10 }),
+        })
+      : null;
 
   const decir = (locucion: Locucion) => {
-    if (dichas.has(locucion)) return;
+    if (!locutor || concluida || estado !== "sonando" || dichas.has(locucion)) return;
     dichas.add(locucion);
-    cola.push({ locucion, pedidaEn: performance.now() });
-    void avanzar();
-  };
-
-  const callarVoz = () => {
-    cola.length = 0;
-    const fuente = reproduciendo;
-    reproduciendo = null;
-    try {
-      fuente?.stop();
-    } catch {
-      return;
-    }
+    locutor.decir(locucion, { paciente: locucion === "cierre" });
   };
 
   const desbloqueo = (evento: Event) => {
@@ -284,8 +207,7 @@ export const crearBandaSonora = ({ departamento, activo, alCambiar }: Opciones):
 
   const arrancar = async () => {
     if (!audio || estado !== "preparando") return;
-    for (const locucion of ["apertura", "territorio", "departamento", "cadena", "cierre"] as const)
-      void cargar(locucion);
+    locutor?.precargar(["apertura", "territorio", "departamento", "cadena", "cierre"]);
     if (audio.state !== "running") await Promise.race([audio.resume(), esperar(ESPERA_DESBLOQUEO)]);
     if (estado !== "preparando") return;
     if (audio.state === "running") {
@@ -309,21 +231,21 @@ export const crearBandaSonora = ({ departamento, activo, alCambiar }: Opciones):
     silenciar: () => {
       if (!audio || !maestro) return;
       vigilarGesto(false);
-      callarVoz();
+      locutor?.callar();
       despedirFondo();
       maestro.gain.setTargetAtTime(0, audio.currentTime, 0.06);
       cambiar("silenciado");
     },
-    hablando: () => estado === "sonando" && (reproduciendo !== null || cargando || cola.length > 0),
+    hablando: () => estado === "sonando" && Boolean(locutor?.hablando()),
     terminar: () => {
       vigilarGesto(false);
       despidiendo = true;
-      if (!reproduciendo && !cargando && cola.length === 0) despedirFondo();
+      if (!locutor?.hablando()) despedirFondo();
     },
     cortar: () => {
       vigilarGesto(false);
       concluida = true;
-      callarVoz();
+      locutor?.callar();
       despedirFondo();
       if (audio && maestro) maestro.gain.setTargetAtTime(0, audio.currentTime, 0.08);
     },
