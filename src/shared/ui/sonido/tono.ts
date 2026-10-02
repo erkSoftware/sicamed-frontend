@@ -1,3 +1,5 @@
+import { abrirAudio } from "./contexto";
+
 const ESCALA = [523.25, 587.33, 659.25, 783.99, 880] as const;
 
 const BASE_RESPALDO = 523.25;
@@ -7,24 +9,8 @@ const PARCIALES = [
   { tipo: "sine", razon: 2, ganancia: 0.3 },
 ] as const;
 
-let contexto: AudioContext | null = null;
-
-const abrir = (): AudioContext | null => {
-  if (contexto) return contexto;
-  if (typeof window === "undefined") return null;
-  const ventana = window as typeof window & { webkitAudioContext?: typeof AudioContext };
-  const Constructor = ventana.AudioContext ?? ventana.webkitAudioContext;
-  if (!Constructor) return null;
-  try {
-    contexto = new Constructor();
-  } catch {
-    contexto = null;
-  }
-  return contexto;
-};
-
 export const emitirTono = (paso: number): void => {
-  const audio = abrir();
+  const audio = abrirAudio();
   if (!audio) return;
   try {
     if (audio.state === "suspended") void audio.resume();

@@ -5,6 +5,8 @@ import { DEPARTAMENTOS } from "../../shared/api/mock/catalogos";
 import { proyectarOrtografica, type Camara } from "../../shared/geo/proyecciones";
 import { numero } from "../../shared/i18n/formato";
 import { EscenaCadena } from "../../shared/ui/graficos/escena/EscenaCadena";
+import { Icono } from "../../shared/ui/primitivos/Icono";
+import { useSonido } from "../../shared/ui/sonido/almacen";
 import {
   leerPaletaGlobo,
   pintarGlobo,
@@ -12,6 +14,7 @@ import {
   type MarcaGlobo,
   type PaletaGlobo,
 } from "../../shared/ui/graficos/pintarGlobo";
+import { crearBandaSonora, type BandaSonora, type EstadoBanda } from "./bandaSonora";
 import { cinematicaActiva, limpiarHashIntro, marcarIntroVista, pedidaPorHash } from "./decision";
 import { anotar, CANAL_INTRO } from "./diagnostico";
 import { DURACION_TOTAL, INICIO_SALIDA, encuadreEn, momentoEn, type Momento } from "./guion";
@@ -159,6 +162,8 @@ export const IntroCinematica = () => {
   const lienzo = useRef<HTMLCanvasElement>(null);
   const entregado = useRef(false);
   const cadenaLista = useRef(false);
+  const banda = useRef<BandaSonora | null>(null);
+  const [sonido, setSonido] = useState<EstadoBanda>("preparando");
 
   const alTerminarCadena = useCallback(() => {
     cadenaLista.current = true;
@@ -171,7 +176,15 @@ export const IntroCinematica = () => {
     document.documentElement.setAttribute("data-cinematica", "corriendo");
     document.documentElement.setAttribute("data-intro", "corriendo");
     window.scrollTo({ top: 0, behavior: "instant" });
-    setElegido(elegirDepartamento());
+    const departamento = elegirDepartamento();
+    banda.current?.cortar();
+    banda.current = crearBandaSonora({
+      departamento: departamento.codigo,
+      activo: useSonido.getState().activo,
+      alCambiar: setSonido,
+    });
+    setSonido(banda.current.estado());
+    setElegido(departamento);
     setMomento({ fase: "aparicion", avance: 0, escena: 0 });
     setPase((anterior) => anterior + 1);
     setCorriendo(true);
@@ -180,6 +193,7 @@ export const IntroCinematica = () => {
   const cerrar = () => {
     anotar("cerrar");
     entregado.current = true;
+    banda.current?.cortar();
     document.documentElement.removeAttribute("data-cinematica");
     document.documentElement.setAttribute("data-intro", "listo");
     marcarIntroVista();
@@ -251,6 +265,7 @@ export const IntroCinematica = () => {
 
     let inicio = 0;
     let previa = "";
+    let previaFase = "";
     let cuadros = 0;
 
     const dibujar = (ahora: number) => {
@@ -259,7 +274,7 @@ export const IntroCinematica = () => {
         inicio = ahora;
         anotar("primer-cuadro", { ancho, alto });
       }
-      if (cadenaLista.current) {
+      if (cadenaLista.current && !banda.current?.hablando()) {
         cadenaLista.current = false;
         const transcurrido = ahora - inicio;
         if (transcurrido < INICIO_SALIDA) {
@@ -270,6 +285,7 @@ export const IntroCinematica = () => {
       const tiempo = ahora - inicio;
       if (tiempo >= DURACION_TOTAL) {
         anotar("fin", { cuadros });
+        banda.current?.terminar();
         entregar();
         marcarIntroVista();
         setCorriendo(false);
@@ -282,6 +298,10 @@ export const IntroCinematica = () => {
         previa = clave;
         anotar("fase", { clave, ms: Math.round(tiempo) });
         setMomento(actual);
+        if (actual.fase !== previaFase) {
+          previaFase = actual.fase;
+          banda.current?.fase(actual.fase);
+        }
         if (actual.fase === "salida") entregar();
       }
 
@@ -361,6 +381,7 @@ export const IntroCinematica = () => {
   useEffect(() => {
     const raiz = document.documentElement;
     return () => {
+      banda.current?.cortar();
       raiz.removeAttribute("data-cinematica");
       raiz.setAttribute("data-intro", "listo");
     };
@@ -376,6 +397,19 @@ export const IntroCinematica = () => {
   }, [corriendo]);
 
   if (!corriendo) return null;
+
+  const alternarSonido = () => {
+    const actual = banda.current;
+    if (!actual) return;
+    if (actual.estado() === "sonando") {
+      useSonido.getState().fijar(false);
+      actual.silenciar();
+      return;
+    }
+    useSonido.getState().fijar(true);
+    actual.activar();
+  };
+  const suena = sonido === "sonando";
 
   const fase = momento.fase;
   const enEcosistema = fase === "ecosistema" || fase === "salida";
@@ -447,9 +481,22 @@ export const IntroCinematica = () => {
         <span className="cinematica__progreso" />
       </div>
 
-      <button type="button" className="cinematica__salto" onClick={cerrar}>
-        Saltar la introducción
-      </button>
+      <div className="cinematica__mandos">
+        {sonido === "sin-audio" ? null : (
+          <button
+            type="button"
+            className="cinematica__salto cinematica__sonido"
+            data-llamado={sonido === "bloqueado" ? "si" : "no"}
+            onClick={alternarSonido}
+          >
+            <Icono nombre={suena ? "sonido" : "silencio"} tamano={14} />
+            {suena ? "Silenciar" : "Activar sonido"}
+          </button>
+        )}
+        <button type="button" className="cinematica__salto" onClick={cerrar}>
+          Saltar la introducción
+        </button>
+      </div>
     </div>
   );
 };

@@ -23,6 +23,7 @@ const escribir = (activo: boolean): void => {
 type EstadoSonido = {
   activo: boolean;
   alternar: () => void;
+  fijar: (activo: boolean) => void;
 };
 
 export const useSonido = create<EstadoSonido>((set, get) => ({
@@ -32,6 +33,10 @@ export const useSonido = create<EstadoSonido>((set, get) => ({
     escribir(siguiente);
     set({ activo: siguiente });
     if (siguiente) emitirTono(2);
+  },
+  fijar: (activo) => {
+    escribir(activo);
+    set({ activo });
   },
 }));
 

@@ -1,0 +1,146 @@
+{
+  "apertura": {
+    "huella": "61a4c64f895110af",
+    "texto": "SICAMED. Sistema de Información del Cannabis Medicinal."
+  },
+  "cadena": {
+    "huella": "552e9a60d09d2653",
+    "texto": "Cada lote viaja con su guía: de la finca a la bodega, y de ahí al laboratorio, la IPS o la exportación."
+  },
+  "cierre": {
+    "huella": "d4dc622c270aadb9",
+    "texto": "Trazabilidad de la semilla al paciente. Bienvenido a SICAMED."
+  },
+  "departamentos/05": {
+    "huella": "55e67f61ff95106c",
+    "texto": "Rumbo a Antioquia."
+  },
+  "departamentos/08": {
+    "huella": "939c80d5de7f8267",
+    "texto": "Rumbo a Atlántico."
+  },
+  "departamentos/11": {
+    "huella": "37786b7ed0244f84",
+    "texto": "Rumbo a Bogotá, Distrito Capital."
+  },
+  "departamentos/13": {
+    "huella": "1656787490c2b7c6",
+    "texto": "Rumbo a Bolívar."
+  },
+  "departamentos/15": {
+    "huella": "a313d68e7b0d0a19",
+    "texto": "Rumbo a Boyacá."
+  },
+  "departamentos/17": {
+    "huella": "fe7030a41133f245",
+    "texto": "Rumbo a Caldas."
+  },
+  "departamentos/18": {
+    "huella": "eed24ee7f3b18e95",
+    "texto": "Rumbo a Caquetá."
+  },
+  "departamentos/19": {
+    "huella": "dd8212dfa805a22e",
+    "texto": "Rumbo a Cauca."
+  },
+  "departamentos/20": {
+    "huella": "c87a2fe0853b34f6",
+    "texto": "Rumbo a Cesar."
+  },
+  "departamentos/23": {
+    "huella": "c993e69df341bfdc",
+    "texto": "Rumbo a Córdoba."
+  },
+  "departamentos/25": {
+    "huella": "11fd7908227d6d3d",
+    "texto": "Rumbo a Cundinamarca."
+  },
+  "departamentos/27": {
+    "huella": "3870819c536c4f49",
+    "texto": "Rumbo a Chocó."
+  },
+  "departamentos/41": {
+    "huella": "e6011540d6dd5fd6",
+    "texto": "Rumbo a Huila."
+  },
+  "departamentos/44": {
+    "huella": "77fcfbb35aa7a00a",
+    "texto": "Rumbo a La Guajira."
+  },
+  "departamentos/47": {
+    "huella": "84efa4fcfa4293e0",
+    "texto": "Rumbo a Magdalena."
+  },
+  "departamentos/50": {
+    "huella": "b5247bcfcf75ecca",
+    "texto": "Rumbo a Meta."
+  },
+  "departamentos/52": {
+    "huella": "350a055981dc0b5f",
+    "texto": "Rumbo a Nariño."
+  },
+  "departamentos/54": {
+    "huella": "a7ed1b5909a182d4",
+    "texto": "Rumbo a Norte de Santander."
+  },
+  "departamentos/63": {
+    "huella": "af358468198e5ac5",
+    "texto": "Rumbo a Quindío."
+  },
+  "departamentos/66": {
+    "huella": "d108959893697b19",
+    "texto": "Rumbo a Risaralda."
+  },
+  "departamentos/68": {
+    "huella": "f37cdf80df49f4cd",
+    "texto": "Rumbo a Santander."
+  },
+  "departamentos/70": {
+    "huella": "31097b952d9b7a34",
+    "texto": "Rumbo a Sucre."
+  },
+  "departamentos/73": {
+    "huella": "3c9ab8cbce11e9b4",
+    "texto": "Rumbo a Tolima."
+  },
+  "departamentos/76": {
+    "huella": "add0cd28132eee89",
+    "texto": "Rumbo a Valle del Cauca."
+  },
+  "departamentos/81": {
+    "huella": "8f484ed3998d3dd8",
+    "texto": "Rumbo a Arauca."
+  },
+  "departamentos/85": {
+    "huella": "86bbf5975b917ce9",
+    "texto": "Rumbo a Casanare."
+  },
+  "departamentos/86": {
+    "huella": "c54df62c607febc1",
+    "texto": "Rumbo a Putumayo."
+  },
+  "departamentos/91": {
+    "huella": "0c28d206abd946a5",
+    "texto": "Rumbo a Amazonas."
+  },
+  "departamentos/94": {
+    "huella": "4d59867f6421df04",
+    "texto": "Rumbo a Guainía."
+  },
+  "departamentos/95": {
+    "huella": "50e0aa2d4bdb5f90",
+    "texto": "Rumbo a Guaviare."
+  },
+  "departamentos/97": {
+    "huella": "df65647ff132e3ce",
+    "texto": "Rumbo a Vaupés."
+  },
+  "departamentos/99": {
+    "huella": "d9919b88304cc881",
+    "texto": "Rumbo a Vichada."
+  },
+  "territorio": {
+    "huella": "5bb9cddf90ae4a1d",
+    "texto": "Colombia, conectada en un solo registro."
+  }
+}
