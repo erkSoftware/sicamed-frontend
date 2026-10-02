@@ -385,11 +385,21 @@ html[data-cinematica="corriendo"] .sitio {
   }
 }
 
-.cinematica__salto {
+.cinematica__mandos {
   position: absolute;
   right: clamp(var(--e4), 4vw, var(--e7));
   bottom: clamp(var(--e4), 4vh, var(--e6));
   z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--e3);
+}
+
+.cinematica__salto {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
   padding: 7px var(--e4);
   font-family: var(--fuente-mono);
   font-size: var(--texto-xs);
@@ -410,6 +420,18 @@ html[data-cinematica="corriendo"] .sitio {
   color: var(--verde-950);
   background: var(--marca-viva);
   border-color: var(--marca-viva);
+}
+
+.cinematica__sonido[data-llamado="si"] {
+  color: #eaf6ef;
+  border-color: var(--marca-viva);
+  animation: cinematica-llamado 1.6s ease-in-out 6;
+}
+
+@keyframes cinematica-llamado {
+  50% {
+    transform: scale(1.06);
+  }
 }
 
 @media (max-width: 720px) {

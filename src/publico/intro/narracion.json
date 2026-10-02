@@ -1,0 +1,30 @@
+{
+  "modelo": "gpt-4o-mini-tts",
+  "voz": "marin",
+  "instrucciones": "Habla en español latinoamericano con un acento colombiano suave y natural. Eres la narradora de un documental institucional: voz cálida, serena y segura, cercana pero profesional. Ritmo fluido y ágil, sin pausas largas entre frases ni silencios al inicio o al final. Sin exagerar la emoción ni sonar publicitaria.",
+  "lineas": [
+    {
+      "clave": "apertura",
+      "texto": "SICAMED. Sistema de Información del Cannabis Medicinal."
+    },
+    {
+      "clave": "territorio",
+      "texto": "Colombia, conectada en un solo registro."
+    },
+    {
+      "clave": "cadena",
+      "texto": "Cada lote viaja con su guía: de la finca a la bodega, y de ahí al laboratorio, la IPS o la exportación."
+    },
+    {
+      "clave": "cierre",
+      "texto": "Trazabilidad de la semilla al paciente. Bienvenido a SICAMED."
+    }
+  ],
+  "departamento": {
+    "plantilla": "Rumbo a {nombre}.",
+    "pronunciacion": {
+      "11": "Bogotá, Distrito Capital",
+      "88": "San Andrés y Providencia"
+    }
+  }
+}
